@@ -1,0 +1,92 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'signing'
+apply plugin: 'eclipse'
+
+group = 'de.undercouch'
+version = '0.1'
+sourceCompatibility = '1.6'
+targetCompatibility = '1.6'
+
+dependencies {
+    compile gradleApi()
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.7'
+}
+
+jar {
+    // include license into jar
+    from 'LICENSE.txt'
+}
+
+// package javadoc into a jar file
+task packageJavadoc(type: Jar, dependsOn: 'javadoc') {
+    from javadoc.destinationDir
+    classifier = 'javadoc'
+}
+
+// package source into a jar file
+task packageSources(type: Jar) {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+// define artifacts for upload
+artifacts {
+    archives jar
+    archives packageJavadoc
+    archives packageSources
+}
+
+// sign all artifacts
+signing {
+    required { gradle.taskGraph.hasTask(uploadArchives) }
+    sign configurations.archives
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            // sign artifacts before upload
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+            
+            // upload to sonatype OSS
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2") {
+                authentication(userName: this.hasProperty('sonatypeUsername') ? sonatypeUsername : '',
+                    password: this.hasProperty('sonatypePassword') ? sonatypePassword : '')
+            }
+            
+            // pom file details
+            pom.project {
+               name 'gradle-download-task'
+               packaging 'jar'
+               description 'Adds a download task to Gradle that displays progress information'
+               url 'http://www.michel-kraemer.com'
+ 
+               scm {
+                   url 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
+                   connection 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
+                   developerConnection 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
+               }
+ 
+               licenses {
+                   license {
+                       name 'The Apache Software License, Version 2.0'
+                       url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                       distribution 'repo'
+                   }
+               }
+ 
+               developers {
+                   developer {
+                       id 'michel-kraemer'
+                       name 'Michel Kraemer'
+                       email 'michel@undercouch.de'
+                   }
+               }
+           }
+        }
+    }
+}
