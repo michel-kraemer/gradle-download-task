@@ -27,7 +27,7 @@ Then you can use the `Download` as follows:
 import de.undercouch.gradle.tasks.download.Download
 
 task downloadFile(type: Download) {
-    src 'http://www.example.com/file.ext'
+    src 'http://www.example.com/index.html'
     dest buildDir
 }
 ```
@@ -42,7 +42,7 @@ task myTask << {
     //do something ...
     //... then download a file
     download {
-        src 'http://www.example.com/file.ext'
+        src 'http://www.example.com/index.html'
         dest buildDir
     }
     //... do something else
