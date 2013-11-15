@@ -35,6 +35,8 @@ import org.gradle.logging.ProgressLoggerFactory;
  * @author Michel Kraemer
  */
 public class DownloadAction implements DownloadSpec {
+    private static final int MAX_NUMBER_OF_REDIRECTS = 30;
+    
     private URL src;
     private File dest;
     private boolean quiet = false;
@@ -165,34 +167,62 @@ public class DownloadAction implements DownloadSpec {
      */
     private URLConnection openConnection(long timestamp,
             Project project) throws IOException {
+        int redirects = MAX_NUMBER_OF_REDIRECTS;
+        
         URLConnection uc = src.openConnection();
-        
-        //set If-Modified-Since header
-        if (timestamp > 0) {
-            uc.setIfModifiedSince(timestamp);
-        }
-        
-        //authenticate
-        if (username != null && password != null) {
-            String up = username + ":" + password;
-            Base64Converter encoder = new Base64Converter();
-            String encoding = encoder.encode(up.getBytes());
-            uc.setRequestProperty("Authorization", "Basic " + encoding);
-        }
-        
-        uc.connect();
-
-        if (uc instanceof HttpURLConnection) {
-            HttpURLConnection httpConnection = (HttpURLConnection)uc;
-            int responseCode = httpConnection.getResponseCode();
-            long lastModified = httpConnection.getLastModified();
-            if (responseCode == HttpURLConnection.HTTP_NOT_MODIFIED ||
-                    (lastModified != 0 && timestamp >= lastModified)) {
-                if (!quiet) {
-                    project.getLogger().info("Not modified. Skipping '" + src + "'");
-                }
-                return null;
+        while (true) {
+            if (uc instanceof HttpURLConnection) {
+                HttpURLConnection httpConnection = (HttpURLConnection)uc;
+                httpConnection.setInstanceFollowRedirects(true);
             }
+            
+            //set If-Modified-Since header
+            if (timestamp > 0) {
+                uc.setIfModifiedSince(timestamp);
+            }
+            
+            //authenticate
+            if (username != null && password != null) {
+                String up = username + ":" + password;
+                Base64Converter encoder = new Base64Converter();
+                String encoding = encoder.encode(up.getBytes());
+                uc.setRequestProperty("Authorization", "Basic " + encoding);
+            }
+            
+            uc.connect();
+    
+            if (uc instanceof HttpURLConnection) {
+                HttpURLConnection httpConnection = (HttpURLConnection)uc;
+                int responseCode = httpConnection.getResponseCode();
+                long lastModified = httpConnection.getLastModified();
+                if (responseCode == HttpURLConnection.HTTP_NOT_MODIFIED ||
+                        (lastModified != 0 && timestamp >= lastModified)) {
+                    if (!quiet) {
+                        project.getLogger().info("Not modified. Skipping '" + src + "'");
+                    }
+                    return null;
+                }
+                
+                if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
+                        responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
+                        responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
+                    if (redirects == 0) {
+                        throw new IllegalStateException("Request exceeds maximum number "
+                                + "of redirects (" + MAX_NUMBER_OF_REDIRECTS + ")");
+                    }
+
+                    //redirect to other location and try again
+                    String nu = uc.getHeaderField("Location");
+                    String cookie = uc.getHeaderField("Set-Cookie");
+                    uc = (HttpURLConnection)new URL(nu).openConnection();
+                    uc.setRequestProperty("Cookie", cookie);
+                    
+                    redirects--;
+                    continue;
+                }
+            }
+            
+            break;
         }
 
         return uc;
