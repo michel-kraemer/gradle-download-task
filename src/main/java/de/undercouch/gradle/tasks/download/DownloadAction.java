@@ -318,25 +318,25 @@ public class DownloadAction implements DownloadSpec {
     
     @Override
     public void src(Object src) throws MalformedURLException {
-        if (src instanceof String) {
-            this.src = new URL((String)src);
+        if (src instanceof CharSequence) {
+            this.src = new URL(src.toString());
         } else if (src instanceof URL) {
             this.src = (URL)src;
         } else {
             throw new IllegalArgumentException("Download source must " +
-                "either be a URL or a String");
+                "either be a URL or a CharSequence");
         }
     }
     
     @Override
     public void dest(Object dest) {
-        if (dest instanceof String) {
-            this.dest = new File((String)dest);
+        if (dest instanceof CharSequence) {
+            this.dest = new File(dest.toString());
         } else if (dest instanceof File) {
             this.dest = (File)dest;
         } else {
             throw new IllegalArgumentException("Download destination must " +
-                "either be a File or a String");
+                "either be a File or a CharSequence");
         }
     }
     
