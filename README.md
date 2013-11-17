@@ -16,7 +16,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'de.undercouch:gradle-download-task:0.3'
+        classpath 'de.undercouch:gradle-download-task:0.4'
     }
 }
 ```
@@ -69,6 +69,9 @@ The download task and the extension support the following properties
 <dd><code>true</code> if the file should only be downloaded if it
 has been modified on the server since the last download <em>(default:
 <code>false</code>)</em></dd>
+<dt>compress</dt>
+<dd><code>true</code> if compression should be used during download <em>(default:
+<code>true</code>)</em></dd>
 <dt>username</dt>
 <dd>The username for <code>Basic</code> authentication <em>(optional)</em></dd>
 <dt>password</dt>
