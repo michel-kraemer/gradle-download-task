@@ -23,6 +23,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.tools.ant.util.Base64Converter;
 import org.gradle.api.Project;
@@ -42,6 +43,7 @@ public class DownloadAction implements DownloadSpec {
     private boolean quiet = false;
     private boolean overwrite = true;
     private boolean onlyIfNewer = false;
+    private boolean compress = true;
     private String username;
     private String password;
     
@@ -124,6 +126,9 @@ public class DownloadAction implements DownloadSpec {
         
         //open stream and start downloading
         InputStream is = conn.getInputStream();
+        if (isContentCompressed(conn)) {
+            is = new GZIPInputStream(is);
+        }
         try {
             startProgress();
             OutputStream os = new FileOutputStream(destFile);
@@ -187,6 +192,11 @@ public class DownloadAction implements DownloadSpec {
                 Base64Converter encoder = new Base64Converter();
                 String encoding = encoder.encode(up.getBytes());
                 uc.setRequestProperty("Authorization", "Basic " + encoding);
+            }
+            
+            //enable compression
+            if (compress) {
+                uc.setRequestProperty("Accept-Encoding", "gzip");
             }
             
             uc.connect();
@@ -265,6 +275,18 @@ public class DownloadAction implements DownloadSpec {
         }
     }
     
+    /**
+     * Checks if the content of the given URL connection is compressed
+     * @return true if it is compressed, false otherwise
+     */
+    private boolean isContentCompressed(URLConnection conn) {
+        String value = conn.getHeaderField("Content-Encoding");
+        if (value == null || value.isEmpty()) {
+            return false;
+        }
+        return value.equalsIgnoreCase("gzip");
+    }
+    
     private void startProgress() {
         if (progressLogger != null) {
             progressLogger.started();
@@ -334,6 +356,11 @@ public class DownloadAction implements DownloadSpec {
     }
     
     @Override
+    public void compress(boolean compress) {
+        this.compress = compress;
+    }
+    
+    @Override
     public void username(String username) {
         this.username = username;
     }
@@ -366,6 +393,11 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public boolean isOnlyIfNewer() {
         return onlyIfNewer;
+    }
+    
+    @Override
+    public boolean isCompress() {
+        return compress;
     }
     
     @Override

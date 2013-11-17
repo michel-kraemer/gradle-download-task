@@ -70,6 +70,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
     
     @Override
+    public void compress(boolean compress) {
+        action.compress(compress);
+    }
+    
+    @Override
     public void username(String username) {
         action.username(username);
     }
@@ -102,6 +107,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public boolean isOnlyIfNewer() {
         return action.isOnlyIfNewer();
+    }
+    
+    @Override
+    public boolean isCompress() {
+        return action.isCompress();
     }
     
     @Override

@@ -56,6 +56,12 @@ public interface DownloadSpec {
     void onlyIfNewer(boolean onlyIfNewer);
     
     /**
+     * Specifies if compression should be used during download
+     * @param compress true if compression should be enabled
+     */
+    void compress(boolean compress);
+    
+    /**
      * Sets the username for <code>Basic</code> authentication
      * @param username the username
      */
@@ -91,6 +97,11 @@ public interface DownloadSpec {
      * @return the onlyIfNewer flag
      */
     boolean isOnlyIfNewer();
+    
+    /**
+     * @return true if compression is enabled
+     */
+    boolean isCompress();
     
     /**
      * @return the username for <code>Basic</code> authentication

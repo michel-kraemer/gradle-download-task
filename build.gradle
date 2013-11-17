@@ -4,7 +4,7 @@ apply plugin: 'signing'
 apply plugin: 'eclipse'
 
 group = 'de.undercouch'
-version = '0.3'
+version = '0.4'
 sourceCompatibility = '1.6'
 targetCompatibility = '1.6'
 
