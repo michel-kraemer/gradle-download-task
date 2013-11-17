@@ -52,6 +52,8 @@ public class DownloadAction implements DownloadSpec {
     private long processedBytes = 0;
     private long loggedKb = 0;
     
+    private boolean skipped = false;
+    
     /**
      * Starts downloading
      * @param project the project to be built
@@ -92,6 +94,7 @@ public class DownloadAction implements DownloadSpec {
                 project.getLogger().info("Destination file already exists. "
                         + "Skipping '" + destFile.getName() + "'");
             }
+            skipped = true;
             return;
         }
         
@@ -210,6 +213,7 @@ public class DownloadAction implements DownloadSpec {
                     if (!quiet) {
                         project.getLogger().info("Not modified. Skipping '" + src + "'");
                     }
+                    skipped = true;
                     return null;
                 }
                 
@@ -314,6 +318,13 @@ public class DownloadAction implements DownloadSpec {
             progressLogger.progress(msg);
             loggedKb = processedKb;
         }
+    }
+    
+    /**
+     * @return true if execution of this task has been skipped
+     */
+    boolean isSkipped() {
+        return skipped;
     }
     
     @Override

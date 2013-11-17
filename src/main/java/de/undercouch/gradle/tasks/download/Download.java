@@ -20,7 +20,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.internal.tasks.TaskStateInternal;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.TaskState;
 
 /**
  * Downloads a file and displays progress. Example:
@@ -42,6 +44,13 @@ public class Download extends DefaultTask implements DownloadSpec {
     @TaskAction
     public void download() throws IOException {
         action.execute(getProject());
+        if (action.isSkipped()) {
+            TaskState state = getState();
+            if (state instanceof TaskStateInternal) {
+                TaskStateInternal si = (TaskStateInternal)state;
+                si.upToDate();
+            }
+        }
     }
     
     @Override
