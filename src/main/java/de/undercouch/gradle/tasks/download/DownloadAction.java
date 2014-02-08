@@ -19,6 +19,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -105,13 +106,25 @@ public class DownloadAction implements DownloadSpec {
         
         //create progress logger
         if (!quiet) {
-            if (project instanceof ProjectInternal) {
-                ProjectInternal pi = (ProjectInternal)project;
-                ProgressLoggerFactory plf = pi.getServices().get(ProgressLoggerFactory.class);
-                progressLogger = plf.newOperation(getClass());
+            //we about to access an internal class. Use reflection here to provide
+            //as much compatibility to different Gradle versions as possible
+            try {
+                Method getServices = project.getClass().getMethod("getServices");
+                Object serviceFactory = getServices.invoke(project);
+                Method get = serviceFactory.getClass().getMethod("get", Class.class);
+                Object progressLoggerFactory = get.invoke(serviceFactory,
+                        ProgressLoggerFactory.class);
+                Method newOperation = progressLoggerFactory.getClass().getMethod(
+                        "newOperation", Class.class);
+                progressLogger = (ProgressLogger)newOperation.invoke(
+                        progressLoggerFactory, getClass());
                 String desc = "Download " + src.toString();
                 progressLogger.setDescription(desc);
                 progressLogger.setLoggingHeader(desc);
+            } catch (Exception e) {
+                //unable to get progress logger
+                project.getLogger().error("Unable to get progress logger. Download "
+                        + "progress will not be displayed.");
             }
         }
         
