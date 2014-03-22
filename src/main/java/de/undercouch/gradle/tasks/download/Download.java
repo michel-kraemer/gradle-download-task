@@ -17,6 +17,7 @@ package de.undercouch.gradle.tasks.download;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.Map;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.internal.tasks.TaskStateInternal;
@@ -91,7 +92,17 @@ public class Download extends DefaultTask implements DownloadSpec {
     public void password(String password) {
         action.password(password);
     }
-    
+
+    @Override
+    public void headers(Map<String, String> headers) {
+        action.headers(headers);
+    }
+
+    @Override
+    public void header(String name, String value) {
+        action.header(name, value);
+    }
+
     @Override
     public Object getSrc() {
         return action.getSrc();
@@ -130,5 +141,15 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public String getPassword() {
         return action.getPassword();
+    }
+
+    @Override
+    public Map<String, String> getHeaders() {
+        return action.getHeaders();
+    }
+
+    @Override
+    public String getHeader(String name) {
+        return action.getHeader(name);
     }
 }

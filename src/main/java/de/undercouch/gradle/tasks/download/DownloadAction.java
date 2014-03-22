@@ -28,6 +28,8 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.tools.ant.util.Base64Converter;
@@ -50,6 +52,7 @@ public class DownloadAction implements DownloadSpec {
     private boolean compress = true;
     private String username;
     private String password;
+    private Map<String, String> headers;
     
     private ProgressLogger progressLogger;
     private String size;
@@ -226,6 +229,13 @@ public class DownloadAction implements DownloadSpec {
                 Base64Converter encoder = new Base64Converter();
                 String encoding = encoder.encode(up.getBytes());
                 uc.setRequestProperty("Authorization", "Basic " + encoding);
+            }
+
+            //set headers
+            if (headers != null) {
+                for (Map.Entry<String, String> headerEntry : headers.entrySet()) {
+                    uc.setRequestProperty(headerEntry.getKey(), headerEntry.getValue());
+                }
             }
             
             //enable compression
@@ -426,7 +436,20 @@ public class DownloadAction implements DownloadSpec {
     public void password(String password) {
         this.password = password;
     }
-    
+
+    @Override
+    public void headers(Map<String, String> headers) {
+        this.headers = headers;
+    }
+
+    @Override
+    public void header(String name, String value) {
+        if (headers == null) {
+            headers = new LinkedHashMap<String, String>();
+        }
+        headers.put(name, value);
+    }
+
     @Override
     public Object getSrc() {
         if (sources != null && sources.size() == 1) {
@@ -468,5 +491,18 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public String getPassword() {
         return password;
+    }
+
+    @Override
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    @Override
+    public String getHeader(String name) {
+        if (headers == null) {
+            return null;
+        }
+        return headers.get(name);
     }
 }
