@@ -16,7 +16,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'de.undercouch:gradle-download-task:0.5'
+        classpath 'de.undercouch:gradle-download-task:1.0'
     }
 }
 ```
