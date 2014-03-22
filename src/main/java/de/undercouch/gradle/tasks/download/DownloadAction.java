@@ -19,11 +19,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.tools.ant.util.Base64Converter;
@@ -38,7 +42,7 @@ import org.gradle.logging.ProgressLoggerFactory;
 public class DownloadAction implements DownloadSpec {
     private static final int MAX_NUMBER_OF_REDIRECTS = 30;
     
-    private URL src;
+    private List<URL> sources = new ArrayList<URL>(1);
     private File dest;
     private boolean quiet = false;
     private boolean overwrite = true;
@@ -52,7 +56,7 @@ public class DownloadAction implements DownloadSpec {
     private long processedBytes = 0;
     private long loggedKb = 0;
     
-    private boolean skipped = false;
+    private int skipped = 0;
     
     /**
      * Starts downloading
@@ -60,7 +64,7 @@ public class DownloadAction implements DownloadSpec {
      * @throws IOException if the file could not downloaded
      */
     public void execute(Project project) throws IOException {
-        if (src == null) {
+        if (sources == null || sources.isEmpty()) {
             throw new IllegalArgumentException("Please provide a download source");
         }
         if (dest == null) {
@@ -72,6 +76,17 @@ public class DownloadAction implements DownloadSpec {
             dest.mkdirs();
         }
         
+        if (sources.size() > 1 && !dest.isDirectory()) {
+            throw new IllegalArgumentException("If multiple sources are provided "
+                    + "the destination has to be a directory.");
+        }
+        
+        for (URL src : sources) {
+            execute(src, project);
+        }
+    }
+    
+    private void execute(URL src, Project project) throws IOException {
         File destFile = dest;
         if (destFile.isDirectory()) {
             //guess name from URL
@@ -94,7 +109,7 @@ public class DownloadAction implements DownloadSpec {
                 project.getLogger().info("Destination file already exists. "
                         + "Skipping '" + destFile.getName() + "'");
             }
-            skipped = true;
+            ++skipped;
             return;
         }
         
@@ -128,7 +143,7 @@ public class DownloadAction implements DownloadSpec {
         }
         
         //open URL connection
-        URLConnection conn = openConnection(timestamp, project);
+        URLConnection conn = openConnection(src, timestamp, project);
         if (conn == null) {
             return;
         }
@@ -138,6 +153,9 @@ public class DownloadAction implements DownloadSpec {
         if (contentLength >= 0) {
             size = toLengthText(contentLength);
         }
+        
+        processedBytes = 0;
+        loggedKb = 0;
         
         //open stream and start downloading
         InputStream is = conn.getInputStream();
@@ -180,12 +198,13 @@ public class DownloadAction implements DownloadSpec {
     /**
      * Opens a URLConnection. Checks the last-modified header on the
      * server if the given timestamp is greater than 0.
+     * @param src the source URL to open a connection for
      * @param timestamp the timestamp of the destination file
      * @param project the project to be built
      * @return the URLConnection or null if the download should be skipped
      * @throws IOException if the connection could not be opened
      */
-    private URLConnection openConnection(long timestamp,
+    private URLConnection openConnection(URL src, long timestamp,
             Project project) throws IOException {
         int redirects = MAX_NUMBER_OF_REDIRECTS;
         
@@ -225,7 +244,7 @@ public class DownloadAction implements DownloadSpec {
                     if (!quiet) {
                         project.getLogger().info("Not modified. Skipping '" + src + "'");
                     }
-                    skipped = true;
+                    ++skipped;
                     return null;
                 }
                 
@@ -336,18 +355,33 @@ public class DownloadAction implements DownloadSpec {
      * @return true if execution of this task has been skipped
      */
     boolean isSkipped() {
-        return skipped;
+        return sources != null && skipped == sources.size();
     }
     
     @Override
     public void src(Object src) throws MalformedURLException {
+        if (sources == null) {
+            sources = new ArrayList<URL>(1);
+        }
+        
         if (src instanceof CharSequence) {
-            this.src = new URL(src.toString());
+            sources.add(new URL(src.toString()));
         } else if (src instanceof URL) {
-            this.src = (URL)src;
+            sources.add((URL)src);
+        } else if (src instanceof Collection) {
+            Collection<?> sc = (Collection<?>)src;
+            for (Object sco : sc) {
+                src(sco);
+            }
+        } else if (src != null && src.getClass().isArray()) {
+            int len = Array.getLength(src);
+            for (int i = 0; i < len; ++i) {
+                Object sco = Array.get(src, i);
+                src(sco);
+            }
         } else {
             throw new IllegalArgumentException("Download source must " +
-                "either be a URL or a CharSequence");
+                "either be a URL, a CharSequence, a Collection or an array.");
         }
     }
     
@@ -394,8 +428,11 @@ public class DownloadAction implements DownloadSpec {
     }
     
     @Override
-    public URL getSrc() {
-        return src;
+    public Object getSrc() {
+        if (sources != null && sources.size() == 1) {
+            return sources.get(0);
+        }
+        return sources;
     }
     
     @Override

@@ -18,11 +18,13 @@ import static org.junit.Assert.assertArrayEquals;
 
 import java.io.File;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
+import org.gradle.api.tasks.TaskExecutionException;
 import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.After;
 import org.junit.Before;
@@ -42,6 +44,7 @@ import org.mortbay.resource.Resource;
  */
 public class DownloadTaskPluginTest {
     private final static String TEST_FILE_NAME = "test.txt";
+    private final static String TEST_FILE_NAME2 = "test2.txt";
     
     /**
      * A folder for temporary files
@@ -51,6 +54,7 @@ public class DownloadTaskPluginTest {
     
     private Server server;
     private byte[] contents;
+    private byte[] contents2;
     
     /**
      * Runs an embedded HTTP server and creates test files to serve
@@ -75,12 +79,16 @@ public class DownloadTaskPluginTest {
         
         //create temporary files
         contents = new byte[4096];
+        contents2 = new byte[4096];
         for (int i = 0; i < contents.length; ++i) {
             contents[i] = (byte)(Math.random() * 255);
+            contents2[i] = (byte)(Math.random() * 255);
         }
         
         File testFile = folder.newFile(TEST_FILE_NAME);
         FileUtils.writeByteArrayToFile(testFile, contents);
+        File testFile2 = folder.newFile(TEST_FILE_NAME2);
+        FileUtils.writeByteArrayToFile(testFile2, contents2);
     }
     
     /**
@@ -172,5 +180,40 @@ public class DownloadTaskPluginTest {
         byte[] dstContents = FileUtils.readFileToByteArray(
                 new File(dst, TEST_FILE_NAME));
         assertArrayEquals(contents, dstContents);
+    }
+    
+    /**
+     * Tests if a multiple files can be downloaded to a directory
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void downloadMultipleFiles() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(Arrays.asList(makeSrc(TEST_FILE_NAME), makeSrc(TEST_FILE_NAME2)));
+        
+        File dst = folder.newFolder();
+        t.dest(dst);
+        t.execute();
+        
+        byte[] dstContents = FileUtils.readFileToByteArray(
+                new File(dst, TEST_FILE_NAME));
+        assertArrayEquals(contents, dstContents);
+        byte[] dstContents2 = FileUtils.readFileToByteArray(
+                new File(dst, TEST_FILE_NAME2));
+        assertArrayEquals(contents2, dstContents2);
+    }
+    
+    /**
+     * Tests if the task throws an exception if you try to download
+     * multiple files to a single destination file
+     * @throws Exception if anything goes wrong
+     */
+    @Test(expected = TaskExecutionException.class)
+    public void downloadMultipleFilesToFile() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(Arrays.asList(makeSrc(TEST_FILE_NAME), makeSrc(TEST_FILE_NAME2)));
+        File dst = folder.newFile();
+        t.dest(dst);
+        t.execute();
     }
 }

@@ -17,7 +17,6 @@ package de.undercouch.gradle.tasks.download;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URL;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.internal.tasks.TaskStateInternal;
@@ -94,7 +93,7 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
     
     @Override
-    public URL getSrc() {
+    public Object getSrc() {
         return action.getSrc();
     }
     

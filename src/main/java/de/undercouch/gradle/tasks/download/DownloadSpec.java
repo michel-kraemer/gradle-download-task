@@ -16,7 +16,6 @@ package de.undercouch.gradle.tasks.download;
 
 import java.io.File;
 import java.net.MalformedURLException;
-import java.net.URL;
 
 /**
  * An interface for classes that perform file downloads
@@ -74,9 +73,9 @@ public interface DownloadSpec {
     void password(String password);
     
     /**
-     * @return the download source
+     * @return the download source(s), either a URL or a list of URLs
      */
-    URL getSrc();
+    Object getSrc();
     
     /**
      * @return the download destination

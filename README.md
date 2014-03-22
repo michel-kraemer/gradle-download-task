@@ -49,6 +49,21 @@ task myTask << {
 }
 ```
 
+You can also sequentially download a list of files to a directory:
+
+```groovy
+task downloadMultipleFiles(type: Download) {
+    src([
+        'http://www.example.com/index.html',
+        'http://www.example.com/test.html'
+    ])
+    dest buildDir
+}
+```
+
+Please note that you have to specify a directory as destination if you
+download multiple files. Otherwise the plugin will fail.
+
 Properties
 ----------
 
@@ -56,7 +71,8 @@ The download task and the extension support the following properties
 
 <dl>
 <dt>src</dt>
-<dd>The URL from which to retrieve the file <em>(required)</em></dd>
+<dd>The URL from which to retrieve the file. Can be a list of URLs if
+multiple files shoud be downloaded. <em>(required)</em></dd>
 <dt>dest</dt>
 <dd>The file or directory where to store the file <em>(required)</em></dd>
 <dt>quiet</dt>
