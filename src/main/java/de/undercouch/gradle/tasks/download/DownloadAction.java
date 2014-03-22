@@ -28,7 +28,6 @@ import java.util.zip.GZIPInputStream;
 
 import org.apache.tools.ant.util.Base64Converter;
 import org.gradle.api.Project;
-import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.logging.ProgressLogger;
 import org.gradle.logging.ProgressLoggerFactory;
 
