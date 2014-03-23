@@ -86,7 +86,8 @@ public class DownloadTaskPluginTest {
                 response.setStatus(200);
                 PrintWriter rw = response.getWriter();
                 rw.write("headers:\n");
-                Enumeration<String> headerNames = request.getHeaderNames();
+                @SuppressWarnings("unchecked")
+                Enumeration<String> headerNames = (Enumeration<String>)request.getHeaderNames();
                 while (headerNames.hasMoreElements()) {
                     String name = headerNames.nextElement();
                     if (name.startsWith("X-")) {
