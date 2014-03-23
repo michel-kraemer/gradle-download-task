@@ -15,10 +15,14 @@
 package de.undercouch.gradle.tasks.download;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,10 +37,15 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
+import org.mortbay.jetty.handler.ContextHandler;
 import org.mortbay.jetty.handler.DefaultHandler;
 import org.mortbay.jetty.handler.HandlerList;
 import org.mortbay.jetty.handler.ResourceHandler;
 import org.mortbay.resource.Resource;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * Tests the gradle-download-task plugin
@@ -69,9 +78,28 @@ public class DownloadTaskPluginTest {
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setBaseResource(Resource.newResource(
                 folder.getRoot().getAbsolutePath()));
-        
+
+        //echo X-* headers back in response body
+        ContextHandler echoHeadersHandler = new ContextHandler("/echo-headers") {
+            @Override
+            public void handle(String target, HttpServletRequest request, HttpServletResponse response, int dispatch) throws IOException, ServletException {
+                response.setStatus(200);
+                PrintWriter rw = response.getWriter();
+                rw.write("headers:\n");
+                Enumeration<String> headerNames = request.getHeaderNames();
+                while (headerNames.hasMoreElements()) {
+                    String name = headerNames.nextElement();
+                    if (name.startsWith("X-")) {
+                        rw.write(String.format("  %s: %s\n", name, request.getHeader(name)));
+                    }
+                }
+                rw.close();
+            }
+        };
+
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[] { resourceHandler,
+                echoHeadersHandler,
                 new DefaultHandler() });
         server.setHandler(handlers);
         
@@ -181,7 +209,7 @@ public class DownloadTaskPluginTest {
                 new File(dst, TEST_FILE_NAME));
         assertArrayEquals(contents, dstContents);
     }
-    
+
     /**
      * Tests if a multiple files can be downloaded to a directory
      * @throws Exception if anything goes wrong
@@ -215,5 +243,39 @@ public class DownloadTaskPluginTest {
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();
+    }
+
+    /**
+     * Tests that no headers request headers are set when not specified
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void downloadWithNoHeaders() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(makeSrc("echo-headers"));
+        File dst = folder.newFile();
+        t.dest(dst);
+        t.execute();
+
+        String dstContents = FileUtils.readFileToString(dst);
+        assertEquals("headers:\n", dstContents);
+    }
+
+    /**
+     * Tests that specified request headers are included
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void downloadWithHeaders() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(makeSrc("echo-headers"));
+        File dst = folder.newFile();
+        t.dest(dst);
+        t.header("X-Header-Test-A", "value A");
+        t.header("X-Header-Test-B", "value B");
+        t.execute();
+
+        String dstContents = FileUtils.readFileToString(dst);
+        assertEquals("headers:\n  X-Header-Test-A: value A\n  X-Header-Test-B: value B\n", dstContents);
     }
 }

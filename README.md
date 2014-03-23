@@ -92,6 +92,9 @@ has been modified on the server since the last download <em>(default:
 <dd>The username for <code>Basic</code> authentication <em>(optional)</em></dd>
 <dt>password</dt>
 <dd>The password for <code>Basic</code> authentication <em>(optional)</em></dd>
+<dt>header</dt>
+<dd>The name and value of a request header to set when making the download
+request <em>(optional)</em></dd>
 </dl>
 
 License

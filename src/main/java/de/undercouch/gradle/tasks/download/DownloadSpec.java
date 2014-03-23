@@ -16,6 +16,7 @@ package de.undercouch.gradle.tasks.download;
 
 import java.io.File;
 import java.net.MalformedURLException;
+import java.util.Map;
 
 /**
  * An interface for classes that perform file downloads
@@ -71,7 +72,20 @@ public interface DownloadSpec {
      * @param password the password
      */
     void password(String password);
-    
+
+    /**
+     * Sets the HTTP request headers to us when downloading
+     * @param headers a Map of header names to values
+     */
+    void headers(Map<String, String> headers);
+
+    /**
+     * Sets an HTTP request header to use when downloading
+     * @param name name of the HTTP header
+     * @param value value of the HTTP header
+     */
+    void header(String name, String value);
+
     /**
      * @return the download source(s), either a URL or a list of URLs
      */
@@ -111,4 +125,15 @@ public interface DownloadSpec {
      * @return the password for <code>Basic</code> authentication
      */
     String getPassword();
+
+    /**
+     * @return the HTTP request headers to use when downloading
+     */
+    Map<String, String> getHeaders();
+
+    /**
+     * @param name name of the HTTP header
+     * @return the value of the HTTP header
+     */
+    String getHeader(String name);
 }
