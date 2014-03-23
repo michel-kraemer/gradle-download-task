@@ -439,7 +439,10 @@ public class DownloadAction implements DownloadSpec {
 
     @Override
     public void headers(Map<String, String> headers) {
-        this.headers = headers;
+        if (headers == null) {
+            headers = new LinkedHashMap<String, String>();
+        }
+        this.headers.putAll(headers);
     }
 
     @Override
