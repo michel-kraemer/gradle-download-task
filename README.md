@@ -95,6 +95,9 @@ has been modified on the server since the last download <em>(default:
 <dt>header</dt>
 <dd>The name and value of a request header to set when making the download
 request <em>(optional)</em></dd>
+<dt>headers</dt>
+<dd>A map of request headers to set when making the download
+request <em>(optional)</em></dd>
 </dl>
 
 License
