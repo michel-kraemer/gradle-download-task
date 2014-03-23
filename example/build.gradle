@@ -11,12 +11,18 @@ apply plugin: 'download-task'
 
 import de.undercouch.gradle.tasks.download.Download
 
+/**
+ * Download a single file to a directory
+ */
 task downloadFile(type: Download) {
     src 'http://central.maven.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar'
     dest buildDir
     overwrite true
 }
 
+/**
+ * Use the extension to download a single file
+ */
 task downloadFileViaExtension << {
     download {
         src 'http://central.maven.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar'
@@ -25,6 +31,9 @@ task downloadFileViaExtension << {
     }
 }
 
+/**
+ * Download multiple files to a directory
+ */
 task downloadMultipleFiles(type: Download) {
     src([
         'http://central.maven.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar',
@@ -32,4 +41,13 @@ task downloadMultipleFiles(type: Download) {
     ])
     dest buildDir
     overwrite true
+}
+
+/**
+ * Download a file and send a custom header
+ */
+task downloadWithCustomHeader(type: Download) {
+    src 'http://download.oracle.com/otn-pub/java/jdk/8-b132/jre-8-windows-x64.exe'
+    dest buildDir
+    header 'Cookie', 'oraclelicense=accept-securebackup-cookie'
 }
