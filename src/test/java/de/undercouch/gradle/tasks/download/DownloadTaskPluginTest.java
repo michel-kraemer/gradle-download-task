@@ -52,6 +52,8 @@ import javax.servlet.http.HttpServletResponse;
  * @author Michel Kraemer
  */
 public class DownloadTaskPluginTest {
+    private static final String HEADERS = "headers:";
+    private static final String ECHO_HEADERS = "echo-headers";
     private final static String TEST_FILE_NAME = "test.txt";
     private final static String TEST_FILE_NAME2 = "test2.txt";
     
@@ -80,12 +82,14 @@ public class DownloadTaskPluginTest {
                 folder.getRoot().getAbsolutePath()));
 
         //echo X-* headers back in response body
-        ContextHandler echoHeadersHandler = new ContextHandler("/echo-headers") {
+        ContextHandler echoHeadersHandler = new ContextHandler("/" + ECHO_HEADERS) {
             @Override
-            public void handle(String target, HttpServletRequest request, HttpServletResponse response, int dispatch) throws IOException, ServletException {
+            public void handle(String target, HttpServletRequest request,
+                    HttpServletResponse response, int dispatch)
+                            throws IOException, ServletException {
                 response.setStatus(200);
                 PrintWriter rw = response.getWriter();
-                rw.write("headers:\n");
+                rw.write(HEADERS + "\n");
                 @SuppressWarnings("unchecked")
                 Enumeration<String> headerNames = (Enumeration<String>)request.getHeaderNames();
                 while (headerNames.hasMoreElements()) {
@@ -253,13 +257,13 @@ public class DownloadTaskPluginTest {
     @Test
     public void downloadWithNoHeaders() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(makeSrc("echo-headers"));
+        t.src(makeSrc(ECHO_HEADERS));
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("headers:\n", dstContents);
+        assertEquals(HEADERS + "\n", dstContents);
     }
 
     /**
@@ -269,7 +273,7 @@ public class DownloadTaskPluginTest {
     @Test
     public void downloadWithHeaders() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(makeSrc("echo-headers"));
+        t.src(makeSrc(ECHO_HEADERS));
         File dst = folder.newFile();
         t.dest(dst);
         t.header("X-Header-Test-A", "value A");
@@ -277,6 +281,7 @@ public class DownloadTaskPluginTest {
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("headers:\n  X-Header-Test-A: value A\n  X-Header-Test-B: value B\n", dstContents);
+        assertEquals(HEADERS + "\n  X-Header-Test-A: value A\n  "
+                + "X-Header-Test-B: value B\n", dstContents);
     }
 }
