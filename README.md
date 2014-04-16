@@ -64,6 +64,21 @@ task downloadMultipleFiles(type: Download) {
 Please note that you have to specify a directory as destination if you
 download multiple files. Otherwise the plugin will fail.
 
+If you want to download all files from a directory and the server
+provides a simple directory listing you can use the following code:
+
+```groovy
+task downloadDirectory {
+    def dir = 'http://central.maven.org/maven2/de/undercouch/gradle-download-task/1.0/'
+    def urlLister = new org.apache.ivy.util.url.ApacheURLLister()
+    def files = urlLister.listFiles(new URL(dir))
+    download {
+       src files
+       dest buildDir
+    }
+}
+```
+
 Properties
 ----------
 
