@@ -65,3 +65,17 @@ task downloadDirectory << {
        dest buildDir
     }
 }
+
+/**
+ * The following two tasks download a ZIP file and extract its
+ * contents to the build directory
+ */
+task downloadZipFile(type: Download) {
+    src 'https://github.com/michel-kraemer/gradle-download-task/archive/1.0.zip'
+    dest new File(buildDir, '1.0.zip')
+}
+
+task downloadAndUnzipFile(dependsOn: downloadZipFile, type: Copy) {
+    from zipTree(downloadZipFile.dest)
+    into buildDir
+}
