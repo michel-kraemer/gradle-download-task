@@ -21,7 +21,7 @@ buildscript {
 }
 ```
 
-Then you can use the `Download` as follows:
+Then you can use the `Download` task as follows:
 
 ```groovy
 import de.undercouch.gradle.tasks.download.Download
@@ -49,7 +49,10 @@ task myTask << {
 }
 ```
 
-You can also sequentially download a list of files to a directory:
+Examples
+--------
+
+Sequentially download a list of files to a directory:
 
 ```groovy
 task downloadMultipleFiles(type: Download) {
@@ -78,6 +81,23 @@ task downloadDirectory {
     }
 }
 ```
+
+To download and unpack a ZIP file use can combine the download task
+plugin with Gradle's built-in support for ZIP files:
+
+```groovy
+task downloadZipFile(type: Download) {
+    src 'https://github.com/michel-kraemer/gradle-download-task/archive/1.0.zip'
+    dest new File(buildDir, '1.0.zip')
+}
+
+task downloadAndUnzipFile(dependsOn: downloadZipFile, type: Copy) {
+    from zipTree(downloadZipFile.dest)
+    into buildDir
+}
+```
+
+Please have a look at the `examples` directory for more code samples.
 
 Properties
 ----------
