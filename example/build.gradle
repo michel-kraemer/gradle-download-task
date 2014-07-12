@@ -4,6 +4,11 @@ buildscript {
     }
     dependencies {
         classpath 'de.undercouch:gradle-download-task:1.0'
+        
+        //only necessary for this example (see task downloadDirectory)
+        if (gradle.gradleVersion.split("\\.")[0].toInteger() >= 2) {
+            classpath 'org.apache.ivy:ivy:2.3.0'
+        }
     }
 }
 
