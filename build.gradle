@@ -138,7 +138,7 @@ bintray {
         // version descriptor
         version {
             name = project.version
-            attributes = ['gradle-plugin': "de.undercouch:${project.group}:gradle-download-task"]
+            attributes = ['gradle-plugin': "de.undercouch.download:${project.group}:gradle-download-task"]
         }
     }
 }
