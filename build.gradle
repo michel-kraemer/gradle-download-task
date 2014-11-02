@@ -126,8 +126,8 @@ bintray {
     publish = !project.version.endsWith('-SNAPSHOT')
     pkg {
         def githubUrl = 'https://github.com/michel-kraemer/gradle-download-task'
-        repo = 'gradle-plugins'
-        name = 'gradle-download-task'
+        repo = 'maven'
+        name = 'de.undercouch:gradle-download-task'
         desc = 'Adds a download task to Gradle that displays progress information'
         websiteUrl = githubUrl
         issueTrackerUrl = "$githubUrl/issues"
