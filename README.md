@@ -16,10 +16,10 @@ First you need to include the plugin into your build file:
 ```groovy
 buildscript {
     repositories {
-        mavenCentral()
+        jcenter()
     }
     dependencies {
-        classpath 'de.undercouch:gradle-download-task:1.0'
+        classpath 'de.undercouch:gradle-download-task:1.1'
     }
 }
 ```

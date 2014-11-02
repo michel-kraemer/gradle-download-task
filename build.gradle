@@ -1,11 +1,21 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:0.5'
+    }
+}
+
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'signing'
 apply plugin: 'eclipse'
+apply plugin: 'com.jfrog.bintray'
 apply from: "gradle/integrationTest.gradle"
 
 group = 'de.undercouch'
-version = '1.0'
+version = '1.1'
 sourceCompatibility = '1.6'
 targetCompatibility = '1.6'
 
@@ -14,7 +24,7 @@ dependencies {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.8'
+    gradleVersion = '2.1'
 }
 
 jar {
@@ -41,6 +51,48 @@ artifacts {
     archives packageSources
 }
 
+def configurePom(def pom) {
+    // ensure correct artifact ID
+    pom.artifactId = 'gradle-download-task'
+
+    // pom file details
+    pom.project {
+        name 'gradle-download-task'
+        packaging 'jar'
+        description 'Adds a download task to Gradle that displays progress information'
+        url 'http://www.michel-kraemer.com'
+
+        scm {
+            url 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
+            connection 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
+            developerConnection 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
+        }
+
+        licenses {
+            license {
+                name 'The Apache Software License, Version 2.0'
+                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                distribution 'repo'
+            }
+        }
+
+        developers {
+            developer {
+                id 'michel-kraemer'
+                name 'Michel Kraemer'
+                email 'michel@undercouch.de'
+            }
+        }
+    }
+}
+
+install {
+    repositories.mavenInstaller {
+        // ensure correct artifact ID when installing locally
+        configurePom(pom)
+    }
+}
+
 // sign all artifacts
 signing {
     required { gradle.taskGraph.hasTask(uploadArchives) }
@@ -59,35 +111,34 @@ uploadArchives {
                     password: this.hasProperty('sonatypePassword') ? sonatypePassword : '')
             }
 
-            // pom file details
-            pom.project {
-                name 'gradle-download-task'
-                packaging 'jar'
-                description 'Adds a download task to Gradle that displays progress information'
-                url 'http://www.michel-kraemer.com'
+            configurePom(pom)
+        }
+    }
+}
 
-                scm {
-                    url 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
-                    connection 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
-                    developerConnection 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
-                }
+bintray {
+    user = project.getProperty('bintrayUser')
+    key = project.getProperty('bintrayApiKey')
 
-                licenses {
-                    license {
-                        name 'The Apache Software License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                        distribution 'repo'
-                    }
-                }
+    configurations = ['archives']
 
-                developers {
-                    developer {
-                        id 'michel-kraemer'
-                        name 'Michel Kraemer'
-                        email 'michel@undercouch.de'
-                    }
-                }
-            }
+    dryRun = false
+    publish = !project.version.endsWith('-SNAPSHOT')
+    pkg {
+        def githubUrl = 'https://github.com/michel-kraemer/gradle-download-task'
+        repo = 'gradle-plugins'
+        name = 'gradle-download-task'
+        desc = 'Adds a download task to Gradle that displays progress information'
+        websiteUrl = githubUrl
+        issueTrackerUrl = "$githubUrl/issues"
+        vcsUrl = "${githubUrl}.git"
+        licenses = ['Apache-2.0']
+        labels = ['gradle', 'download', 'plugin', 'progress']
+        publicDownloadNumbers = true
+        // version descriptor
+        version {
+            name = project.version
+            attributes = ['gradle-plugin': "de.undercouch:${project.group}:gradle-download-task"]
         }
     }
 }

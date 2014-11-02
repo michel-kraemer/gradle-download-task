@@ -1,9 +1,10 @@
 buildscript {
     repositories {
         mavenCentral()
+        mavenLocal()
     }
     dependencies {
-        classpath 'de.undercouch:gradle-download-task:1.0'
+        classpath 'de.undercouch:gradle-download-task:1.1'
         
         //only necessary for this example (see task downloadDirectory)
         if (gradle.gradleVersion.split("\\.")[0].toInteger() >= 2) {
