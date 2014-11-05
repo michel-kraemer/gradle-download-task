@@ -8,10 +8,18 @@ an artifact from a repository.
 The plugin has been sucessfully tested with Gradle 1.0 up to 2.1.
 It should work with newer versions as well.
 
-Usage
------
+Apply plugin configuration
+--------------------------
 
-First you need to include the plugin into your build file:
+### Gradle 2.1 and higher
+
+```groovy
+plugins {
+    id "de.undercouch.download" version "1.1"
+}
+```
+
+### Gradle 1.x and 2.0
 
 ```groovy
 buildscript {
@@ -22,9 +30,14 @@ buildscript {
         classpath 'de.undercouch:gradle-download-task:1.1'
     }
 }
+
+apply plugin: 'download-task'
 ```
 
-Then you can use the `Download` task as follows:
+Usage
+-----
+
+After you applied the plugin configuration (see above) you can use the `Download` task as follows:
 
 ```groovy
 import de.undercouch.gradle.tasks.download.Download
@@ -39,8 +52,6 @@ You can also use the download extension to retrieve a file anywhere
 in your build script:
 
 ```groovy
-apply plugin: 'download-task'
-
 task myTask << {
     //do something ...
     //... then download a file
