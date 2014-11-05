@@ -117,8 +117,8 @@ uploadArchives {
 }
 
 bintray {
-    user = project.getProperty('bintrayUser')
-    key = project.getProperty('bintrayApiKey')
+    user = this.hasProperty('bintrayUser') ? bintrayUser : ''
+    key = this.hasProperty('bintrayApiKey') ? bintrayApiKey : ''
 
     configurations = ['archives']
 
