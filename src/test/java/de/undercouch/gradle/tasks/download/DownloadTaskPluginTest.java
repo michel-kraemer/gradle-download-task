@@ -17,6 +17,7 @@ package de.undercouch.gradle.tasks.download;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -148,7 +149,7 @@ public class DownloadTaskPluginTest {
         Project project = ProjectBuilder.builder().build();
         
         Map<String, Object> applyParams = new HashMap<String, Object>();
-        applyParams.put("plugin", "download-task");
+        applyParams.put("plugin", "de.undercouch.download");
         project.apply(applyParams);
         
         Map<String, Object> taskParams = new HashMap<String, Object>();
@@ -181,7 +182,19 @@ public class DownloadTaskPluginTest {
         byte[] dstContents = FileUtils.readFileToByteArray(dst);
         assertArrayEquals(contents, dstContents);
     }
-    
+
+    @Test
+    public void downloadToByteArray() throws Exception{
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(TEST_FILE_NAME));
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        t.dest(out);
+        t.execute();
+
+
+        assertArrayEquals(contents, out.toByteArray());
+    }
+
     /**
      * Tests if a single file can be downloaded from a URL
      * @throws Exception if anything goes wrong
