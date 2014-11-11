@@ -32,6 +32,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
+import de.undercouch.gradle.tasks.download.destination.AbstractDestination;
+import de.undercouch.gradle.tasks.download.destination.FileDestination;
+import de.undercouch.gradle.tasks.download.destination.StreamDestination;
 import org.apache.tools.ant.util.Base64Converter;
 import org.gradle.api.Project;
 import org.gradle.logging.ProgressLogger;
@@ -45,7 +48,7 @@ public class DownloadAction implements DownloadSpec {
     private static final int MAX_NUMBER_OF_REDIRECTS = 30;
     
     private List<URL> sources = new ArrayList<URL>(1);
-    private File dest;
+    private AbstractDestination dest;
     private boolean quiet = false;
     private boolean overwrite = true;
     private boolean onlyIfNewer = false;
@@ -74,12 +77,7 @@ public class DownloadAction implements DownloadSpec {
             throw new IllegalArgumentException("Please provide a download destination");
         }
         
-        if (dest.equals(project.getBuildDir())) {
-            //make sure build dir exists
-            dest.mkdirs();
-        }
-        
-        if (sources.size() > 1 && !dest.isDirectory()) {
+        if (sources.size() > 1 && (((dest instanceof FileDestination) && !((FileDestination)dest).getFile().isDirectory()) || !(dest instanceof FileDestination))) {
             throw new IllegalArgumentException("If multiple sources are provided "
                     + "the destination has to be a directory.");
         }
@@ -90,37 +88,69 @@ public class DownloadAction implements DownloadSpec {
     }
     
     private void execute(URL src, Project project) throws IOException {
-        File destFile = dest;
-        if (destFile.isDirectory()) {
-            //guess name from URL
-            String name = src.toString();
-            if (name.endsWith("/")) {
-                name = name.substring(0, name.length() - 1);
-            }
-            name = name.substring(name.lastIndexOf('/') + 1);
-            destFile = new File(dest, name);
-        } else {
-            //create destination directory
-            File parent = destFile.getParentFile();
-            if (parent != null) {
-                parent.mkdirs();
-            }
-        }
-        
-        if (!overwrite && destFile.exists()) {
-            if (!quiet) {
-                project.getLogger().info("Destination file already exists. "
-                        + "Skipping '" + destFile.getName() + "'");
-            }
-            ++skipped;
-            return;
-        }
-        
-        long timestamp = 0;
-        if (onlyIfNewer && destFile.exists()) {
-            timestamp = destFile.lastModified();
-        }
-        
+
+       if(dest instanceof FileDestination) {
+           File destFile = ((FileDestination)dest).getFile();
+
+           if (destFile.equals(project.getBuildDir())) {
+               //make sure build dir exists
+               destFile.mkdirs();
+           }
+
+           if (destFile.isDirectory()) {
+               //guess name from URL
+               String name = src.toString();
+               if (name.endsWith("/")) {
+                   name = name.substring(0, name.length() - 1);
+               }
+               name = name.substring(name.lastIndexOf('/') + 1);
+               destFile = new File(destFile, name);
+           } else {
+               //create destination directory
+               File parent = destFile.getParentFile();
+               if (parent != null) {
+                   parent.mkdirs();
+               }
+           }
+
+           if (!overwrite && destFile.exists()) {
+               if (!quiet) {
+                   project.getLogger().info("Destination file already exists. "
+                           + "Skipping '" + destFile.getName() + "'");
+               }
+               ++skipped;
+               return;
+           }
+
+           long timestamp = 0;
+           if (onlyIfNewer && destFile.exists()) {
+               timestamp = destFile.lastModified();
+           }
+
+
+           OutputStream os = new FileOutputStream(destFile);
+
+           boolean finished = false;
+           try {
+               finished = executeDownload(src, project, timestamp, os);
+           } finally {
+               if (!finished) {
+                   destFile.delete();
+               }
+           }
+
+           long newTimestamp = destFile.lastModified();
+           if (onlyIfNewer && newTimestamp > 0) {
+               destFile.setLastModified(newTimestamp);
+           }
+       }else if(dest instanceof StreamDestination){
+           executeDownload(src,project,0,((StreamDestination)dest).getStream());
+
+       }
+    }
+
+    private boolean executeDownload(URL src, Project project, long timestamp, OutputStream os) throws IOException {
+
         //create progress logger
         if (!quiet) {
             //we about to access an internal class. Use reflection here to provide
@@ -144,32 +174,35 @@ public class DownloadAction implements DownloadSpec {
                         + "progress will not be displayed.");
             }
         }
-        
+
+
         //open URL connection
         URLConnection conn = openConnection(src, timestamp, project);
         if (conn == null) {
-            return;
+            return false;
         }
-        
+
         //get content length
         long contentLength = parseContentLength(conn);
         if (contentLength >= 0) {
             size = toLengthText(contentLength);
         }
-        
+
         processedBytes = 0;
         loggedKb = 0;
-        
+
         //open stream and start downloading
         InputStream is = conn.getInputStream();
         if (isContentCompressed(conn)) {
             is = new GZIPInputStream(is);
         }
+        boolean finished = false;
+
         try {
             startProgress();
-            OutputStream os = new FileOutputStream(destFile);
-            
-            boolean finished = false;
+
+
+
             try {
                 byte[] buf = new byte[1024 * 10];
                 int read;
@@ -178,26 +211,20 @@ public class DownloadAction implements DownloadSpec {
                     processedBytes += read;
                     logProgress();
                 }
-                
+
                 os.flush();
                 finished = true;
             } finally {
                 os.close();
-                if (!finished) {
-                    destFile.delete();
-                }
+
             }
         } finally {
             is.close();
             completeProgress();
         }
-        
-        long newTimestamp = conn.getLastModified();
-        if (onlyIfNewer && newTimestamp > 0) {
-            destFile.setLastModified(newTimestamp);
-        }
+        return finished;
     }
-    
+
     /**
      * Opens a URLConnection. Checks the last-modified header on the
      * server if the given timestamp is greater than 0.
@@ -397,14 +424,7 @@ public class DownloadAction implements DownloadSpec {
     
     @Override
     public void dest(Object dest) {
-        if (dest instanceof CharSequence) {
-            this.dest = new File(dest.toString());
-        } else if (dest instanceof File) {
-            this.dest = (File)dest;
-        } else {
-            throw new IllegalArgumentException("Download destination must " +
-                "either be a File or a CharSequence");
-        }
+       this.dest = AbstractDestination.create(dest);
     }
     
     @Override
@@ -462,7 +482,7 @@ public class DownloadAction implements DownloadSpec {
     }
     
     @Override
-    public File getDest() {
+    public Object getDest() {
         return dest;
     }
     
