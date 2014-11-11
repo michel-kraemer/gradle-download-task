@@ -123,7 +123,7 @@ The download task and the extension support the following properties
 <dd>The URL from which to retrieve the file. Can be a list of URLs if
 multiple files shoud be downloaded. <em>(required)</em></dd>
 <dt>dest</dt>
-<dd>The file or directory where to store the file <em>(required)</em> or an instance of a <em>java.io.OutputStream</em></dd>
+<dd>The file or directory where to store the file <em>(required)</em> or an instance of a <code>java.io.OutputStream</code></dd>
 <dt>quiet</dt>
 <dd><code>true</code> if progress information should not be displayed
 <em>(default: <code>false</code>)</em></dd>
