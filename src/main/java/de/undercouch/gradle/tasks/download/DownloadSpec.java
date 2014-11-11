@@ -94,7 +94,7 @@ public interface DownloadSpec {
     /**
      * @return the download destination
      */
-    File getDest();
+    Object getDest();
     
     /**
      * @return the quiet flag
