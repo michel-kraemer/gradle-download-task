@@ -16,13 +16,12 @@ package de.undercouch.gradle.tasks.download;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.util.Map;
 
 import org.gradle.api.DefaultTask;
-import org.gradle.api.internal.tasks.TaskStateInternal;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.api.tasks.TaskState;
 
 /**
  * Downloads a file and displays progress. Example:
@@ -45,10 +44,17 @@ public class Download extends DefaultTask implements DownloadSpec {
     public void download() throws IOException {
         action.execute(getProject());
         if (action.isSkipped()) {
-            TaskState state = getState();
-            if (state instanceof TaskStateInternal) {
-                TaskStateInternal si = (TaskStateInternal)state;
-                si.upToDate();
+            //we are about to access an internal class. Use reflection here to provide
+            //as much compatibility to previous Gradle versions as possible (see issue #16)
+            try {
+                Method getState = this.getClass().getMethod("getState");
+                Object state = getState.invoke(this);
+                Method upToDate = state.getClass().getMethod("upToDate");
+                if (upToDate != null) {
+                    upToDate.invoke(state);
+                }
+            } catch (Exception e) {
+                //just ignore
             }
         }
     }

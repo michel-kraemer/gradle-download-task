@@ -18,6 +18,7 @@ import org.mortbay.resource.Resource
 
 task integrationTest << {
     def testStr = "This is a test"
+    def testStr2 = "This is another test"
     
     def versionsToTest = [ '1.0', '1.1', '1.2', '1.3', '1.4', '1.5',
         '1.6', '1.7', '1.8', '1.9', '1.10', '1.11', '1.12',
@@ -39,12 +40,17 @@ task integrationTest << {
     def serverPort = server.getConnectors()[0].getLocalPort()
     
     def testFile = null
+    def testFile2 = null
     try {
-        //write simple test file to temporary directory
+        //write simple test files to temporary directory
         testFile = new File(temporaryDir, "test.txt")
+        testFile2 = new File(temporaryDir, "test2.txt")
         testFile.write(testStr)
+        //write testStr into testFile2 but later check that it hasn't been overwritten
+        testFile2.write(testStr)
         
         def testFileSrc = "http://localhost:" + serverPort + "/test.txt"
+        def testFile2Src = "http://localhost:" + serverPort + "/test2.txt"
         
         //create Gradle test project
         def testGradle = { version ->
@@ -79,7 +85,22 @@ task integrationTest << {
                     src '${testFileSrc}'
                     dest buildDir
                 }
+                
+                task downloadFile2(type: Download) {
+                    src '${testFile2Src}'
+                    dest buildDir
+                    overwrite false
+                    onlyIfNewer true
+                }
             """)
+            
+            //define destination test files
+            def downloadedTestFile = new File(testProjectDir, 'build/test.txt')
+            def downloadedTestFile2 = new File(testProjectDir, 'build/test2.txt')
+            
+            //create second destination test file to simulate onlyIfNewer = true and overwrite = false
+            downloadedTestFile2.getParentFile().mkdirs()
+            downloadedTestFile2.write(testStr2)
             
             //execute Gradle to create a Gradle wrapper for the test project
             def gradlew = [ new File(rootDir, 'gradlew').getAbsolutePath() ]
@@ -98,13 +119,15 @@ task integrationTest << {
             }
             exec {
                 workingDir testProjectDir
-                commandLine gradlew + 'downloadFile'
+                commandLine gradlew + ['downloadFile', 'downloadFile2']
             }
             
-            //check test file
-            def downloadedTestFile = new File(testProjectDir, 'build/test.txt')
+            //check test files
             if (!downloadedTestFile.getText().equals(testStr)) {
-                throw new IllegalStateException("Downloaded file does not match test file contents")
+                throw new IllegalStateException("Downloaded file does not match test file contents (test.txt)")
+            }
+            if (!downloadedTestFile2.getText().equals(testStr2)) {
+                throw new IllegalStateException("test file has been overwritten (test2.txt)")
             }
             
             project.delete(testProjectDir)
@@ -116,6 +139,9 @@ task integrationTest << {
     } finally {
         if (testFile != null) {
             testFile.delete()
+        }
+        if (testFile2 != null) {
+            testFile2.delete()
         }
         server.stop()
     }

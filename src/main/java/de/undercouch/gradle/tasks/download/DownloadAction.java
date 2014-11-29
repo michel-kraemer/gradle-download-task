@@ -123,7 +123,7 @@ public class DownloadAction implements DownloadSpec {
         
         //create progress logger
         if (!quiet) {
-            //we about to access an internal class. Use reflection here to provide
+            //we are about to access an internal class. Use reflection here to provide
             //as much compatibility to different Gradle versions as possible
             try {
                 Method getServices = project.getClass().getMethod("getServices");
