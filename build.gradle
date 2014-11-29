@@ -60,7 +60,7 @@ def configurePom(def pom) {
         name 'gradle-download-task'
         packaging 'jar'
         description 'Adds a download task to Gradle that displays progress information'
-        url 'http://www.michel-kraemer.com'
+        url 'https://github.com/michel-kraemer/gradle-download-task'
 
         scm {
             url 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
