@@ -31,7 +31,7 @@ buildscript {
     }
 }
 
-apply plugin: 'download-task'
+apply plugin: 'de.undercouch.download'
 ```
 
 Usage
