@@ -75,6 +75,8 @@ task integrationTest << {
                     }
                 }
                 
+                apply plugin: 'de.undercouch.download'
+                
                 task wrapper(type: Wrapper) {
                     gradleVersion = '${version}'
                 }
