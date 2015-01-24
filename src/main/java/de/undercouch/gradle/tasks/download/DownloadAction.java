@@ -14,6 +14,8 @@
 
 package de.undercouch.gradle.tasks.download;
 
+import groovy.lang.Closure;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -374,6 +376,12 @@ public class DownloadAction implements DownloadSpec {
             sources = new ArrayList<URL>(1);
         }
         
+        if (src instanceof Closure) {
+            //lazily evaluate closure
+            Closure<?> closure = (Closure<?>)src;
+            src = closure.call();
+        }
+        
         if (src instanceof CharSequence) {
             sources.add(new URL(src.toString()));
         } else if (src instanceof URL) {
@@ -397,6 +405,12 @@ public class DownloadAction implements DownloadSpec {
     
     @Override
     public void dest(Object dest) {
+        if (dest instanceof Closure) {
+            //lazily evaluate closure
+            Closure<?> closure = (Closure<?>)dest;
+            dest = closure.call();
+        }
+        
         if (dest instanceof CharSequence) {
             this.dest = new File(dest.toString());
         } else if (dest instanceof File) {
