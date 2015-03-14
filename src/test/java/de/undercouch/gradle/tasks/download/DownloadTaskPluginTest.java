@@ -16,6 +16,8 @@ package de.undercouch.gradle.tasks.download;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +27,10 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
@@ -42,10 +48,6 @@ import org.mortbay.jetty.handler.DefaultHandler;
 import org.mortbay.jetty.handler.HandlerList;
 import org.mortbay.jetty.handler.ResourceHandler;
 import org.mortbay.resource.Resource;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * Tests the gradle-download-task plugin
@@ -283,5 +285,46 @@ public class DownloadTaskPluginTest {
         String dstContents = FileUtils.readFileToString(dst);
         assertEquals(HEADERS + "\n  X-Header-Test-A: value A\n  "
                 + "X-Header-Test-B: value B\n", dstContents);
+    }
+    
+    /**
+     * Tests lazy evaluation of 'src' and 'dest' properties
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void lazySrcAndDest() throws Exception {
+        final boolean[] srcCalled = new boolean[] { false };
+        final boolean[] dstCalled = new boolean[] { false };
+        
+        final File dst = folder.newFile();
+        
+        Download t = makeProjectAndTask();
+        t.src(new Closure<Object>(this, this) {
+            private static final long serialVersionUID = -4463658999363261400L;
+            
+            @SuppressWarnings("unused")
+            public Object doCall() {
+                srcCalled[0] = true;
+                return makeSrc(TEST_FILE_NAME);
+            }
+        });
+        
+        t.dest(new Closure<Object>(this, this) {
+            private static final long serialVersionUID = 932174549047352157L;
+
+            @SuppressWarnings("unused")
+            public Object doCall() {
+                dstCalled[0] = true;
+                return dst;
+            }
+        });
+        
+        t.execute();
+        
+        assertTrue(srcCalled[0]);
+        assertTrue(dstCalled[0]);
+        
+        byte[] dstContents = FileUtils.readFileToByteArray(dst);
+        assertArrayEquals(contents, dstContents);
     }
 }
