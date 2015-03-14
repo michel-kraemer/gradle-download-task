@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import org.apache.commons.codec.binary.Hex;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 
@@ -34,6 +33,14 @@ public class VerifyAction implements VerifySpec {
     private File src;
     private String algorithm = "MD5";
     private String checksum;
+    
+    private String toHex(byte[] barr) {
+        StringBuffer result = new StringBuffer();
+        for (byte b : barr) {
+            result.append(String.format("%02X", b));
+        }
+        return result.toString();
+    }
     
     /**
      * Starts verifying
@@ -63,7 +70,7 @@ public class VerifyAction implements VerifySpec {
             while ((read = fis.read(buf)) != -1) {
                 md.update(buf, 0, read);
             }
-            calculatedChecksum = Hex.encodeHexString(md.digest());
+            calculatedChecksum = toHex(md.digest());
         } finally {
             fis.close();
         }
