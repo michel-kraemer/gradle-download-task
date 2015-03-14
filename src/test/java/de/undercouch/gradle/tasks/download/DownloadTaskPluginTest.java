@@ -148,7 +148,7 @@ public class DownloadTaskPluginTest {
         Project project = ProjectBuilder.builder().build();
         
         Map<String, Object> applyParams = new HashMap<String, Object>();
-        applyParams.put("plugin", "download-task");
+        applyParams.put("plugin", "de.undercouch.download");
         project.apply(applyParams);
         
         Map<String, Object> taskParams = new HashMap<String, Object>();
