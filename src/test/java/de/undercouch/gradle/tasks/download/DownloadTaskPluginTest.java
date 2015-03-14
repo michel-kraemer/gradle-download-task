@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
+import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -32,6 +33,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskExecutionException;
@@ -157,6 +159,19 @@ public class DownloadTaskPluginTest {
         taskParams.put("type", Download.class);
         Download t = (Download)project.task(taskParams, "downloadFile");
         return t;
+    }
+    
+    /**
+     * Makes a verify task
+     * @param downloadTask a configured download task to depend on
+     * @return the unconfigured verify task
+     */
+    private Verify makeVerifyTask(Download downloadTask) {
+        Map<String, Object> taskParams = new HashMap<String, Object>();
+        taskParams.put("type", Verify.class);
+        Verify v = (Verify)downloadTask.getProject().task(taskParams, "verifyFile");
+        v.dependsOn(downloadTask);
+        return v;
     }
     
     /**
@@ -326,5 +341,48 @@ public class DownloadTaskPluginTest {
         
         byte[] dstContents = FileUtils.readFileToByteArray(dst);
         assertArrayEquals(contents, dstContents);
+    }
+    
+    /**
+     * Tests if the Verify task can verify a file using its MD5 checksum
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void verifyMD5() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(TEST_FILE_NAME));
+        File dst = folder.newFile();
+        t.dest(dst);
+        
+        Verify v = makeVerifyTask(t);
+        v.algorithm("MD5");
+        MessageDigest md5 = MessageDigest.getInstance("MD5");
+        md5.update(contents);
+        String calculatedChecksum = Hex.encodeHexString(md5.digest());
+        v.checksum(calculatedChecksum);
+        v.src(t.getDest());
+        
+        t.execute();
+        v.execute(); // will throw if the checksum is not OK
+    }
+    
+    /**
+     * Tests if the Verify task fails if the checksum is wrong
+     * @throws Exception if anything goes wrong
+     */
+    @Test(expected = TaskExecutionException.class)
+    public void verifyWrongMD5() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(TEST_FILE_NAME));
+        File dst = folder.newFile();
+        t.dest(dst);
+        
+        Verify v = makeVerifyTask(t);
+        v.algorithm("MD5");
+        v.checksum("WRONG");
+        v.src(t.getDest());
+        
+        t.execute();
+        v.execute(); // should throw
     }
 }
