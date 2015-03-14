@@ -82,6 +82,7 @@ task integrationTest << {
                 }
                 
                 import de.undercouch.gradle.tasks.download.Download
+                import de.undercouch.gradle.tasks.download.Verify
                 
                 task downloadFile(type: Download) {
                     src '${testFileSrc}'
@@ -93,6 +94,12 @@ task integrationTest << {
                     dest buildDir
                     overwrite false
                     onlyIfNewer true
+                }
+                
+                task verifyFile(type: Verify, dependsOn: downloadFile) {
+                    src new File(buildDir, '${testFile.name}')
+                    algorithm 'MD5'
+                    checksum 'ce114e4501d2f4e2dcea3e17b546f339'
                 }
             """)
             
@@ -121,7 +128,7 @@ task integrationTest << {
             }
             exec {
                 workingDir testProjectDir
-                commandLine gradlew + ['downloadFile', 'downloadFile2']
+                commandLine gradlew + ['downloadFile', 'downloadFile2', 'verifyFile']
             }
             
             //check test files
