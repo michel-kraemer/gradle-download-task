@@ -214,6 +214,24 @@ public class DownloadTaskPluginTest {
         byte[] dstContents = FileUtils.readFileToByteArray(dst);
         assertArrayEquals(contents, dstContents);
     }
+
+    /**
+     * Tests if a single file can be downloaded from a URL
+     * only if the source file is newer
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void downloadSingleURLOnlyIfNewer() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(new URL(makeSrc(TEST_FILE_NAME)));
+        File dst = folder.newFile();
+        t.dest(dst);
+        t.onlyIfNewer(true);
+        t.execute();
+        
+        byte[] dstContents = FileUtils.readFileToByteArray(dst);
+        assertArrayEquals(contents, dstContents);
+    }
     
     /**
      * Tests if a single file can be downloaded to a directory
