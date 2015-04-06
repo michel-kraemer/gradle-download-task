@@ -60,6 +60,7 @@ public class DownloadTaskPluginTest {
     private static final String ECHO_HEADERS = "echo-headers";
     private final static String TEST_FILE_NAME = "test.txt";
     private final static String TEST_FILE_NAME2 = "test2.txt";
+    private final static String LOCAL_BROKEN_FILE = "test3.txt";
     
     /**
      * A folder for temporary files
@@ -70,6 +71,9 @@ public class DownloadTaskPluginTest {
     private Server server;
     private byte[] contents;
     private byte[] contents2;
+    
+    File localBrokenFile;
+    private byte[] brokenFileContents;
     
     /**
      * Runs an embedded HTTP server and creates test files to serve
@@ -117,15 +121,21 @@ public class DownloadTaskPluginTest {
         //create temporary files
         contents = new byte[4096];
         contents2 = new byte[4096];
+        brokenFileContents = new byte[1024];
         for (int i = 0; i < contents.length; ++i) {
             contents[i] = (byte)(Math.random() * 255);
             contents2[i] = (byte)(Math.random() * 255);
+        }
+        for (int i = 0; i < brokenFileContents.length; ++i) {
+        	brokenFileContents[i] = (byte)(Math.random() * 255);
         }
         
         File testFile = folder.newFile(TEST_FILE_NAME);
         FileUtils.writeByteArrayToFile(testFile, contents);
         File testFile2 = folder.newFile(TEST_FILE_NAME2);
         FileUtils.writeByteArrayToFile(testFile2, contents2);
+        localBrokenFile = folder.newFile(LOCAL_BROKEN_FILE);
+        FileUtils.writeByteArrayToFile(localBrokenFile, brokenFileContents);
     }
     
     /**
@@ -230,6 +240,42 @@ public class DownloadTaskPluginTest {
         t.execute();
         
         byte[] dstContents = FileUtils.readFileToByteArray(dst);
+        assertArrayEquals(contents, dstContents);
+    }
+    
+    /**
+     * Tests if a single file can be downloaded from a URL to a directory
+     * only if the source file is newer
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void downloadSingleURLToDirOnlyIfNewer() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(new URL(makeSrc(TEST_FILE_NAME)));
+        File dst = folder.newFolder();
+        t.dest(dst);
+        t.onlyIfNewer(true);
+        t.execute();
+        
+        byte[] dstContents = FileUtils.readFileToByteArray(
+        		new File(dst, TEST_FILE_NAME));
+        assertArrayEquals(contents, dstContents);
+    }
+    
+    /**
+     * Tests if a single file can be downloaded from a URL
+     * replacing the broken file in destination
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void downloadSingleURLToBrokenFile() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(new URL(makeSrc(TEST_FILE_NAME)));
+        t.dest(localBrokenFile);
+        t.onlyIfNewer(true);
+        t.execute();
+        
+        byte[] dstContents = FileUtils.readFileToByteArray(localBrokenFile);
         assertArrayEquals(contents, dstContents);
     }
     
