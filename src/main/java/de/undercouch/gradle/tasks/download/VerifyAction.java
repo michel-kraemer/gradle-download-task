@@ -30,10 +30,15 @@ import org.gradle.api.Project;
  * @author Michel Kraemer
  */
 public class VerifyAction implements VerifySpec {
+    private final Project project;
     private File src;
     private String algorithm = "MD5";
     private String checksum;
     
+    public VerifyAction(Project project) {
+        this.project = project;
+    }
+
     private String toHex(byte[] barr) {
         StringBuffer result = new StringBuffer();
         for (byte b : barr) {
@@ -44,11 +49,10 @@ public class VerifyAction implements VerifySpec {
     
     /**
      * Starts verifying
-     * @param project the project to be built
      * @throws IOException if the file could not verified
      * @throws NoSuchAlgorithmException if the given algorithm is not available
      */
-    public void execute(Project project) throws IOException, NoSuchAlgorithmException {
+    public void execute() throws IOException, NoSuchAlgorithmException {
         if (src == null) {
             throw new IllegalArgumentException("Please provide a file to verify");
         }
@@ -92,7 +96,7 @@ public class VerifyAction implements VerifySpec {
         }
         
         if (src instanceof CharSequence) {
-            src = new File(src.toString());
+            src = project.file(src.toString());
         }
         if (src instanceof File) {
             this.src = (File)src;

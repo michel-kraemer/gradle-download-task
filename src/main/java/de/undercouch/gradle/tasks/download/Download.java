@@ -34,7 +34,12 @@ import org.gradle.api.tasks.TaskAction;
  * @author Michel Kraemer
  */
 public class Download extends DefaultTask implements DownloadSpec {
-    private DownloadAction action = new DownloadAction();
+    private final DownloadAction action;
+
+    public Download() {
+      super();
+      action = new DownloadAction(getProject());
+    }
     
     /**
      * Starts downloading
@@ -42,7 +47,7 @@ public class Download extends DefaultTask implements DownloadSpec {
      */
     @TaskAction
     public void download() throws IOException {
-        action.execute(getProject());
+        action.execute();
         if (action.isSkipped()) {
             //we are about to access an internal class. Use reflection here to provide
             //as much compatibility to previous Gradle versions as possible (see issue #16)
