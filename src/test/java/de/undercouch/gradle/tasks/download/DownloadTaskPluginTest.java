@@ -66,6 +66,8 @@ public class DownloadTaskPluginTest {
      */
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
+    private File parentDir;
+    private File projectDir;
     
     private Server server;
     private byte[] contents;
@@ -122,6 +124,9 @@ public class DownloadTaskPluginTest {
             contents2[i] = (byte)(Math.random() * 255);
         }
         
+        parentDir = folder.newFolder("test");
+        projectDir = new File(parentDir, "project");
+        
         File testFile = folder.newFile(TEST_FILE_NAME);
         FileUtils.writeByteArrayToFile(testFile, contents);
         File testFile2 = folder.newFile(TEST_FILE_NAME2);
@@ -147,9 +152,11 @@ public class DownloadTaskPluginTest {
     /**
      * Makes a Gradle project and creates a download task
      * @return the unconfigured download task
+     * @throws IOException 
      */
-    private Download makeProjectAndTask() {
-        Project project = ProjectBuilder.builder().build();
+    private Download makeProjectAndTask() throws IOException {
+        Project parent = ProjectBuilder.builder().withProjectDir(parentDir).build();
+        Project project = ProjectBuilder.builder().withParent(parent).withProjectDir(projectDir).build();
         
         Map<String, Object> applyParams = new HashMap<String, Object>();
         applyParams.put("plugin", "de.undercouch.download");
@@ -232,6 +239,18 @@ public class DownloadTaskPluginTest {
         assertArrayEquals(contents, dstContents);
     }
 
+    @Test
+    public void downloadSingleFileToRelativePath() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(TEST_FILE_NAME));
+        t.dest(TEST_FILE_NAME);
+        t.execute();
+      
+        byte[] dstContents = FileUtils.readFileToByteArray(
+              new File(projectDir, TEST_FILE_NAME));
+        assertArrayEquals(contents, dstContents);
+    }
+    
     /**
      * Tests if a multiple files can be downloaded to a directory
      * @throws Exception if anything goes wrong
