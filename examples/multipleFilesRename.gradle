@@ -1,0 +1,48 @@
+/**
+ * Include the gradle-download-task plugin
+ */
+plugins {
+    id 'de.undercouch.download' version '1.2'
+}
+
+/**
+ * Import the Download task. This line is optional.
+ * You can of course also always use the full qualified name
+ * when you specify a task of type 'Download'.
+ */
+import de.undercouch.gradle.tasks.download.Download
+
+/**
+ * Define files to download and destination file names
+ */
+ext.src = [
+    'http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess;hb=HEAD': 'config.guess',
+    'http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=HEAD': 'config.sub'
+]
+
+/**
+ * ALTERNATIVE 1: call the download extension in a for loop
+ */
+task downloadMultipleFiles1 << {
+    for (s in src) {
+        download {
+            src s.key
+            dest new File(buildDir, s.value)
+        }
+    }
+}
+
+/**
+ * ALTERNATIVE 2: create multiple tasks
+ */
+task downloadMultipleFiles2
+
+for (s in src) {
+    task "downloadMultipleFiles2_${s.key.hashCode()}"(type: Download) {
+        src s.key
+        dest new File(buildDir, s.value)
+    }
+    downloadMultipleFiles2.dependsOn("downloadMultipleFiles2_${s.key.hashCode()}")
+}
+
+defaultTasks 'downloadMultipleFiles1', 'downloadMultipleFiles2'

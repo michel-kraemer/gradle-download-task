@@ -27,6 +27,13 @@ Download multiple files.
 
     gradle -b multipleFiles.gradle
 
+[multipleFilesRename.gradle](multipleFilesRename.gradle)
+--------------------------------------------------------
+
+Download multiple files and specify destination file names for each of them.
+
+    gradle -b multipleFilesRename.gradle
+
 [customHeader.gradle](customHeader.gradle)
 ------------------------------------------
 
