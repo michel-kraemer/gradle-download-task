@@ -30,8 +30,6 @@ import java.net.URLConnection;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -42,15 +40,16 @@ import java.util.zip.GZIPInputStream;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 import org.apache.tools.ant.util.Base64Converter;
 import org.gradle.api.Project;
 import org.gradle.logging.ProgressLogger;
 import org.gradle.logging.ProgressLoggerFactory;
+
+import de.undercouch.gradle.tasks.download.internal.InsecureHostnameVerifier;
+import de.undercouch.gradle.tasks.download.internal.InsecureTrustManager;
 
 /**
  * Downloads a file and displays progress
@@ -58,6 +57,8 @@ import org.gradle.logging.ProgressLoggerFactory;
  */
 public class DownloadAction implements DownloadSpec {
     private static final int MAX_NUMBER_OF_REDIRECTS = 30;
+    private static final HostnameVerifier INSECURE_HOSTNAME_VERIFIER = new InsecureHostnameVerifier();
+    private static final TrustManager[] INSECURE_TRUST_MANAGERS = { new InsecureTrustManager() };
     
     private List<URL> sources = new ArrayList<URL>(1);
     private File dest;
@@ -569,32 +570,4 @@ public class DownloadAction implements DownloadSpec {
         }
         return sslSocketFactory;
     }
-
-    private static final TrustManager[] INSECURE_TRUST_MANAGERS = {
-        new X509TrustManager() {
-            @Override
-            public void checkClientTrusted(X509Certificate[] x509Certificates, String s)
-                throws CertificateException {
-                // accept all
-            }
-
-            @Override
-            public void checkServerTrusted(X509Certificate[] x509Certificates, String s)
-                throws CertificateException {
-                // accept all
-            }
-
-            @Override
-            public X509Certificate[] getAcceptedIssuers() {
-                return null;
-            }
-        }
-    };
-
-    private static final HostnameVerifier INSECURE_HOSTNAME_VERIFIER = new HostnameVerifier() {
-        @Override
-        public boolean verify(String s, SSLSession sslSession) {
-            return true;
-        }
-    };
 }
