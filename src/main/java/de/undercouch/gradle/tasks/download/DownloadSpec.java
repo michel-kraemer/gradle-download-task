@@ -88,8 +88,9 @@ public interface DownloadSpec {
 
     /**
      * Specifies if HTTPS certificate verification errors should be ignored
-     * and any certificate (even an invalid one) should be accepted.
-     * @param accept true if certificate errors should be ignored
+     * and any certificate (even an invalid one) should be accepted. By default
+     * certificates are validated and errors are not being ignored.
+     * @param accept true if certificate errors should be ignored (default: false)
      */
     void acceptAnyCertificate(boolean accept);
 
@@ -145,7 +146,8 @@ public interface DownloadSpec {
     String getHeader(String name);
 
     /**
-     * @return true if HTTPS certificate verification errors should be ignored
+     * @return true if HTTPS certificate verification errors should be ignored,
+     * default value is false
      */
     boolean isAcceptAnyCertificate();
 }

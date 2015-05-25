@@ -147,6 +147,10 @@ request <em>(optional)</em></dd>
 <dt>headers</dt>
 <dd>A map of request headers to set when making the download
 request <em>(optional)</em></dd>
+<dt>acceptAnyCertificate</dt>
+<dd><code>true</code> if HTTPS certificate verification errors should be ignored
+and any certificate (even an invalid one) should be accepted.
+<em>(default: <code>false</code>)</em>
 </dl>
 
 License
