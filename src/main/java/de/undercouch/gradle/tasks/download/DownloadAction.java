@@ -34,8 +34,8 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
@@ -74,8 +74,9 @@ public class DownloadAction implements DownloadSpec {
     private String size;
     private long processedBytes = 0;
     private long loggedKb = 0;
-    
+
     private int skipped = 0;
+
     private SSLSocketFactory sslSocketFactory = null;
 
     /**
@@ -236,7 +237,7 @@ public class DownloadAction implements DownloadSpec {
             }
 
             if (uc instanceof HttpsURLConnection && insecure) {
-                HttpsURLConnection httpsConnection = (HttpsURLConnection) uc;
+                HttpsURLConnection httpsConnection = (HttpsURLConnection)uc;
                 httpsConnection.setSSLSocketFactory(getSSLSocketFactory());
                 httpsConnection.setHostnameVerifier(INSECURE_HOSTNAME_VERIFIER);
             }
@@ -488,7 +489,8 @@ public class DownloadAction implements DownloadSpec {
         headers.put(name, value);
     }
 
-    @Override public void insecure(boolean insecure) {
+    @Override
+    public void insecure(boolean insecure) {
         this.insecure = insecure;
     }
 
@@ -548,7 +550,8 @@ public class DownloadAction implements DownloadSpec {
         return headers.get(name);
     }
 
-    @Override public boolean isInsecure() {
+    @Override
+    public boolean isInsecure() {
         return insecure;
     }
 
@@ -569,24 +572,28 @@ public class DownloadAction implements DownloadSpec {
 
     private static final TrustManager[] INSECURE_TRUST_MANAGERS = {
         new X509TrustManager() {
-            @Override public void checkClientTrusted(X509Certificate[] x509Certificates, String s)
+            @Override
+            public void checkClientTrusted(X509Certificate[] x509Certificates, String s)
                 throws CertificateException {
                 // accept all
             }
 
-            @Override public void checkServerTrusted(X509Certificate[] x509Certificates, String s)
+            @Override
+            public void checkServerTrusted(X509Certificate[] x509Certificates, String s)
                 throws CertificateException {
                 // accept all
             }
 
-            @Override public X509Certificate[] getAcceptedIssuers() {
+            @Override
+            public X509Certificate[] getAcceptedIssuers() {
                 return null;
             }
         }
     };
 
     private static final HostnameVerifier INSECURE_HOSTNAME_VERIFIER = new HostnameVerifier() {
-        @Override public boolean verify(String s, SSLSession sslSession) {
+        @Override
+        public boolean verify(String s, SSLSession sslSession) {
             return true;
         }
     };

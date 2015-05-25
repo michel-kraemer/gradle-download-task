@@ -109,7 +109,8 @@ public class Download extends DefaultTask implements DownloadSpec {
         action.header(name, value);
     }
 
-    @Override public void insecure(boolean insecure) {
+    @Override
+    public void insecure(boolean insecure) {
         action.insecure(insecure);
     }
 
@@ -163,7 +164,8 @@ public class Download extends DefaultTask implements DownloadSpec {
         return action.getHeader(name);
     }
 
-    @Override public boolean isInsecure() {
+    @Override
+    public boolean isInsecure() {
         return action.isInsecure();
     }
 }
