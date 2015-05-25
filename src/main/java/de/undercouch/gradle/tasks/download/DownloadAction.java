@@ -27,12 +27,25 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import org.apache.tools.ant.util.Base64Converter;
 import org.gradle.api.Project;
@@ -55,14 +68,16 @@ public class DownloadAction implements DownloadSpec {
     private String username;
     private String password;
     private Map<String, String> headers;
-    
+    private boolean insecure = false;
+
     private ProgressLogger progressLogger;
     private String size;
     private long processedBytes = 0;
     private long loggedKb = 0;
     
     private int skipped = 0;
-    
+    private SSLSocketFactory sslSocketFactory = null;
+
     /**
      * Starts downloading
      * @param project the project to be built
@@ -218,6 +233,12 @@ public class DownloadAction implements DownloadSpec {
             if (uc instanceof HttpURLConnection) {
                 HttpURLConnection httpConnection = (HttpURLConnection)uc;
                 httpConnection.setInstanceFollowRedirects(true);
+            }
+
+            if (uc instanceof HttpsURLConnection && insecure) {
+                HttpsURLConnection httpsConnection = (HttpsURLConnection) uc;
+                httpsConnection.setSSLSocketFactory(getSSLSocketFactory());
+                httpsConnection.setHostnameVerifier(INSECURE_HOSTNAME_VERIFIER);
             }
             
             //set If-Modified-Since header
@@ -467,6 +488,10 @@ public class DownloadAction implements DownloadSpec {
         headers.put(name, value);
     }
 
+    @Override public void insecure(boolean insecure) {
+        this.insecure = insecure;
+    }
+
     @Override
     public Object getSrc() {
         if (sources != null && sources.size() == 1) {
@@ -522,4 +547,47 @@ public class DownloadAction implements DownloadSpec {
         }
         return headers.get(name);
     }
+
+    @Override public boolean isInsecure() {
+        return insecure;
+    }
+
+    private SSLSocketFactory getSSLSocketFactory() {
+        if (sslSocketFactory == null) {
+            try {
+                SSLContext sc = SSLContext.getInstance("SSL");
+                sc.init(null, INSECURE_TRUST_MANAGERS, new SecureRandom());
+                sslSocketFactory = sc.getSocketFactory();
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            } catch (KeyManagementException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return sslSocketFactory;
+    }
+
+    private static final TrustManager[] INSECURE_TRUST_MANAGERS = {
+        new X509TrustManager() {
+            @Override public void checkClientTrusted(X509Certificate[] x509Certificates, String s)
+                throws CertificateException {
+                // accept all
+            }
+
+            @Override public void checkServerTrusted(X509Certificate[] x509Certificates, String s)
+                throws CertificateException {
+                // accept all
+            }
+
+            @Override public X509Certificate[] getAcceptedIssuers() {
+                return null;
+            }
+        }
+    };
+
+    private static final HostnameVerifier INSECURE_HOSTNAME_VERIFIER = new HostnameVerifier() {
+        @Override public boolean verify(String s, SSLSession sslSession) {
+            return true;
+        }
+    };
 }

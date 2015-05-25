@@ -87,6 +87,12 @@ public interface DownloadSpec {
     void header(String name, String value);
 
     /**
+     * Specifies if HTTPS certificate verification errors should be ignored.
+     * @param insecure true if certificate errors should be ignored
+     */
+    void insecure(boolean insecure);
+
+    /**
      * @return the download source(s), either a URL or a list of URLs
      */
     Object getSrc();
@@ -136,4 +142,9 @@ public interface DownloadSpec {
      * @return the value of the HTTP header
      */
     String getHeader(String name);
+
+    /**
+     * @return true if HTTPS certificate verification errors should be ignored
+     */
+    boolean isInsecure();
 }
