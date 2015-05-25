@@ -69,7 +69,7 @@ public class DownloadAction implements DownloadSpec {
     private String username;
     private String password;
     private Map<String, String> headers;
-    private boolean insecure = false;
+    private boolean acceptAnyCertificate = false;
 
     private ProgressLogger progressLogger;
     private String size;
@@ -237,7 +237,7 @@ public class DownloadAction implements DownloadSpec {
                 httpConnection.setInstanceFollowRedirects(true);
             }
 
-            if (uc instanceof HttpsURLConnection && insecure) {
+            if (uc instanceof HttpsURLConnection && acceptAnyCertificate) {
                 HttpsURLConnection httpsConnection = (HttpsURLConnection)uc;
                 httpsConnection.setSSLSocketFactory(getInsecureSSLSocketFactory());
                 httpsConnection.setHostnameVerifier(INSECURE_HOSTNAME_VERIFIER);
@@ -491,8 +491,8 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
-    public void insecure(boolean insecure) {
-        this.insecure = insecure;
+    public void acceptAnyCertificate(boolean accept) {
+        this.acceptAnyCertificate = accept;
     }
 
     @Override
@@ -552,8 +552,8 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
-    public boolean isInsecure() {
-        return insecure;
+    public boolean isAcceptAnyCertificate() {
+        return acceptAnyCertificate;
     }
 
     private SSLSocketFactory getInsecureSSLSocketFactory() {

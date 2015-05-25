@@ -110,8 +110,8 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
 
     @Override
-    public void insecure(boolean insecure) {
-        action.insecure(insecure);
+    public void acceptAnyCertificate(boolean accept) {
+        action.acceptAnyCertificate(accept);
     }
 
     @Override
@@ -165,7 +165,7 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
 
     @Override
-    public boolean isInsecure() {
-        return action.isInsecure();
+    public boolean isAcceptAnyCertificate() {
+        return action.isAcceptAnyCertificate();
     }
 }

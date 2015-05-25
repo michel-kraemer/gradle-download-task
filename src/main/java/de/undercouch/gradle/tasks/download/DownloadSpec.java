@@ -87,10 +87,11 @@ public interface DownloadSpec {
     void header(String name, String value);
 
     /**
-     * Specifies if HTTPS certificate verification errors should be ignored.
-     * @param insecure true if certificate errors should be ignored
+     * Specifies if HTTPS certificate verification errors should be ignored
+     * and any certificate (even an invalid one) should be accepted.
+     * @param accept true if certificate errors should be ignored
      */
-    void insecure(boolean insecure);
+    void acceptAnyCertificate(boolean accept);
 
     /**
      * @return the download source(s), either a URL or a list of URLs
@@ -146,5 +147,5 @@ public interface DownloadSpec {
     /**
      * @return true if HTTPS certificate verification errors should be ignored
      */
-    boolean isInsecure();
+    boolean isAcceptAnyCertificate();
 }
