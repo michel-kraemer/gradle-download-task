@@ -78,7 +78,7 @@ public class DownloadAction implements DownloadSpec {
 
     private int skipped = 0;
 
-    private SSLSocketFactory sslSocketFactory = null;
+    private SSLSocketFactory insecureSSLSocketFactory = null;
 
     /**
      * Starts downloading
@@ -239,7 +239,7 @@ public class DownloadAction implements DownloadSpec {
 
             if (uc instanceof HttpsURLConnection && insecure) {
                 HttpsURLConnection httpsConnection = (HttpsURLConnection)uc;
-                httpsConnection.setSSLSocketFactory(getSSLSocketFactory());
+                httpsConnection.setSSLSocketFactory(getInsecureSSLSocketFactory());
                 httpsConnection.setHostnameVerifier(INSECURE_HOSTNAME_VERIFIER);
             }
             
@@ -556,18 +556,18 @@ public class DownloadAction implements DownloadSpec {
         return insecure;
     }
 
-    private SSLSocketFactory getSSLSocketFactory() {
-        if (sslSocketFactory == null) {
+    private SSLSocketFactory getInsecureSSLSocketFactory() {
+        if (insecureSSLSocketFactory == null) {
             try {
                 SSLContext sc = SSLContext.getInstance("SSL");
                 sc.init(null, INSECURE_TRUST_MANAGERS, new SecureRandom());
-                sslSocketFactory = sc.getSocketFactory();
+                insecureSSLSocketFactory = sc.getSocketFactory();
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             } catch (KeyManagementException e) {
                 throw new RuntimeException(e);
             }
         }
-        return sslSocketFactory;
+        return insecureSSLSocketFactory;
     }
 }
