@@ -140,6 +140,11 @@ public class DownloadAction implements DownloadSpec {
             timestamp = destFile.lastModified();
         }
         
+        long fileLength = 0;
+        if (destFile.exists()) {
+            fileLength = destFile.length();
+        }
+        
         //create progress logger
         if (!quiet) {
             //we are about to access an internal class. Use reflection here to provide
@@ -165,7 +170,7 @@ public class DownloadAction implements DownloadSpec {
         }
         
         //open URL connection
-        URLConnection conn = openConnection(src, timestamp, project);
+        URLConnection conn = openConnection(src, timestamp, fileLength, project);
         if (conn == null) {
             return;
         }
@@ -222,16 +227,20 @@ public class DownloadAction implements DownloadSpec {
      * server if the given timestamp is greater than 0.
      * @param src the source URL to open a connection for
      * @param timestamp the timestamp of the destination file
+     * @param fileLength the length of the destination file
      * @param project the project to be built
      * @return the URLConnection or null if the download should be skipped
      * @throws IOException if the connection could not be opened
      */
-    private URLConnection openConnection(URL src, long timestamp,
+    private URLConnection openConnection(URL src, long timestamp, long fileLength,
             Project project) throws IOException {
         int redirects = MAX_NUMBER_OF_REDIRECTS;
         
         URLConnection uc = src.openConnection();
         while (true) {
+            long contentLength = parseContentLength(uc);
+            uc = uc.getURL().openConnection();
+        	
             if (uc instanceof HttpURLConnection) {
                 HttpURLConnection httpConnection = (HttpURLConnection)uc;
                 httpConnection.setInstanceFollowRedirects(true);
@@ -243,8 +252,9 @@ public class DownloadAction implements DownloadSpec {
                 httpsConnection.setHostnameVerifier(INSECURE_HOSTNAME_VERIFIER);
             }
             
-            //set If-Modified-Since header
-            if (timestamp > 0) {
+            //set If-Modified-Since header only if the sizes of the files match
+            boolean isSizesMatch = contentLength == fileLength;
+            if (timestamp > 0 && isSizesMatch) {
                 uc.setIfModifiedSince(timestamp);
             }
             
@@ -274,8 +284,8 @@ public class DownloadAction implements DownloadSpec {
                 HttpURLConnection httpConnection = (HttpURLConnection)uc;
                 int responseCode = httpConnection.getResponseCode();
                 long lastModified = httpConnection.getLastModified();
-                if (responseCode == HttpURLConnection.HTTP_NOT_MODIFIED ||
-                        (lastModified != 0 && timestamp >= lastModified)) {
+                if (responseCode == HttpURLConnection.HTTP_NOT_MODIFIED && isSizesMatch ||
+                        (lastModified != 0 && timestamp >= lastModified && isSizesMatch)) {
                     if (!quiet) {
                         project.getLogger().info("Not modified. Skipping '" + src + "'");
                     }
