@@ -39,9 +39,9 @@ public class DownloadExtension implements Configurable<DownloadExtension> {
     
     @Override
     public DownloadExtension configure(@SuppressWarnings("rawtypes") Closure cl) {
-        DownloadAction da = ConfigureUtil.configure(cl, new DownloadAction());
+        DownloadAction da = ConfigureUtil.configure(cl, new DownloadAction(project));
         try {
-            da.execute(project);
+            da.execute();
         } catch (IOException e) {
             throw new IllegalStateException("Could not download file", e);
         }
