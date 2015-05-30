@@ -60,6 +60,7 @@ public class DownloadAction implements DownloadSpec {
     private static final HostnameVerifier INSECURE_HOSTNAME_VERIFIER = new InsecureHostnameVerifier();
     private static final TrustManager[] INSECURE_TRUST_MANAGERS = { new InsecureTrustManager() };
     
+    private final Project project;
     private List<URL> sources = new ArrayList<URL>(1);
     private File dest;
     private boolean quiet = false;
@@ -79,13 +80,16 @@ public class DownloadAction implements DownloadSpec {
     private int skipped = 0;
 
     private SSLSocketFactory insecureSSLSocketFactory = null;
+    
+    public DownloadAction(Project project) {
+      this.project = project;
+    }
 
     /**
      * Starts downloading
-     * @param project the project to be built
      * @throws IOException if the file could not downloaded
      */
-    public void execute(Project project) throws IOException {
+    public void execute() throws IOException {
         if (sources == null || sources.isEmpty()) {
             throw new IllegalArgumentException("Please provide a download source");
         }
@@ -104,11 +108,11 @@ public class DownloadAction implements DownloadSpec {
         }
         
         for (URL src : sources) {
-            execute(src, project);
+            execute(src);
         }
     }
     
-    private void execute(URL src, Project project) throws IOException {
+    private void execute(URL src) throws IOException {
         File destFile = dest;
         if (destFile.isDirectory()) {
             //guess name from URL
@@ -165,7 +169,7 @@ public class DownloadAction implements DownloadSpec {
         }
         
         //open URL connection
-        URLConnection conn = openConnection(src, timestamp, project);
+        URLConnection conn = openConnection(src, timestamp);
         if (conn == null) {
             return;
         }
@@ -226,8 +230,7 @@ public class DownloadAction implements DownloadSpec {
      * @return the URLConnection or null if the download should be skipped
      * @throws IOException if the connection could not be opened
      */
-    private URLConnection openConnection(URL src, long timestamp,
-            Project project) throws IOException {
+    private URLConnection openConnection(URL src, long timestamp) throws IOException {
         int redirects = MAX_NUMBER_OF_REDIRECTS;
         
         URLConnection uc = src.openConnection();
@@ -435,7 +438,7 @@ public class DownloadAction implements DownloadSpec {
         }
         
         if (dest instanceof CharSequence) {
-            this.dest = new File(dest.toString());
+            this.dest = project.file(dest.toString());
         } else if (dest instanceof File) {
             this.dest = (File)dest;
         } else {

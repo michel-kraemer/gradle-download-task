@@ -33,7 +33,12 @@ import org.gradle.api.tasks.TaskAction;
  * @author Michel Kraemer
  */
 public class Verify extends DefaultTask implements VerifySpec {
-    private final VerifyAction action = new VerifyAction();
+    private final VerifyAction action;
+
+    public Verify() {
+      super();
+      action = new VerifyAction(getProject());
+    }
     
     /**
      * Starts verifying
@@ -42,7 +47,7 @@ public class Verify extends DefaultTask implements VerifySpec {
      */
     @TaskAction
     public void verify() throws IOException, NoSuchAlgorithmException {
-        action.execute(getProject());
+        action.execute();
     }
 
     @Override
