@@ -36,9 +36,11 @@ import org.gradle.api.tasks.TaskAction;
 public class Download extends DefaultTask implements DownloadSpec {
     private final DownloadAction action;
 
+    /**
+     * Default constructor
+     */
     public Download() {
-      super();
-      action = new DownloadAction(getProject());
+        action = new DownloadAction(getProject());
     }
     
     /**

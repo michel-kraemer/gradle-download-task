@@ -66,6 +66,7 @@ public class DownloadTaskPluginTest {
      */
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
+    
     private File parentDir;
     private File projectDir;
     
@@ -239,15 +240,20 @@ public class DownloadTaskPluginTest {
         assertArrayEquals(contents, dstContents);
     }
 
+    /**
+     * Tests if a file is downloaded to the project directory when specifying
+     * a relative path
+     * @throws Exception if anything goes wrong
+     */
     @Test
     public void downloadSingleFileToRelativePath() throws Exception {
         Download t = makeProjectAndTask();
         t.src(makeSrc(TEST_FILE_NAME));
         t.dest(TEST_FILE_NAME);
         t.execute();
-      
+        
         byte[] dstContents = FileUtils.readFileToByteArray(
-              new File(projectDir, TEST_FILE_NAME));
+                new File(projectDir, TEST_FILE_NAME));
         assertArrayEquals(contents, dstContents);
     }
     

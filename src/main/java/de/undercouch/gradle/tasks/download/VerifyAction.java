@@ -35,6 +35,10 @@ public class VerifyAction implements VerifySpec {
     private String algorithm = "MD5";
     private String checksum;
     
+    /**
+     * Creates a new verify action
+     * @param project the project to be built
+     */
     public VerifyAction(Project project) {
         this.project = project;
     }

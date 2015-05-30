@@ -81,8 +81,12 @@ public class DownloadAction implements DownloadSpec {
 
     private SSLSocketFactory insecureSSLSocketFactory = null;
     
+    /**
+     * Creates a new download action
+     * @param project the project to be built
+     */
     public DownloadAction(Project project) {
-      this.project = project;
+        this.project = project;
     }
 
     /**

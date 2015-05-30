@@ -35,9 +35,11 @@ import org.gradle.api.tasks.TaskAction;
 public class Verify extends DefaultTask implements VerifySpec {
     private final VerifyAction action;
 
+    /**
+     * Default constructor
+     */
     public Verify() {
-      super();
-      action = new VerifyAction(getProject());
+        action = new VerifyAction(getProject());
     }
     
     /**
