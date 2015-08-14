@@ -9,3 +9,5 @@ bin/
 .settings/
 .classpath
 .project
+*.i??
+out/
