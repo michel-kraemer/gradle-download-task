@@ -1,1 +1,2 @@
+sudo: false
 script: "chmod 755 gradlew && ./gradlew install && ./gradlew check"
