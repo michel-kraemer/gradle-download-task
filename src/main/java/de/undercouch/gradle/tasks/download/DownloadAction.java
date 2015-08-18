@@ -163,8 +163,14 @@ public class DownloadAction implements DownloadSpec {
                 progressLogger = (ProgressLogger)newOperation.invoke(
                         progressLoggerFactory, getClass());
                 String desc = "Download " + src.toString();
-                progressLogger.setDescription(desc);
-                progressLogger.setLoggingHeader(desc);
+                Method setDescription = progressLogger.getClass().getMethod(
+                        "setDescription", String.class);
+                setDescription.setAccessible(true);
+                setDescription.invoke(progressLogger, desc);
+                Method setLoggingHeader = progressLogger.getClass().getMethod(
+                        "setLoggingHeader", String.class);
+                setLoggingHeader.setAccessible(true);
+                setLoggingHeader.invoke(progressLogger, desc);
             } catch (Exception e) {
                 //unable to get progress logger
                 project.getLogger().error("Unable to get progress logger. Download "
