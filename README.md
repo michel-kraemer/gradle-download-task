@@ -96,7 +96,7 @@ task downloadDirectory {
 }
 ```
 
-To download and unpack a ZIP file use can combine the download task
+To download and unpack a ZIP file you can combine the download task
 plugin with Gradle's built-in support for ZIP files:
 
 ```groovy
@@ -113,8 +113,8 @@ task downloadAndUnzipFile(dependsOn: downloadZipFile, type: Copy) {
 
 Please have a look at the `examples` directory for more code samples.
 
-Properties
-----------
+Download task
+-------------
 
 The download task and the extension support the following properties
 
@@ -151,6 +151,57 @@ request <em>(optional)</em></dd>
 <dd><code>true</code> if HTTPS certificate verification errors should be ignored
 and any certificate (even an invalid one) should be accepted.
 <em>(default: <code>false</code>)</em>
+</dl>
+
+Verify task
+-----------
+
+The plugin also provides a `Verify` task that can be used to check the integrity
+of a downloaded file by calculating its checksum and comparing it to a
+pre-defined value. The task succeeds if the file's checksum equals the
+given value and fails if it doesn't.
+
+Use the task as follows:
+
+```groovy
+import de.undercouch.gradle.tasks.download.Verify
+
+task verifyFile(type: Verify) {
+    src new File(buildDir, 'file.ext')
+    algorithm 'MD5'
+    checksum 'ce114e4501d2f4e2dcea3e17b546f339'
+}
+```
+
+You can combine the download task and the verify task as follows:
+
+```groovy
+import de.undercouch.gradle.tasks.download.Download
+import de.undercouch.gradle.tasks.download.Verify
+
+task downloadFile(type: Download) {
+    src 'http://www.example.com/index.html'
+    dest buildDir
+}
+
+task verifyFile(type: Verify, dependsOn: downloadFile) {
+    src new File(buildDir, 'index.html')
+    algorithm 'MD5'
+    checksum '09b9c392dc1f6e914cea287cb6be34b0'
+}
+```
+
+The verify task supports the following properties:
+
+<dl>
+<dt>src</dt>
+<dd>The file to verify <em>(required)</em></dd>
+<dt>checksum</dt>
+<dd>The actual checksum to verify against <em>(required)</em></dd>
+<dt>algorithm</dt>
+<dd>The algorithm to use to compute the checksum. See the
+<a href="http://docs.oracle.com/javase/7/docs/technotes/guides/security/StandardNames.html#MessageDigest">list of algorithm names</a>
+for more information. <em>(default: <code>MD5</code>)</em></dd>
 </dl>
 
 License

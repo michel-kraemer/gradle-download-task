@@ -55,6 +55,14 @@ Download a ZIP file and extract its contents.
 
     gradle -b unzip.gradle
 
+[verify.gradle](verify.gradle)
+------------------------------
+
+Download a file and verify its contents by calculating its checksum and
+comparing it to a given value.
+
+    gradle -b verify.gradle
+
 Run all examples
 ----------------
 
