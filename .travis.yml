@@ -1,7 +1,2 @@
 sudo: false
 script: "chmod 755 gradlew && ./gradlew install && ./gradlew check"
-cache:
-  directories:
-  - $HOME/.gradle/caches/artifacts-*
-  - $HOME/.gradle/caches/modules-*
-  - $HOME/.gradle/wrapper
