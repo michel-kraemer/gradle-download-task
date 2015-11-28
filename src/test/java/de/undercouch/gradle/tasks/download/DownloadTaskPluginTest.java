@@ -410,4 +410,40 @@ public class DownloadTaskPluginTest {
         t.execute();
         v.execute(); // should throw
     }
+    
+    /**
+     * Test if the task is skipped if we're in offline mode
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void offlineSkip() throws Exception {
+        Download t = makeProjectAndTask();
+        t.getProject().getGradle().getStartParameter().setOffline(true);
+        t.src(makeSrc(TEST_FILE_NAME));
+        
+        // create empty destination file
+        File dst = folder.newFile();
+        t.dest(dst);
+        
+        t.execute();
+        
+        // file should still be empty
+        byte[] dstContents = FileUtils.readFileToByteArray(dst);
+        assertArrayEquals(new byte[0], dstContents);
+    }
+    
+    /**
+     * Test if the task fails we're in offline mode and the file does
+     * not exist already
+     * @throws Exception if anything goes wrong
+     */
+    @Test(expected = TaskExecutionException.class)
+    public void offlineFail() throws Exception {
+        Download t = makeProjectAndTask();
+        t.getProject().getGradle().getStartParameter().setOffline(true);
+        t.src(makeSrc(TEST_FILE_NAME));
+        File dst = new File(folder.getRoot(), "offlineFail");
+        t.dest(dst);
+        t.execute(); // should fail
+    }
 }
