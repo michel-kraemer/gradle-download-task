@@ -14,8 +14,6 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import groovy.lang.Closure;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -50,6 +48,7 @@ import org.gradle.logging.ProgressLoggerFactory;
 
 import de.undercouch.gradle.tasks.download.internal.InsecureHostnameVerifier;
 import de.undercouch.gradle.tasks.download.internal.InsecureTrustManager;
+import groovy.lang.Closure;
 
 /**
  * Downloads a file and displays progress
@@ -77,6 +76,7 @@ public class DownloadAction implements DownloadSpec {
     private long processedBytes = 0;
     private long loggedKb = 0;
 
+    private int upToDate = 0;
     private int skipped = 0;
 
     private SSLSocketFactory insecureSSLSocketFactory = null;
@@ -139,8 +139,23 @@ public class DownloadAction implements DownloadSpec {
                 project.getLogger().info("Destination file already exists. "
                         + "Skipping '" + destFile.getName() + "'");
             }
-            ++skipped;
+            ++upToDate;
             return;
+        }
+        
+        // in case offline mode is enabled don't try to download if
+        // destination already exists
+        if (project.getGradle().getStartParameter().isOffline()) {
+            if (destFile.exists()) {
+                if (!quiet) {
+                    project.getLogger().info("Skipping existing file '" +
+                            destFile.getName() + "' in offline mode.");
+                }
+                ++skipped;
+                return;
+            }
+            throw new IllegalStateException("Unable to download " + src +
+                    " in offline mode.");
         }
         
         long timestamp = 0;
@@ -292,7 +307,7 @@ public class DownloadAction implements DownloadSpec {
                     if (!quiet) {
                         project.getLogger().info("Not modified. Skipping '" + src + "'");
                     }
-                    ++skipped;
+                    ++upToDate;
                     return null;
                 }
                 
@@ -397,6 +412,13 @@ public class DownloadAction implements DownloadSpec {
             progressLogger.progress(msg);
             loggedKb = processedKb;
         }
+    }
+    
+    /**
+     * @return true if the download destination is up to date
+     */
+    boolean isUpToDate() {
+        return sources != null && upToDate == sources.size();
     }
     
     /**

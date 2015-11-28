@@ -50,19 +50,28 @@ public class Download extends DefaultTask implements DownloadSpec {
     @TaskAction
     public void download() throws IOException {
         action.execute();
-        if (action.isSkipped()) {
-            //we are about to access an internal class. Use reflection here to provide
-            //as much compatibility to previous Gradle versions as possible (see issue #16)
-            try {
+        
+        // handle 'skipped' and 'upToDate'
+        try {
+            if (action.isSkipped()) {
+                //we are about to access an internal class. Use reflection here to provide
+                //as much compatibility to previous Gradle versions as possible (see issue #16)
+                Method getState = this.getClass().getMethod("getState");
+                Object state = getState.invoke(this);
+                Method skipped = state.getClass().getMethod("skipped");
+                if (skipped != null) {
+                    skipped.invoke(state, "Download skipped");
+                }
+            } else if (action.isUpToDate()) {
                 Method getState = this.getClass().getMethod("getState");
                 Object state = getState.invoke(this);
                 Method upToDate = state.getClass().getMethod("upToDate");
                 if (upToDate != null) {
                     upToDate.invoke(state);
                 }
-            } catch (Exception e) {
-                //just ignore
             }
+        } catch (Exception e) {
+            //just ignore
         }
     }
     
