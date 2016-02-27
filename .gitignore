@@ -11,3 +11,4 @@ bin/
 .project
 *.i??
 out/
+.DS_Store
