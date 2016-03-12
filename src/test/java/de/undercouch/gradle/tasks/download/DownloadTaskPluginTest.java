@@ -153,9 +153,8 @@ public class DownloadTaskPluginTest {
     /**
      * Makes a Gradle project and creates a download task
      * @return the unconfigured download task
-     * @throws IOException 
      */
-    private Download makeProjectAndTask() throws IOException {
+    private Download makeProjectAndTask() {
         Project parent = ProjectBuilder.builder().withProjectDir(parentDir).build();
         Project project = ProjectBuilder.builder().withParent(parent).withProjectDir(projectDir).build();
         

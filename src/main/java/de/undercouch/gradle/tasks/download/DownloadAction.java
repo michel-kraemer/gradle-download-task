@@ -251,7 +251,6 @@ public class DownloadAction implements DownloadSpec {
      * server if the given timestamp is greater than 0.
      * @param src the source URL to open a connection for
      * @param timestamp the timestamp of the destination file
-     * @param project the project to be built
      * @return the URLConnection or null if the download should be skipped
      * @throws IOException if the connection could not be opened
      */
@@ -375,6 +374,7 @@ public class DownloadAction implements DownloadSpec {
     
     /**
      * Checks if the content of the given URL connection is compressed
+     * @param conn the connection to check
      * @return true if it is compressed, false otherwise
      */
     private boolean isContentCompressed(URLConnection conn) {
