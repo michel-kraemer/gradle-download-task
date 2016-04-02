@@ -33,8 +33,15 @@ idea {
   }
 }
 
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
 dependencies {
     compile gradleApi()
+
+    testCompile 'org.littleshoot:littleproxy:1.1.0-beta2'
 }
 
 task wrapper(type: Wrapper) {

@@ -17,11 +17,11 @@ package de.undercouch.gradle.tasks.download;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.ServerSocket;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.util.Arrays;
@@ -35,14 +35,23 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.JavaVersion;
+import org.apache.commons.lang3.SystemUtils;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskExecutionException;
 import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.littleshoot.proxy.HttpFilters;
+import org.littleshoot.proxy.HttpFiltersAdapter;
+import org.littleshoot.proxy.HttpFiltersSourceAdapter;
+import org.littleshoot.proxy.HttpProxyServer;
+import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.ContextHandler;
@@ -50,6 +59,10 @@ import org.mortbay.jetty.handler.DefaultHandler;
 import org.mortbay.jetty.handler.HandlerList;
 import org.mortbay.jetty.handler.ResourceHandler;
 import org.mortbay.resource.Resource;
+
+import groovy.lang.Closure;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.HttpRequest;
 
 /**
  * Tests the gradle-download-task plugin
@@ -60,6 +73,10 @@ public class DownloadTaskPluginTest {
     private static final String ECHO_HEADERS = "echo-headers";
     private final static String TEST_FILE_NAME = "test.txt";
     private final static String TEST_FILE_NAME2 = "test2.txt";
+    
+    private static HttpProxyServer proxy;
+    private static int proxyPort;
+    private static int proxyCounter = 0;
     
     /**
      * A folder for temporary files
@@ -73,6 +90,54 @@ public class DownloadTaskPluginTest {
     private Server server;
     private byte[] contents;
     private byte[] contents2;
+    
+    /**
+     * Find a free socket port
+     * @return the number of the free port
+     * @throws IOException if an IO error occurred
+     */
+    private static int findPort() throws IOException {
+        ServerSocket socket = null;
+        try {
+            socket = new ServerSocket(0);
+            return socket.getLocalPort();
+        } finally {
+            if (socket != null) {
+                socket.close();
+            }
+        }
+    }
+    
+    /**
+     * Runs a proxy server counting requests
+     * @throws Exception if the proxy server could not be started
+     */
+    @BeforeClass
+    public static void setUpClass() throws Exception {
+        proxyPort = findPort();
+        proxy = DefaultHttpProxyServer.bootstrap()
+                .withPort(proxyPort)
+                .withFiltersSource(new HttpFiltersSourceAdapter() {
+                    public HttpFilters filterRequest(HttpRequest originalRequest,
+                            ChannelHandlerContext ctx) {
+                       return new HttpFiltersAdapter(originalRequest) {
+                          @Override
+                          public void proxyToServerRequestSent() {
+                              proxyCounter++;
+                          }
+                       };
+                    }
+                })
+                .start();
+    }
+    
+    /**
+     * Stops the proxy server
+     */
+    @AfterClass
+    public static void tearDownClass() {
+        proxy.stop();
+    }
     
     /**
      * Runs an embedded HTTP server and creates test files to serve
@@ -132,6 +197,9 @@ public class DownloadTaskPluginTest {
         FileUtils.writeByteArrayToFile(testFile, contents);
         File testFile2 = folder.newFile(TEST_FILE_NAME2);
         FileUtils.writeByteArrayToFile(testFile2, contents2);
+        
+        // reset proxy request counter
+        proxyCounter = 0;
     }
     
     /**
@@ -444,5 +512,53 @@ public class DownloadTaskPluginTest {
         File dst = new File(folder.getRoot(), "offlineFail");
         t.dest(dst);
         t.execute(); // should fail
+    }
+    
+    /**
+     * Tests if a single file can be downloaded through a proxy server
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void proxy() throws Exception {
+        String proxyHost = System.getProperty("http.proxyHost");
+        String proxyPort = System.getProperty("http.proxyPort");
+        String nonProxyHosts = System.getProperty("http.nonProxyHosts");
+        
+        try {
+            System.setProperty("http.proxyHost", "127.0.0.1");
+            System.setProperty("http.proxyPort", String.valueOf(
+                    DownloadTaskPluginTest.proxyPort));
+            if (SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_1_7)) {
+                System.setProperty("http.nonProxyHosts", "");
+            } else {
+                System.setProperty("http.nonProxyHosts", "~localhost");
+            }
+            
+            Download t = makeProjectAndTask();
+            t.src(makeSrc(TEST_FILE_NAME));
+            File dst = folder.newFile();
+            t.dest(dst);
+            t.execute();
+            
+            byte[] dstContents = FileUtils.readFileToByteArray(dst);
+            assertArrayEquals(contents, dstContents);
+            assertEquals(1, proxyCounter);
+        } finally {
+            if (proxyHost == null) {
+                System.getProperties().remove("http.proxyHost");
+            } else {
+                System.setProperty("http.proxyHost", proxyHost);
+            }
+            if (proxyPort == null) {
+                System.getProperties().remove("http.proxyPort");
+            } else {
+                System.setProperty("http.proxyPort", proxyPort);
+            }
+            if (nonProxyHosts == null) {
+                System.getProperties().remove("http.nonProxyHosts");
+            } else {
+                System.setProperty("http.nonProxyHosts", nonProxyHosts);
+            }
+        }
     }
 }

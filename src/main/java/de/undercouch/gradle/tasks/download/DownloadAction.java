@@ -21,8 +21,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
+import java.net.Authenticator;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.PasswordAuthentication;
+import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.KeyManagementException;
@@ -247,6 +252,47 @@ public class DownloadAction implements DownloadSpec {
     }
     
     /**
+     * Configure proxy for a given URL
+     * @param src the URL
+     * @return the proxy or <code>null</code> if not proxy is necessary
+     * @throws IOException if the proxy could not be configured
+     */
+    private Proxy configureProxy(URL src) throws IOException {
+        Proxy proxy = null;
+        String protocol = src.getProtocol();
+        if (!"http".equals(protocol) && !"https".equals(protocol) &&
+                !"ftp".equals(protocol)) {
+            return proxy;
+        }
+        if (System.getProperty(protocol + ".proxyHost") != null) {
+            List<Proxy> l = null;
+            try {
+                l = ProxySelector.getDefault().select(src.toURI());
+            } catch (URISyntaxException e) {
+                throw new IOException("Could not select proxy for URL", e);
+            }
+            if (!l.isEmpty()) {
+                proxy = l.get(0);
+            }
+            
+            if (proxy != null) {
+                final String user = System.getProperty(protocol + ".proxyUser");
+                final String pass = System.getProperty(protocol + ".proxyPassword");
+                if (user != null && pass != null) {
+                    Authenticator authenticator = new Authenticator() {
+                        @Override
+                        public PasswordAuthentication getPasswordAuthentication() {
+                            return new PasswordAuthentication(user, pass.toCharArray());
+                        }
+                    };
+                    Authenticator.setDefault(authenticator);
+                }
+            }
+        }
+        return proxy;
+    }
+    
+    /**
      * Opens a URLConnection. Checks the last-modified header on the
      * server if the given timestamp is greater than 0.
      * @param src the source URL to open a connection for
@@ -257,7 +303,17 @@ public class DownloadAction implements DownloadSpec {
     private URLConnection openConnection(URL src, long timestamp) throws IOException {
         int redirects = MAX_NUMBER_OF_REDIRECTS;
         
-        URLConnection uc = src.openConnection();
+        // configure proxy
+        Proxy proxy = configureProxy(src);
+        
+        // open connection
+        URLConnection uc;
+        if (proxy != null) {
+            uc = src.openConnection(proxy);
+        } else {
+            uc = src.openConnection();
+        }
+        
         while (true) {
             if (uc instanceof HttpURLConnection) {
                 HttpURLConnection httpConnection = (HttpURLConnection)uc;
