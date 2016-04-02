@@ -153,7 +153,7 @@ and any certificate (even an invalid one) should be accepted.
 <em>(default: <code>false</code>)</em>
 </dl>
 
-<em>Heads up:</em> You may provide a Groovy Closure to the `src` and `dest`
+<em>Tip!</em> You may provide Groovy Closures to the `src` and `dest`
 properties to calculate their value at runtime.
 
 Verify task
