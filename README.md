@@ -5,7 +5,7 @@ This is a simple download task for [Gradle](http://www.gradle.org/).
 It displays progress information just as Gradle does when it retrieves
 an artifact from a repository.
 
-The plugin has been sucessfully tested with Gradle 1.0 up to 2.9.
+The plugin has been sucessfully tested with Gradle 1.0 up to 2.12.
 It should work with newer versions as well.
 
 Apply plugin configuration
@@ -152,6 +152,9 @@ request <em>(optional)</em></dd>
 and any certificate (even an invalid one) should be accepted.
 <em>(default: <code>false</code>)</em>
 </dl>
+
+<em>Heads up:</em> You may provide a Groovy Closure to the `src` and `dest`
+properties to calculate their value at runtime.
 
 Verify task
 -----------
