@@ -16,17 +16,23 @@ package de.undercouch.gradle.tasks.download;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.Proxy;
+import java.net.ProxySelector;
 import java.net.ServerSocket;
+import java.net.URI;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -35,8 +41,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.JavaVersion;
-import org.apache.commons.lang3.SystemUtils;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskExecutionException;
 import org.gradle.testfixtures.ProjectBuilder;
@@ -515,6 +519,34 @@ public class DownloadTaskPluginTest {
     }
     
     /**
+     * <p>Find a setting for the "http.nonProxyHosts" system property that does
+     * not bypass "localhost".</p>
+     * <p>See http://bugs.java.com/view_bug.do?bug_id=6737819</p>
+     * @return the new setting or <code>null</code> if no setting was found
+     * on the current JVM
+     * @throws Exception should never happen
+     */
+    private static String findNonProxyHosts() throws Exception {
+        URI u = new URI("http://localhost");
+        
+        System.setProperty("http.nonProxyHosts", "");
+        List<Proxy> l = ProxySelector.getDefault().select(u);
+        assertFalse(l.isEmpty());
+        if (l.get(0).type() != Proxy.Type.DIRECT) {
+            return "";
+        }
+        
+        System.setProperty("http.nonProxyHosts", "~localhost");
+        l = ProxySelector.getDefault().select(u);
+        assertFalse(l.isEmpty());
+        if (l.get(0).type() != Proxy.Type.DIRECT) {
+            return "~localhost";
+        }
+        
+        return null;
+    }
+    
+    /**
      * Tests if a single file can be downloaded through a proxy server
      * @throws Exception if anything goes wrong
      */
@@ -528,11 +560,15 @@ public class DownloadTaskPluginTest {
             System.setProperty("http.proxyHost", "127.0.0.1");
             System.setProperty("http.proxyPort", String.valueOf(
                     DownloadTaskPluginTest.proxyPort));
-            if (SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_1_7)) {
-                System.setProperty("http.nonProxyHosts", "");
-            } else {
-                System.setProperty("http.nonProxyHosts", "~localhost");
+            String newNonProxyHosts = findNonProxyHosts();
+            if (newNonProxyHosts == null) {
+                System.err.println("Could not configure nonProxyHosts that "
+                        + "bypasses localhost. Please use a newer JDK version "
+                        + "to run this test.");
+                assumeTrue(false);
+                return;
             }
+            System.setProperty("http.nonProxyHosts", newNonProxyHosts);
             
             Download t = makeProjectAndTask();
             t.src(makeSrc(TEST_FILE_NAME));
