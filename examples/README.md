@@ -48,6 +48,22 @@ Download all files from a directory.
 
     gradle -b directory.gradle
 
+[mirrors.gradle](mirrors.gradle)
+--------------------------------
+
+Download a single file from a mirror server. Configure multiple mirror servers
+and use the first one that is working.
+
+    gradle -b mirrors.gradle
+
+[srcAndDestClosure.gradle](srcAndDestClosure.gradle)
+----------------------------------------------------
+
+Download a single file to a directory. Use closures for the `src` and `dest`
+property.
+
+    gradle -b srcAndDestClosure.gradle
+
 [unzip.gradle](unzip.gradle)
 ----------------------------
 
