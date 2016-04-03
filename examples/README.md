@@ -64,6 +64,14 @@ property.
 
     gradle -b srcAndDestClosure.gradle
 
+[tempRename.gradle](tempRename.gradle)
+--------------------------------------
+
+Conditionally download a single file using a temporary name (`<filename>.part`).
+Rename the file afterwards if the download was successful.
+
+    gradle -b tempRename.gradle
+
 [unzip.gradle](unzip.gradle)
 ----------------------------
 
