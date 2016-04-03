@@ -1,5 +1,0 @@
-sudo: false
-language: java
-install: ./gradlew install
-jdk:
-  - openjdk6

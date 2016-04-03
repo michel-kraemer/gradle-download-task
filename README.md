@@ -1,4 +1,4 @@
-Gradle Download Task [![Build Status](https://travis-ci.org/michel-kraemer/gradle-download-task.svg?branch=master)](https://travis-ci.org/michel-kraemer/gradle-download-task)
+Gradle Download Task [![Circle CI](https://circleci.com/gh/michel-kraemer/gradle-download-task.svg?style=svg)](https://circleci.com/gh/michel-kraemer/gradle-download-task)
 ====================
 
 This is a simple download task for [Gradle](http://www.gradle.org/).
