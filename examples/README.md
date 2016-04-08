@@ -6,6 +6,9 @@ This directory contains a number of examples for gradle-download-task.
 The examples work with Gradle 2.1 and higher. If you need instructions
 for older Gradle versions please have a look at the project's [readme file](../README.md).
 
+A more detailed description of the examples here can be found in the blog post
+[10 recipes for gradle-download-task](http://www.michel-kraemer.com/recipes-for-gradle-download).
+
 [simpleTask.gradle](simpleTask.gradle)
 --------------------------------------
 
