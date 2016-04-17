@@ -567,10 +567,14 @@ public class DownloadAction implements DownloadSpec {
 
     @Override
     public void headers(Map<String, String> headers) {
-        if (headers == null) {
-            headers = new LinkedHashMap<String, String>();
+        if (this.headers == null) {
+            this.headers = new LinkedHashMap<String, String>();
+        } else {
+            this.headers.clear();
         }
-        this.headers.putAll(headers);
+        if (headers != null) {
+            this.headers.putAll(headers);
+        }
     }
 
     @Override
