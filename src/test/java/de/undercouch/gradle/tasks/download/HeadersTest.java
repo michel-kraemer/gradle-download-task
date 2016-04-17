@@ -15,6 +15,7 @@
 package de.undercouch.gradle.tasks.download;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -116,6 +117,9 @@ public class HeadersTest extends TestBase {
     @Test
     public void downloadWithHeadersMap() throws Exception {
         Download t = makeProjectAndTask();
+        
+        assertNull(t.getHeader("X-Header-Test-A"));
+        
         Map<String, String> headers = new HashMap<String, String>();
         headers.put("X-Header-Test-A", "value A");
         headers.put("X-Header-Test-B", "value B");

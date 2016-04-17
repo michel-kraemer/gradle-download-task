@@ -99,7 +99,7 @@ public class DownloadAction implements DownloadSpec {
      * @throws IOException if the file could not downloaded
      */
     public void execute() throws IOException {
-        if (sources == null || sources.isEmpty()) {
+        if (sources.isEmpty()) {
             throw new IllegalArgumentException("Please provide a download source");
         }
         if (dest == null) {
@@ -474,22 +474,18 @@ public class DownloadAction implements DownloadSpec {
      * @return true if the download destination is up to date
      */
     boolean isUpToDate() {
-        return sources != null && upToDate == sources.size();
+        return upToDate == sources.size();
     }
     
     /**
      * @return true if execution of this task has been skipped
      */
     boolean isSkipped() {
-        return sources != null && skipped == sources.size();
+        return skipped == sources.size();
     }
     
     @Override
     public void src(Object src) throws MalformedURLException {
-        if (sources == null) {
-            sources = new ArrayList<URL>(1);
-        }
-        
         if (src instanceof Closure) {
             //lazily evaluate closure
             Closure<?> closure = (Closure<?>)src;
@@ -592,7 +588,7 @@ public class DownloadAction implements DownloadSpec {
 
     @Override
     public Object getSrc() {
-        if (sources != null && sources.size() == 1) {
+        if (sources.size() == 1) {
             return sources.get(0);
         }
         return sources;

@@ -84,6 +84,7 @@ public class ProxyTest extends TestBase {
      * @throws Exception if an error occurred
      */
     @Before
+    @Override
     public void setUp() throws Exception {
         super.setUp();
         

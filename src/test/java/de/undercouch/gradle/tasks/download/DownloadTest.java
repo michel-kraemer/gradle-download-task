@@ -184,4 +184,26 @@ public class DownloadTest extends TestBase {
         byte[] dstContents = FileUtils.readFileToByteArray(dst);
         assertArrayEquals(contents, dstContents);
     }
+    
+    /**
+     * Do not overwrite an existing file
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void skipExisting() throws Exception {
+        // write contents to destination file
+        File dst = folder.newFile();
+        FileUtils.writeStringToFile(dst, "Hello");
+        
+        Download t = makeProjectAndTask();
+        String src = makeSrc(TEST_FILE_NAME);
+        t.src(src);
+        t.dest(dst);
+        t.overwrite(false); // do not overwrite the file
+        t.execute();
+
+        // contents must not be changed
+        byte[] dstContents = FileUtils.readFileToByteArray(dst);
+        assertArrayEquals("Hello".getBytes(), dstContents);
+    }
 }
