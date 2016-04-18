@@ -139,25 +139,9 @@ public class DownloadAction implements DownloadSpec {
             execute(src);
         }
     }
-    
+
     private void execute(URL src) throws IOException {
-        File destFile = dest;
-        if (destFile.isDirectory()) {
-            //guess name from URL
-            String name = src.toString();
-            if (name.endsWith("/")) {
-                name = name.substring(0, name.length() - 1);
-            }
-            name = name.substring(name.lastIndexOf('/') + 1);
-            destFile = new File(dest, name);
-        } else {
-            //create destination directory
-            File parent = destFile.getParentFile();
-            if (parent != null) {
-                parent.mkdirs();
-            }
-        }
-        
+        final File destFile = destFile(src);
         if (!overwrite && destFile.exists()) {
             if (!quiet) {
                 project.getLogger().info("Destination file already exists. "
@@ -293,6 +277,26 @@ public class DownloadAction implements DownloadSpec {
         if (onlyIfNewer && newTimestamp > 0) {
             destFile.setLastModified(newTimestamp);
         }
+    }
+
+    private File destFile(URL src) {
+        File destFile = dest;
+        if (destFile.isDirectory()) {
+            //guess name from URL
+            String name = src.toString();
+            if (name.endsWith("/")) {
+                name = name.substring(0, name.length() - 1);
+            }
+            name = name.substring(name.lastIndexOf('/') + 1);
+            destFile = new File(dest, name);
+        } else {
+            //create destination directory
+            File parent = destFile.getParentFile();
+            if (parent != null) {
+                parent.mkdirs();
+            }
+        }
+        return destFile;
     }
     
     /**
@@ -555,6 +559,14 @@ public class DownloadAction implements DownloadSpec {
      */
     boolean isSkipped() {
         return skipped == sources.size();
+    }
+
+    List<File> getOutputFiles() {
+        List<File> files = new ArrayList<File>(sources.size());
+        for (URL src : sources) {
+            files.add(destFile(src));
+        }
+        return files;
     }
     
     @Override

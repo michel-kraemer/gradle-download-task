@@ -18,9 +18,13 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
+import java.util.List;
 import java.util.Map;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.Task;
+import org.gradle.api.specs.Spec;
+import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.TaskAction;
 
 /**
@@ -41,6 +45,12 @@ public class Download extends DefaultTask implements DownloadSpec {
      */
     public Download() {
         action = new DownloadAction(getProject());
+        getOutputs().upToDateWhen(new Spec<Task>() {
+            @Override
+            public boolean isSatisfiedBy(Task task) {
+                return !(isOnlyIfNewer() || isOverwrite());
+            }
+        });
     }
     
     /**
@@ -73,6 +83,11 @@ public class Download extends DefaultTask implements DownloadSpec {
         } catch (Exception e) {
             //just ignore
         }
+    }
+
+    @OutputFiles
+    public List<File> getOutputFiles() {
+        return action.getOutputFiles();
     }
     
     @Override
