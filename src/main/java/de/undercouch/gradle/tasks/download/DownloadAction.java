@@ -317,7 +317,9 @@ public class DownloadAction implements DownloadSpec {
         while (true) {
             if (uc instanceof HttpURLConnection) {
                 HttpURLConnection httpConnection = (HttpURLConnection)uc;
-                httpConnection.setInstanceFollowRedirects(true);
+                // in order to be able to limit the number of redirects we
+                // are going to handle them ourselves (see below)
+                httpConnection.setInstanceFollowRedirects(false);
             }
 
             if (uc instanceof HttpsURLConnection && acceptAnyCertificate) {
@@ -366,9 +368,8 @@ public class DownloadAction implements DownloadSpec {
                     return null;
                 }
                 
-                if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
-                        responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
-                        responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
+                // handle redirects
+                if (responseCode >= 300 && responseCode < 400) {
                     if (redirects == 0) {
                         throw new IllegalStateException("Request exceeds maximum number "
                                 + "of redirects (" + MAX_NUMBER_OF_REDIRECTS + ")");
