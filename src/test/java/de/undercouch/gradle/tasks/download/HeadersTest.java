@@ -63,12 +63,7 @@ public class HeadersTest extends TestBase {
                 rw.close();
             }
         };
-        
-        Handler[] superHandlers = super.makeHandlers();
-        Handler[] handlers = new Handler[superHandlers.length + 1];
-        handlers[0] = echoHeadersHandler;
-        System.arraycopy(superHandlers, 0, handlers, 1, superHandlers.length);
-        return handlers;
+        return new Handler[] { echoHeadersHandler };
     }
     
     /**

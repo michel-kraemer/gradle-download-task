@@ -57,7 +57,6 @@ public class RedirectTest extends TestBase {
                 }
             }
         };
-        
         return new Handler[] { redirectHandler };
     }
     

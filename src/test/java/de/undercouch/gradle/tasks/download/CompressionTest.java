@@ -66,12 +66,7 @@ public class CompressionTest extends TestBase {
                 os.close();
             }
         };
-        
-        Handler[] superHandlers = super.makeHandlers();
-        Handler[] handlers = new Handler[superHandlers.length + 1];
-        handlers[0] = compressionHandler;
-        System.arraycopy(superHandlers, 0, handlers, 1, superHandlers.length);
-        return handlers;
+        return new Handler[] { compressionHandler };
     }
     
     /**

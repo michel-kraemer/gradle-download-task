@@ -27,7 +27,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.tasks.TaskExecutionException;
-import org.junit.Before;
 import org.junit.Test;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.handler.ContextHandler;
@@ -75,18 +74,7 @@ public class AuthenticationTest extends TestBase {
                 rw.close();
             }
         };
-        
-        Handler[] superHandlers = super.makeHandlers();
-        Handler[] handlers = new Handler[superHandlers.length + 1];
-        handlers[0] = authenticationHandler;
-        System.arraycopy(superHandlers, 0, handlers, 1, superHandlers.length);
-        return handlers;
-    }
-    
-    @Before
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
+        return new Handler[] { authenticationHandler };
     }
     
     /**
