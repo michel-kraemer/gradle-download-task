@@ -112,8 +112,13 @@ public class DownloadAction implements DownloadSpec {
         }
         
         if (sources.size() > 1 && !dest.isDirectory()) {
-            throw new IllegalArgumentException("If multiple sources are provided "
-                    + "the destination has to be a directory.");
+            if (!dest.exists()) {
+                // create directory automatically
+                dest.mkdirs();
+            } else {
+                throw new IllegalArgumentException("If multiple sources are provided "
+                        + "the destination has to be a directory.");
+            }
         }
         
         for (URL src : sources) {
