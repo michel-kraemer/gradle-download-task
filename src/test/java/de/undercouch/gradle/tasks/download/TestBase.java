@@ -81,13 +81,20 @@ public abstract class TestBase {
     protected byte[] contents2;
     
     /**
+     * @return the HTTP server used for testing
+     */
+    protected Server createServer() {
+        //run server on any free port
+        return new Server(0);
+    }
+    
+    /**
      * Runs an embedded HTTP server and creates test files to serve
      * @throws Exception if the server could not be started
      */
     @Before
     public void setUp() throws Exception {
-        //run server on any free port
-        server = new Server(0);
+        server = createServer();
         
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(makeHandlers());
