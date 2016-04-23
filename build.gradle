@@ -40,6 +40,7 @@ repositories {
 
 dependencies {
     compile gradleApi()
+    compile 'org.apache.httpcomponents:httpclient:4.4.1'
 
     testCompile 'org.littleshoot:littleproxy:1.1.0-beta2'
 }

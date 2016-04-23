@@ -75,6 +75,7 @@ task integrationTest << {
                     
                     repositories {
                         mavenLocal()
+                        mavenCentral()
                     }
                 }
                 
