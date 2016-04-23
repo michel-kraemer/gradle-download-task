@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
+import org.gradle.api.tasks.TaskExecutionException;
 import org.junit.Before;
 import org.junit.Test;
 import org.mortbay.jetty.Handler;
@@ -85,8 +86,8 @@ public class ContentLengthTest extends TestBase {
      * @throws Exception if anything goes wrong
      */
     @Test
-    public void incorrectContentLength() throws Exception {
-        contentLength = "10000";
+    public void correctContentLength() throws Exception {
+        contentLength = "5";
         
         Download t = makeProjectAndTask();
         t.src(makeSrc(CONTENT_LENGTH));
@@ -95,6 +96,21 @@ public class ContentLengthTest extends TestBase {
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("cl: 10000", dstContents);
+        assertEquals("cl: 5", dstContents);
+    }
+    
+    /**
+     * Tests if the plugin can handle an incorrect Content-Length header
+     * @throws Exception if anything goes wrong
+     */
+    @Test(expected = TaskExecutionException.class)
+    public void tooLargeContentLength() throws Exception {
+        contentLength = "10000";
+        
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(CONTENT_LENGTH));
+        File dst = folder.newFile();
+        t.dest(dst);
+        t.execute();
     }
 }

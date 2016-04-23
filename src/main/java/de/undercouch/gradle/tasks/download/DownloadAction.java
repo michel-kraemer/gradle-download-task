@@ -21,32 +21,49 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
-import java.net.Authenticator;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.PasswordAuthentication;
-import java.net.Proxy;
-import java.net.ProxySelector;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
-import org.apache.tools.ant.util.Base64Converter;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.AuthCache;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.client.utils.DateUtils;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.HttpClientConnectionManager;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.gradle.api.Project;
 import org.gradle.logging.ProgressLogger;
 import org.gradle.logging.ProgressLoggerFactory;
@@ -60,7 +77,6 @@ import groovy.lang.Closure;
  * @author Michel Kraemer
  */
 public class DownloadAction implements DownloadSpec {
-    private static final int MAX_NUMBER_OF_REDIRECTS = 30;
     private static final HostnameVerifier INSECURE_HOSTNAME_VERIFIER = new InsecureHostnameVerifier();
     private static final TrustManager[] INSECURE_TRUST_MANAGERS = { new InsecureTrustManager() };
     
@@ -84,7 +100,7 @@ public class DownloadAction implements DownloadSpec {
     private int upToDate = 0;
     private int skipped = 0;
 
-    private SSLSocketFactory insecureSSLSocketFactory = null;
+    private SSLConnectionSocketFactory insecureSSLSocketFactory = null;
     
     /**
      * Creates a new download action
@@ -203,14 +219,58 @@ public class DownloadAction implements DownloadSpec {
             }
         }
         
-        //open URL connection
-        URLConnection conn = openConnection(src, timestamp);
-        if (conn == null) {
+        //create HTTP host from URL
+        HttpHost httpHost = new HttpHost(src.getHost(), src.getPort(), src.getProtocol());
+        
+        //create HTTP client
+        CloseableHttpClient client = createHttpClient(httpHost);
+        
+        try {
+            //open URL connection
+            CloseableHttpResponse response = openConnection(httpHost, src.getFile(),
+                    timestamp, client);
+            if (response == null) {
+                return;
+            }
+            
+            //check if file on server was modified
+            long lastModified = parseLastModified(response);
+            int code = response.getStatusLine().getStatusCode();
+            if (code == HttpURLConnection.HTTP_NOT_MODIFIED ||
+                    (lastModified != 0 && timestamp >= lastModified)) {
+                if (!quiet) {
+                    project.getLogger().info("Not modified. Skipping '" + src + "'");
+                }
+                ++upToDate;
+                return;
+            }
+            
+            //perform the download
+            try {
+                performDownload(response, destFile);
+            } finally {
+                response.close();
+            }
+        } finally {
+            client.close();
+        }
+    }
+
+    /**
+     * Save an HTTP response to a file
+     * @param response the response to save
+     * @param destFile the destination file
+     * @throws IOException if the response could not be downloaded
+     */
+    private void performDownload(HttpResponse response, File destFile)
+            throws IOException {
+        HttpEntity entity = response.getEntity();
+        if (entity == null) {
             return;
         }
         
         //get content length
-        long contentLength = parseContentLength(conn);
+        long contentLength = entity.getContentLength();
         if (contentLength >= 0) {
             size = toLengthText(contentLength);
         }
@@ -219,8 +279,8 @@ public class DownloadAction implements DownloadSpec {
         loggedKb = 0;
         
         //open stream and start downloading
-        InputStream is = conn.getInputStream();
-        if (isContentCompressed(conn)) {
+        InputStream is = entity.getContent();
+        if (isContentCompressed(entity)) {
             is = new GZIPInputStream(is);
         }
         try {
@@ -250,151 +310,136 @@ public class DownloadAction implements DownloadSpec {
             completeProgress();
         }
         
-        long newTimestamp = conn.getLastModified();
+        long newTimestamp = parseLastModified(response);
         if (onlyIfNewer && newTimestamp > 0) {
             destFile.setLastModified(newTimestamp);
         }
     }
     
     /**
-     * Configure proxy for a given URL
-     * @param src the URL
+     * Configure proxy for a given HTTP host
+     * @param httpHost the HTTP host
      * @return the proxy or <code>null</code> if not proxy is necessary
      * @throws IOException if the proxy could not be configured
      */
-    private Proxy configureProxy(URL src) throws IOException {
-        Proxy proxy = null;
-        String protocol = src.getProtocol();
-        if (!"http".equals(protocol) && !"https".equals(protocol) &&
-                !"ftp".equals(protocol)) {
+    private HttpHost configureProxy(HttpHost httpHost) throws IOException {
+        HttpHost proxy = null;
+        
+        String scheme = httpHost.getSchemeName();
+        if (!"http".equals(scheme) && !"https".equals(scheme) &&
+                !"ftp".equals(scheme)) {
             return proxy;
         }
-        if (System.getProperty(protocol + ".proxyHost") != null) {
-            List<Proxy> l = null;
-            try {
-                l = ProxySelector.getDefault().select(src.toURI());
-            } catch (URISyntaxException e) {
-                throw new IOException("Could not select proxy for URL", e);
-            }
-            if (!l.isEmpty()) {
-                proxy = l.get(0);
-            }
-            
-            if (proxy != null) {
-                final String user = System.getProperty(protocol + ".proxyUser");
-                final String pass = System.getProperty(protocol + ".proxyPassword");
-                if (user != null && pass != null) {
-                    Authenticator authenticator = new Authenticator() {
-                        @Override
-                        public PasswordAuthentication getPasswordAuthentication() {
-                            return new PasswordAuthentication(user, pass.toCharArray());
-                        }
-                    };
-                    Authenticator.setDefault(authenticator);
+        
+        String host = System.getProperty(scheme + ".proxyHost");
+        if (host != null) {
+            String portStr = System.getProperty(scheme + ".proxyPort");
+            if (portStr != null) {
+                int port;
+                try {
+                    port = Integer.parseInt(portStr);
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Illegal proxy port: " + portStr);
                 }
+                proxy = new HttpHost(host, port);
+            } else {
+                proxy = new HttpHost(host);
             }
         }
+        
         return proxy;
     }
     
     /**
-     * Opens a URLConnection. Checks the last-modified header on the
-     * server if the given timestamp is greater than 0.
-     * @param src the source URL to open a connection for
+     * Creates an HTTP client for the given host
+     * @param httpHost the host to connect to
+     * @return the HTTP client
+     */
+    private CloseableHttpClient createHttpClient(HttpHost httpHost) {
+        HttpClientBuilder builder = HttpClientBuilder.create();
+        
+        //accept any certificate if necessary
+        if ("https".equals(httpHost.getSchemeName()) && acceptAnyCertificate) {
+            SSLConnectionSocketFactory icsf = getInsecureSSLSocketFactory();
+            builder.setSSLSocketFactory(icsf);
+            Registry<ConnectionSocketFactory> registry =
+                    RegistryBuilder.<ConnectionSocketFactory>create()
+                        .register("https", icsf)
+                        .build();
+            HttpClientConnectionManager cm =
+                    new BasicHttpClientConnectionManager(registry);
+            builder.setConnectionManager(cm);
+        }
+        
+        CloseableHttpClient client = builder.build();
+        return client;
+    }
+    
+    /**
+     * Opens a connection to the given HTTP host and requests a file. Checks
+     * the last-modified header on the server if the given timestamp is
+     * greater than 0.
+     * @param httpHost the HTTP host to connect to
+     * @param file the file to request
      * @param timestamp the timestamp of the destination file
+     * @param client the HTTP client to use to perform the request
      * @return the URLConnection or null if the download should be skipped
      * @throws IOException if the connection could not be opened
      */
-    private URLConnection openConnection(URL src, long timestamp) throws IOException {
-        int redirects = MAX_NUMBER_OF_REDIRECTS;
+    private CloseableHttpResponse openConnection(HttpHost httpHost, String file,
+            long timestamp, CloseableHttpClient client) throws IOException {
+        //perform preemptive authentication
+        HttpClientContext context = null;
+        if (username != null && password != null) {
+            CredentialsProvider credsProvider = new BasicCredentialsProvider();
+            credsProvider.setCredentials(new AuthScope(httpHost),
+                    new UsernamePasswordCredentials(username, password));
+            AuthCache authCache = new BasicAuthCache();
+            authCache.put(httpHost, new BasicScheme());
+            context = HttpClientContext.create();
+            context.setCredentialsProvider(credsProvider);
+            context.setAuthCache(authCache);
+        }
         
-        // configure proxy
-        Proxy proxy = configureProxy(src);
+        //create request
+        HttpGet get = new HttpGet(file);
         
-        // open connection
-        URLConnection uc;
+        //configure proxy
+        HttpHost proxy = configureProxy(httpHost);
         if (proxy != null) {
-            uc = src.openConnection(proxy);
-        } else {
-            uc = src.openConnection();
+            RequestConfig config = RequestConfig.custom()
+                .setProxy(proxy)
+                .build();
+            get.setConfig(config);
         }
         
-        while (true) {
-            if (uc instanceof HttpURLConnection) {
-                HttpURLConnection httpConnection = (HttpURLConnection)uc;
-                // in order to be able to limit the number of redirects we
-                // are going to handle them ourselves (see below)
-                httpConnection.setInstanceFollowRedirects(false);
-            }
-
-            if (uc instanceof HttpsURLConnection && acceptAnyCertificate) {
-                HttpsURLConnection httpsConnection = (HttpsURLConnection)uc;
-                httpsConnection.setSSLSocketFactory(getInsecureSSLSocketFactory());
-                httpsConnection.setHostnameVerifier(INSECURE_HOSTNAME_VERIFIER);
-            }
-            
-            //set If-Modified-Since header
-            if (timestamp > 0) {
-                uc.setIfModifiedSince(timestamp);
-            }
-            
-            //authenticate
-            if (username != null && password != null) {
-                String up = username + ":" + password;
-                Base64Converter encoder = new Base64Converter();
-                String encoding = encoder.encode(up.getBytes());
-                uc.setRequestProperty("Authorization", "Basic " + encoding);
-            }
-
-            //set headers
-            if (headers != null) {
-                for (Map.Entry<String, String> headerEntry : headers.entrySet()) {
-                    uc.setRequestProperty(headerEntry.getKey(), headerEntry.getValue());
-                }
-            }
-            
-            //enable compression
-            if (compress) {
-                uc.setRequestProperty("Accept-Encoding", "gzip");
-            }
-            
-            uc.connect();
-    
-            if (uc instanceof HttpURLConnection) {
-                HttpURLConnection httpConnection = (HttpURLConnection)uc;
-                int responseCode = httpConnection.getResponseCode();
-                long lastModified = httpConnection.getLastModified();
-                if (responseCode == HttpURLConnection.HTTP_NOT_MODIFIED ||
-                        (lastModified != 0 && timestamp >= lastModified)) {
-                    if (!quiet) {
-                        project.getLogger().info("Not modified. Skipping '" + src + "'");
-                    }
-                    ++upToDate;
-                    return null;
-                }
-                
-                // handle redirects
-                if (responseCode >= 300 && responseCode < 400) {
-                    if (redirects == 0) {
-                        throw new IllegalStateException("Request exceeds maximum number "
-                                + "of redirects (" + MAX_NUMBER_OF_REDIRECTS + ")");
-                    }
-
-                    //redirect to other location and try again
-                    String nu = uc.getHeaderField("Location");
-                    String cookie = uc.getHeaderField("Set-Cookie");
-                    uc = (HttpURLConnection)new URL(nu).openConnection();
-                    uc.setRequestProperty("Cookie", cookie);
-                    
-                    redirects--;
-                    continue;
-                }
-            }
-            
-            break;
+        //set If-Modified-Since header
+        if (timestamp > 0) {
+            get.setHeader("If-Modified-Since", String.valueOf(timestamp));
         }
-
-        return uc;
+        
+        //set headers
+        if (headers != null) {
+            for (Map.Entry<String, String> headerEntry : headers.entrySet()) {
+                get.addHeader(headerEntry.getKey(), headerEntry.getValue());
+            }
+        }
+        
+        //enable compression
+        if (compress) {
+            get.setHeader("Accept-Encoding", "gzip");
+        }
+        
+        //execute request
+        CloseableHttpResponse response = client.execute(httpHost, get, context);
+        
+        //handle response
+        int code = response.getStatusLine().getStatusCode();
+        if (code < 200 || code > 299) {
+            throw new ClientProtocolException(response.getStatusLine().getReasonPhrase());
+        }
+        
+        return response;
     }
     
     /**
@@ -415,32 +460,37 @@ public class DownloadAction implements DownloadSpec {
     }
     
     /**
-     * Parses the Content-Length of a {@link URLConnection}. Use this
-     * method to workaround the fact that {@link URLConnection#getContentLength()}
-     * only returns an <code>int</code> whereas this method returns
-     * a <code>long</code>
-     * @param conn the {@link URLConnection}
-     * @return the content length or -1 if it is unknown
+     * Parse the Last-Modified header of a {@link HttpResponse}
+     * @param response the {@link HttpResponse}
+     * @return the last-modified value or 0 if it is unknown
      */
-    private long parseContentLength(URLConnection conn) {
-        String value = conn.getHeaderField("Content-Length");
+    private long parseLastModified(HttpResponse response) {
+        Header header = response.getLastHeader("Last-Modified");
+        if (header == null) {
+            return 0;
+        }
+        String value = header.getValue();
         if (value == null || value.isEmpty()) {
-            return -1;
+            return 0;
         }
-        try {
-            return Long.parseLong(value);
-        } catch (NumberFormatException e) {
-            return -1;
+        Date date = DateUtils.parseDate(value);
+        if (date == null) {
+            return 0;
         }
+        return date.getTime();
     }
     
     /**
-     * Checks if the content of the given URL connection is compressed
-     * @param conn the connection to check
+     * Checks if the content of the given {@link HttpEntity} is compressed
+     * @param entity the entity to check
      * @return true if it is compressed, false otherwise
      */
-    private boolean isContentCompressed(URLConnection conn) {
-        String value = conn.getHeaderField("Content-Encoding");
+    private boolean isContentCompressed(HttpEntity entity) {
+        Header header = entity.getContentEncoding();
+        if (header == null) {
+            return false;
+        }
+        String value = header.getValue();
         if (value == null || value.isEmpty()) {
             return false;
         }
@@ -653,12 +703,14 @@ public class DownloadAction implements DownloadSpec {
         return acceptAnyCertificate;
     }
 
-    private SSLSocketFactory getInsecureSSLSocketFactory() {
+    private SSLConnectionSocketFactory getInsecureSSLSocketFactory() {
         if (insecureSSLSocketFactory == null) {
+            SSLContext sc;
             try {
-                SSLContext sc = SSLContext.getInstance("SSL");
+                sc = SSLContext.getInstance("SSL");
                 sc.init(null, INSECURE_TRUST_MANAGERS, new SecureRandom());
-                insecureSSLSocketFactory = sc.getSocketFactory();
+                insecureSSLSocketFactory = new SSLConnectionSocketFactory(
+                        sc, INSECURE_HOSTNAME_VERIFIER);
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             } catch (KeyManagementException e) {

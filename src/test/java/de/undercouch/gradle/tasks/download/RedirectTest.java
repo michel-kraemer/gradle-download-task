@@ -38,6 +38,7 @@ import org.mortbay.jetty.handler.ContextHandler;
 public class RedirectTest extends TestBase {
     private static final String REDIRECT = "redirect";
     private int redirects = 0;
+    private boolean circular = false;
     
     @Override
     protected Handler[] makeHandlers() throws IOException {
@@ -48,7 +49,11 @@ public class RedirectTest extends TestBase {
                             throws IOException, ServletException {
                 if (redirects > 0) {
                     redirects--;
-                    response.sendRedirect("/" + REDIRECT);
+                    if (circular) {
+                        response.sendRedirect("/" + REDIRECT);
+                    } else {
+                        response.sendRedirect("/" + REDIRECT + "?r=" + redirects);
+                    }
                 } else {
                     response.setStatus(200);
                     PrintWriter rw = response.getWriter();
@@ -65,6 +70,7 @@ public class RedirectTest extends TestBase {
     public void setUp() throws Exception {
         super.setUp();
         redirects = 0;
+        circular = false;
     }
     
     /**
@@ -103,13 +109,29 @@ public class RedirectTest extends TestBase {
         assertEquals("r: 0", dstContents);
     }
     
+   /**
+    * Tests if the plugin can handle circular redirects
+    * @throws Exception if anything goes wrong
+    */
+   @Test(expected = TaskExecutionException.class)
+   public void circularRedirect() throws Exception {
+       redirects = 10;
+       circular = true;
+       
+       Download t = makeProjectAndTask();
+       t.src(makeSrc(REDIRECT));
+       File dst = folder.newFile();
+       t.dest(dst);
+       t.execute();
+   }
+    
     /**
      * Make sure the plugin fails with too many redirects
      * @throws Exception if anything goes wrong
      */
     @Test(expected = TaskExecutionException.class)
     public void tooManyRedirects() throws Exception {
-        redirects = 31;
+        redirects = 51;
         
         Download t = makeProjectAndTask();
         t.src(makeSrc(REDIRECT));
