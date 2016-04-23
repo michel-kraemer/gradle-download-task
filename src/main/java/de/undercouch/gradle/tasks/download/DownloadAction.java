@@ -391,14 +391,8 @@ public class DownloadAction implements DownloadSpec {
         //perform preemptive authentication
         HttpClientContext context = null;
         if (username != null && password != null) {
-            CredentialsProvider credsProvider = new BasicCredentialsProvider();
-            credsProvider.setCredentials(new AuthScope(httpHost),
-                    new UsernamePasswordCredentials(username, password));
-            AuthCache authCache = new BasicAuthCache();
-            authCache.put(httpHost, new BasicScheme());
             context = HttpClientContext.create();
-            context.setCredentialsProvider(credsProvider);
-            context.setAuthCache(authCache);
+            addAuthentication(httpHost, username, password, true, context);
         }
         
         //create request
@@ -411,6 +405,17 @@ public class DownloadAction implements DownloadSpec {
                 .setProxy(proxy)
                 .build();
             get.setConfig(config);
+            
+            //add authentication information for proxy
+            String scheme = httpHost.getSchemeName();
+            String proxyUser = System.getProperty(scheme + ".proxyUser");
+            String proxyPassword = System.getProperty(scheme + ".proxyPassword");
+            if (proxyUser != null && proxyPassword != null) {
+                if (context == null) {
+                    context = HttpClientContext.create();
+                }
+                addAuthentication(proxy, proxyUser, proxyPassword, false, context);
+            }
         }
         
         //set If-Modified-Since header
@@ -440,6 +445,39 @@ public class DownloadAction implements DownloadSpec {
         }
         
         return response;
+    }
+    
+    /**
+     * Add authentication information for the given host
+     * @param host the host
+     * @param username the username
+     * @param password the password
+     * @param preAuthenticate <code>true</code> if the authentication scheme
+     * should be set to <code>Basic</code> preemptively (should be
+     * <code>false</code> if adding authentication for a proxy server)
+     * @param context the context in which the authentication information
+     * should be saved
+     */
+    private void addAuthentication(HttpHost host, String username,
+            String password, boolean preAuthenticate, HttpClientContext context) {
+        AuthCache authCache = context.getAuthCache();
+        if (authCache == null) {
+            authCache = new BasicAuthCache();
+            context.setAuthCache(authCache);
+        }
+        
+        CredentialsProvider credsProvider = context.getCredentialsProvider();
+        if (credsProvider == null) {
+            credsProvider = new BasicCredentialsProvider();
+            context.setCredentialsProvider(credsProvider);
+        }
+        
+        credsProvider.setCredentials(new AuthScope(host),
+                new UsernamePasswordCredentials(username, password));
+        
+        if (preAuthenticate) {
+            authCache.put(host, new BasicScheme());
+        }
     }
     
     /**
