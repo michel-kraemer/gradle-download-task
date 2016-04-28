@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
+import java.util.Locale;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -116,7 +117,7 @@ public class OnlyIfNewerTest extends TestBase {
     @Test
     public void setFileLastModified() throws Exception {
         String lm = "Tue, 15 Nov 1994 12:45:26 GMT";
-        long expectedlmlong = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z")
+        long expectedlmlong = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH)
                 .parse(lm)
                 .getTime();
         lastModified = lm;
@@ -145,7 +146,7 @@ public class OnlyIfNewerTest extends TestBase {
     @Test
     public void dontDownloadIfEqual() throws Exception {
         String lm = "Tue, 15 Nov 1994 12:45:26 GMT";
-        long expectedlmlong = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z")
+        long expectedlmlong = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH)
                 .parse(lm)
                 .getTime();
         lastModified = lm;
@@ -173,7 +174,7 @@ public class OnlyIfNewerTest extends TestBase {
     @Test
     public void dontDownloadIfOlder() throws Exception {
         String lm = "Tue, 15 Nov 1994 12:45:26 GMT";
-        long expectedlmlong = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z")
+        long expectedlmlong = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH)
                 .parse(lm)
                 .getTime();
         lastModified = lm;
@@ -201,7 +202,7 @@ public class OnlyIfNewerTest extends TestBase {
     @Test
     public void newerDownload() throws Exception {
         String lm = "Tue, 15 Nov 1994 12:45:26 GMT";
-        long expectedlmlong = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z")
+        long expectedlmlong = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH)
                 .parse(lm)
                 .getTime();
         lastModified = lm;
