@@ -132,6 +132,10 @@ uploadArchives {
                 authentication(userName: this.hasProperty('sonatypeUsername') ? sonatypeUsername : '',
                     password: this.hasProperty('sonatypePassword') ? sonatypePassword : '')
             }
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots") {
+                authentication(userName: this.hasProperty('sonatypeUsername') ? sonatypeUsername : '',
+                    password: this.hasProperty('sonatypePassword') ? sonatypePassword : '')
+            }
 
             configurePom(pom)
         }
