@@ -209,6 +209,40 @@ The verify task supports the following properties:
 for more information. <em>(default: <code>MD5</code>)</em></dd>
 </dl>
 
+Proxy configuration
+-------------------
+
+You can configure a proxy server by setting standard JVM system properties. The
+plugin uses the same system properties as Gradle. You can set them in the build
+script directly. For example, the proxy host can be set as follows:
+
+```groovy
+System.setProperty("http.proxyHost", "www.somehost.org");
+```
+
+Alternatively, you can set the properties in a `gradle.properties` file like
+this:
+
+```properties
+systemProp.http.proxyHost=www.somehost.org
+systemProp.http.proxyPort=8080
+systemProp.http.proxyUser=userid
+systemProp.http.proxyPassword=password
+systemProp.http.nonProxyHosts=*.nonproxyrepos.com|localhost
+```
+
+Put this file in your project's root directory or in your Gradle home directory.
+
+HTTPS is also supported:
+
+```properties
+systemProp.https.proxyHost=www.somehost.org
+systemProp.https.proxyPort=8080
+systemProp.https.proxyUser=userid
+systemProp.https.proxyPassword=password
+systemProp.https.nonProxyHosts=*.nonproxyrepos.com|localhost
+```
+
 License
 -------
 
