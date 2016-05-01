@@ -7,6 +7,10 @@ buildscript {
     }
 }
 
+plugins {
+    id "com.gradle.plugin-publish" version "0.9.4"
+}
+
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'signing'
@@ -166,5 +170,24 @@ bintray {
             name = project.version
             attributes = ['gradle-plugin': "de.undercouch.download:${project.group}:gradle-download-task"]
         }
+    }
+}
+
+pluginBundle {
+    website = 'https://github.com/michel-kraemer/gradle-download-task'
+    vcsUrl = 'https://github.com/michel-kraemer/gradle-download-task'
+    description = 'Adds a download task to Gradle that displays progress information'
+
+    plugins {
+        greetingsPlugin {
+            id = 'de.undercouch.download'
+            displayName = 'gradle-download-task'
+            tags = ['download', 'task', 'progress', 'url', 'server', 'file']
+        }
+    }
+
+    mavenCoordinates {
+        groupId = "de.undercouch"
+        artifactId = "gradle-download-task"
     }
 }
