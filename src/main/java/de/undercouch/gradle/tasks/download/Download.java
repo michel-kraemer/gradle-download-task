@@ -58,7 +58,7 @@ public class Download extends DefaultTask implements DownloadSpec {
                 //as much compatibility to previous Gradle versions as possible (see issue #16)
                 Method getState = this.getClass().getMethod("getState");
                 Object state = getState.invoke(this);
-                Method skipped = state.getClass().getMethod("skipped");
+                Method skipped = state.getClass().getMethod("skipped", String.class);
                 if (skipped != null) {
                     skipped.invoke(state, "Download skipped");
                 }
