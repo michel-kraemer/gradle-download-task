@@ -1,3 +1,17 @@
+// Copyright 2013-2016 Michel Kraemer
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package de.undercouch.gradle.tasks.download;
 
 import org.gradle.testkit.runner.BuildTask;
@@ -15,17 +29,31 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS;
 import static org.gradle.testkit.runner.TaskOutcome.UP_TO_DATE;
 import static org.junit.Assert.assertEquals;
 
+/**
+ * Base class for functional tests
+ * @author Jan Berkel
+ */
 public abstract class FunctionalTestBase extends TestBase {
     @Rule
     public final TemporaryFolder testProjectDir = new TemporaryFolder();
     private File buildFile;
 
+    /**
+     * Set up the functional tests
+     * @throws Exception if anything went wrong
+     */
     @Override
     public void setUp() throws Exception {
         super.setUp();
         buildFile = testProjectDir.newFile("build.gradle");
     }
 
+    /**
+     * Create a gradle runner using the given build file
+     * @param buildFile the build file
+     * @return the gradle runner
+     * @throws IOException if the build file could not written to disk
+     */
     protected GradleRunner createRunnerWithBuildFile(String buildFile) throws IOException {
         writeBuildFile(buildFile);
         return GradleRunner.create()
@@ -33,18 +61,35 @@ public abstract class FunctionalTestBase extends TestBase {
             .withProjectDir(testProjectDir.getRoot());
     }
 
+    /**
+     * Asserts that a given task was successful
+     * @param task the task
+     */
     protected void assertTaskSuccess(BuildTask task) {
-        assertEquals("task "+task+" state should be success", SUCCESS, task.getOutcome());
+        assertEquals("task " + task + " state should be success", SUCCESS, task.getOutcome());
     }
 
+    /**
+     * Asserts that a given task has been marked as up-to-date
+     * @param task the task
+     */
     protected void assertTaskUpToDate(BuildTask task) {
-        assertEquals("task "+task+" state should be up-to-date", UP_TO_DATE, task.getOutcome());
+        assertEquals("task " + task + " state should be up-to-date", UP_TO_DATE, task.getOutcome());
     }
 
+    /**
+     * Asserts that a given task has been marked as skipped
+     * @param task the task
+     */
     protected void assertTaskSkipped(BuildTask task) {
-        assertEquals("task "+task+" state should be skipped", SKIPPED, task.getOutcome());
+        assertEquals("task " + task + " state should be skipped", SKIPPED, task.getOutcome());
     }
 
+    /**
+     * Write a gradle build file to disk
+     * @param content the build file's contents
+     * @throws IOException if the file could not be written
+     */
     private void writeBuildFile(String content) throws IOException {
         BufferedWriter output = null;
         try {
