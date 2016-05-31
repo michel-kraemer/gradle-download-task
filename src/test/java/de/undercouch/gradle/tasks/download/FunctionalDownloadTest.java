@@ -54,7 +54,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFile() throws Exception {
-        assertTaskSuccess(download(singleSrc, dest, true));
+        assertTaskSuccess(download(singleSrc, dest, true, false));
         assertTrue(destFile.exists());
         assertArrayEquals(contents, FileUtils.readFileToByteArray(destFile));
     }
@@ -65,7 +65,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadMultipleFiles() throws Exception {
-        assertTaskSuccess(download(multipleSrc, dest, true));
+        assertTaskSuccess(download(multipleSrc, dest, true, false));
         assertTrue(destFile.isDirectory());
         assertArrayEquals(contents, FileUtils.readFileToByteArray(
                 new File(destFile, TEST_FILE_NAME)));
@@ -79,8 +79,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileTwiceMarksTaskAsUpToDate() throws Exception {
-        assertTaskSuccess(download(singleSrc, dest, false));
-        assertTaskUpToDate(download(singleSrc, dest, false));
+        assertTaskSuccess(download(singleSrc, dest, false, false));
+        assertTaskUpToDate(download(singleSrc, dest, false, false));
     }
 
     /**
@@ -89,8 +89,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileTwiceWithOverwriteExecutesTwice() throws Exception {
-        assertTaskSuccess(download(singleSrc, dest, false));
-        assertTaskSuccess(download(singleSrc, dest, true));
+        assertTaskSuccess(download(singleSrc, dest, false, false));
+        assertTaskSuccess(download(singleSrc, dest, true, false));
     }
 
     /**
@@ -100,8 +100,30 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileTwiceWithOfflineMode() throws Exception {
-        assertTaskSuccess(download(singleSrc, dest, false));
-        assertTaskSkipped(downloadOffline(singleSrc, dest, true));
+        assertTaskSuccess(download(singleSrc, dest, false, false));
+        assertTaskSkipped(downloadOffline(singleSrc, dest, true, false));
+    }
+
+    /**
+     * Download a file once, then download again with 'onlyIfNewer'
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void downloadOnlyIfNewer() throws Exception {
+        assertTaskSuccess(download(singleSrc, dest, false, false));
+        assertTaskUpToDate(download(singleSrc, dest, true, true));
+    }
+
+    /**
+     * Create destination file locally, then run download.
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void downloadOnlyIfNewerReDownloadIfFileExists() throws Exception {
+        File testFile = new File(folder.getRoot(), TEST_FILE_NAME);
+        FileUtils.writeByteArrayToFile(destFile, contents);
+        assertTrue(destFile.setLastModified(testFile.lastModified()));
+        assertTaskSuccess(download(singleSrc, dest, true, false));
     }
 
     /**
@@ -112,8 +134,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * @return the download task
      * @throws Exception if anything went wrong
      */
-    protected BuildTask download(String src, String dest, boolean overwrite) throws Exception {
-        return createRunner(src, dest, overwrite, false)
+    protected BuildTask download(String src, String dest, boolean overwrite, boolean onlyIfNewer) throws Exception {
+        return createRunner(src, dest, overwrite, onlyIfNewer)
             .withArguments("download")
             .build()
             .task(":download");
@@ -127,8 +149,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * @return the download task
      * @throws Exception if anything went wrong
      */
-    protected BuildTask downloadOffline(String src, String dest, boolean overwrite) throws IOException {
-        return createRunner(src, dest, overwrite, false)
+    protected BuildTask downloadOffline(String src, String dest, boolean overwrite, boolean onlyIfNewer) throws IOException {
+        return createRunner(src, dest, overwrite, onlyIfNewer)
             .withArguments("--offline", "download")
             .build()
             .task(":download");
@@ -151,6 +173,6 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 "dest " + dest + "\n" +
                 "overwrite " + Boolean.toString(overwrite) + "\n" +
                 "onlyIfNewer " + Boolean.toString(onlyIfNewer) + "\n" +
-            "}\n");
+            "}\n", false);
     }
 }
