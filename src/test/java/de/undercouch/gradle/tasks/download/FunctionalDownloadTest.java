@@ -115,6 +115,19 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     }
 
     /**
+     * Download a file once, then download again with 'onlyIfNewer'.
+     * File changed between downloads.
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void downloadOnlyIfNewerRedownloadsIfFileHasBeenUpdated() throws Exception {
+        assertTaskSuccess(download(singleSrc, dest, false, false));
+        File src = new File(folder.getRoot(), TEST_FILE_NAME);
+        assertTrue(src.setLastModified(src.lastModified() + 5000));
+        assertTaskSuccess(download(singleSrc, dest, true, true));
+    }
+
+    /**
      * Create destination file locally, then run download.
      * @throws Exception if anything went wrong
      */
