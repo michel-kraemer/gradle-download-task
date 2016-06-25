@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Array;
-import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -65,11 +64,10 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.gradle.api.Project;
-import org.gradle.logging.ProgressLogger;
-import org.gradle.logging.ProgressLoggerFactory;
 
 import de.undercouch.gradle.tasks.download.internal.InsecureHostnameVerifier;
 import de.undercouch.gradle.tasks.download.internal.InsecureTrustManager;
+import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
 import groovy.lang.Closure;
 
 /**
@@ -92,7 +90,7 @@ public class DownloadAction implements DownloadSpec {
     private Map<String, String> headers;
     private boolean acceptAnyCertificate = false;
 
-    private ProgressLogger progressLogger;
+    private ProgressLoggerWrapper progressLogger;
     private String size;
     private long processedBytes = 0;
     private long loggedKb = 0;
@@ -191,27 +189,8 @@ public class DownloadAction implements DownloadSpec {
         
         //create progress logger
         if (!quiet) {
-            //we are about to access an internal class. Use reflection here to provide
-            //as much compatibility to different Gradle versions as possible
             try {
-                Method getServices = project.getClass().getMethod("getServices");
-                Object serviceFactory = getServices.invoke(project);
-                Method get = serviceFactory.getClass().getMethod("get", Class.class);
-                Object progressLoggerFactory = get.invoke(serviceFactory,
-                        ProgressLoggerFactory.class);
-                Method newOperation = progressLoggerFactory.getClass().getMethod(
-                        "newOperation", Class.class);
-                progressLogger = (ProgressLogger)newOperation.invoke(
-                        progressLoggerFactory, getClass());
-                String desc = "Download " + src.toString();
-                Method setDescription = progressLogger.getClass().getMethod(
-                        "setDescription", String.class);
-                setDescription.setAccessible(true);
-                setDescription.invoke(progressLogger, desc);
-                Method setLoggingHeader = progressLogger.getClass().getMethod(
-                        "setLoggingHeader", String.class);
-                setLoggingHeader.setAccessible(true);
-                setLoggingHeader.invoke(progressLogger, desc);
+                progressLogger = new ProgressLoggerWrapper(project, src.toString());
             } catch (Exception e) {
                 //unable to get progress logger
                 project.getLogger().error("Unable to get progress logger. Download "
