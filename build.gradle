@@ -46,7 +46,9 @@ dependencies {
     compile gradleApi()
     compile 'org.apache.httpcomponents:httpclient:4.4.1'
 
+    testCompile 'junit:junit:4.12'
     testCompile 'org.littleshoot:littleproxy:1.1.0-beta2'
+    testCompile 'org.mortbay.jetty:jetty:6.1.26'
 }
 
 task wrapper(type: Wrapper) {
