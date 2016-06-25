@@ -116,10 +116,7 @@ public class DownloadAction implements DownloadSpec {
         if (sources.isEmpty()) {
             throw new IllegalArgumentException("Please provide a download source");
         }
-        if (dest == null) {
-            throw new IllegalArgumentException("Please provide a download destination");
-        }
-        
+
         if (dest.equals(project.getBuildDir())) {
             //make sure build dir exists
             dest.mkdirs();
@@ -165,11 +162,8 @@ public class DownloadAction implements DownloadSpec {
             throw new IllegalStateException("Unable to download " + src +
                     " in offline mode.");
         }
-        
-        long timestamp = 0;
-        if (onlyIfNewer && destFile.exists()) {
-            timestamp = destFile.lastModified();
-        }
+
+        final long timestamp = onlyIfNewer && destFile.exists() ? destFile.lastModified() : 0;
         
         //create progress logger
         if (!quiet) {
@@ -192,10 +186,6 @@ public class DownloadAction implements DownloadSpec {
             //open URL connection
             CloseableHttpResponse response = openConnection(httpHost, src.getFile(),
                     timestamp, client);
-            if (response == null) {
-                return;
-            }
-            
             //check if file on server was modified
             long lastModified = parseLastModified(response);
             int code = response.getStatusLine().getStatusCode();
@@ -280,6 +270,10 @@ public class DownloadAction implements DownloadSpec {
     }
 
     private File destFile(URL src) {
+        if (dest == null) {
+            throw new IllegalArgumentException("Please provide a download destination");
+        }
+
         File destFile = dest;
         if (destFile.isDirectory()) {
             //guess name from URL
@@ -366,7 +360,7 @@ public class DownloadAction implements DownloadSpec {
      * @param file the file to request
      * @param timestamp the timestamp of the destination file, in milliseconds
      * @param client the HTTP client to use to perform the request
-     * @return the URLConnection or null if the download should be skipped
+     * @return the URLConnection
      * @throws IOException if the connection could not be opened
      */
     private CloseableHttpResponse openConnection(HttpHost httpHost, String file,

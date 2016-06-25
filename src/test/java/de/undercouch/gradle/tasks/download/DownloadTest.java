@@ -129,6 +129,18 @@ public class DownloadTest extends TestBase {
                 new File(dst, TEST_FILE_NAME2));
         assertArrayEquals(contents2, dstContents2);
     }
+
+    @Test
+    public void downloadMultipleFilesCreatesDestDirAutomatically() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(Arrays.asList(makeSrc(TEST_FILE_NAME), makeSrc(TEST_FILE_NAME2)));
+
+        File dst = folder.newFolder();
+        assertTrue(dst.delete());
+        t.dest(dst);
+        t.execute();
+        assertTrue(dst.isDirectory());
+    }
     
     /**
      * Tests if the task throws an exception if you try to download
@@ -205,5 +217,39 @@ public class DownloadTest extends TestBase {
         // contents must not be changed
         byte[] dstContents = FileUtils.readFileToByteArray(dst);
         assertArrayEquals("Hello".getBytes(), dstContents);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvalidSrc() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(new Object());
+    }
+
+    @Test(expected = TaskExecutionException.class)
+    public void testExecuteEmptySrc() throws Exception {
+        Download t = makeProjectAndTask();
+        t.execute();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvalidDest() throws Exception {
+        Download t = makeProjectAndTask();
+        t.dest(new Object());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testExecuteEmptyDest() throws Exception {
+        Download t = makeProjectAndTask();
+        String src = makeSrc(TEST_FILE_NAME);
+        t.src(src);
+        t.execute();
+    }
+
+    @Test
+    public void testArraySrc() throws Exception {
+        Download t = makeProjectAndTask();
+        String src = makeSrc(TEST_FILE_NAME);
+        t.src(new Object[] { src });
+        assertTrue(t.getSrc() instanceof URL);
     }
 }

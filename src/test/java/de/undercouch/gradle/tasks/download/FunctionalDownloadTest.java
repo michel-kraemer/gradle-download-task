@@ -69,7 +69,18 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileWithQuietMode() throws Exception {
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false, false, true)));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false, true, false, true)));
+        assertTrue(destFile.exists());
+        assertArrayEquals(contents, FileUtils.readFileToByteArray(destFile));
+    }
+
+    /**
+     * Test if a single file can be downloaded successfully with quiet mode
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void downloadSingleFileWithoutCompress() throws Exception {
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false, false, false, false)));
         assertTrue(destFile.exists());
         assertArrayEquals(contents, FileUtils.readFileToByteArray(destFile));
     }
@@ -117,7 +128,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Test
     public void downloadSingleFileTwiceWithOfflineMode() throws Exception {
         assertTaskSuccess(download(new Parameters(singleSrc, dest, false, false)));
-        assertTaskSkipped(download(new Parameters(singleSrc, dest, true, false, true, false)));
+        assertTaskSkipped(download(new Parameters(singleSrc, dest, true, false, true, true, false)));
     }
 
     /**
@@ -182,6 +193,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 "dest " + parameters.dest + "\n" +
                 "overwrite " + Boolean.toString(parameters.overwrite) + "\n" +
                 "onlyIfNewer " + Boolean.toString(parameters.onlyIfNewer) + "\n" +
+                "compress " + Boolean.toString(parameters.compress) + "\n" +
                 "quiet " + Boolean.toString(parameters.quiet) + "\n" +
             "}\n", false);
     }
@@ -191,18 +203,20 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         final String dest;
         final boolean overwrite;
         final boolean onlyIfNewer;
+        final boolean compress;
         final boolean quiet;
         final boolean offline;
 
         Parameters(String src, String dest, boolean overwrite, boolean onlyIfNewer) {
-            this(src, dest, overwrite, onlyIfNewer, false, false);
+            this(src, dest, overwrite, onlyIfNewer, true, false, false);
         }
 
-        Parameters(String src, String dest, boolean overwrite, boolean onlyIfNewer, boolean offline, boolean quiet) {
+        Parameters(String src, String dest, boolean overwrite, boolean onlyIfNewer, boolean compress, boolean offline, boolean quiet) {
             this.src = src;
             this.dest = dest;
             this.overwrite = overwrite;
             this.onlyIfNewer = onlyIfNewer;
+            this.compress = compress;
             this.offline = offline;
             this.quiet = quiet;
         }
