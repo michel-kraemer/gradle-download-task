@@ -54,7 +54,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFile() throws Exception {
-        assertTaskSuccess(download(singleSrc, dest, true));
+        assertTaskSuccess(download(singleSrc, dest, true, false));
         assertTrue(destFile.exists());
         assertArrayEquals(contents, FileUtils.readFileToByteArray(destFile));
     }
@@ -65,7 +65,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadMultipleFiles() throws Exception {
-        assertTaskSuccess(download(multipleSrc, dest, true));
+        assertTaskSuccess(download(multipleSrc, dest, true, false));
         assertTrue(destFile.isDirectory());
         assertArrayEquals(contents, FileUtils.readFileToByteArray(
                 new File(destFile, TEST_FILE_NAME)));
@@ -79,8 +79,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileTwiceMarksTaskAsUpToDate() throws Exception {
-        assertTaskSuccess(download(singleSrc, dest, false));
-        assertTaskUpToDate(download(singleSrc, dest, false));
+        assertTaskSuccess(download(singleSrc, dest, false, false));
+        assertTaskUpToDate(download(singleSrc, dest, false, false));
     }
 
     /**
@@ -89,8 +89,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileTwiceWithOverwriteExecutesTwice() throws Exception {
-        assertTaskSuccess(download(singleSrc, dest, false));
-        assertTaskSuccess(download(singleSrc, dest, true));
+        assertTaskSuccess(download(singleSrc, dest, false, false));
+        assertTaskSuccess(download(singleSrc, dest, true, false));
     }
 
     /**
@@ -100,8 +100,43 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileTwiceWithOfflineMode() throws Exception {
-        assertTaskSuccess(download(singleSrc, dest, false));
-        assertTaskSkipped(downloadOffline(singleSrc, dest, true));
+        assertTaskSuccess(download(singleSrc, dest, false, false));
+        assertTaskSkipped(downloadOffline(singleSrc, dest, true, false));
+    }
+
+    /**
+     * Download a file once, then download again with 'onlyIfNewer'
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void downloadOnlyIfNewer() throws Exception {
+        assertTaskSuccess(download(singleSrc, dest, false, false));
+        assertTaskUpToDate(download(singleSrc, dest, true, true));
+    }
+
+    /**
+     * Download a file once, then download again with 'onlyIfNewer'.
+     * File changed between downloads.
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void downloadOnlyIfNewerRedownloadsIfFileHasBeenUpdated() throws Exception {
+        assertTaskSuccess(download(singleSrc, dest, false, false));
+        File src = new File(folder.getRoot(), TEST_FILE_NAME);
+        assertTrue(src.setLastModified(src.lastModified() + 5000));
+        assertTaskSuccess(download(singleSrc, dest, true, true));
+    }
+
+    /**
+     * Create destination file locally, then run download.
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void downloadOnlyIfNewerReDownloadIfFileExists() throws Exception {
+        File testFile = new File(folder.getRoot(), TEST_FILE_NAME);
+        FileUtils.writeByteArrayToFile(destFile, contents);
+        assertTrue(destFile.setLastModified(testFile.lastModified()));
+        assertTaskSuccess(download(singleSrc, dest, true, false));
     }
 
     /**
@@ -109,11 +144,13 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * @param src the src from which to download
      * @param dest the destination file
      * @param overwrite true if the overwrite flag should be set
+     * @param onlyIfNewer true if the onlyIfNewer flag should be set
      * @return the download task
      * @throws Exception if anything went wrong
      */
-    protected BuildTask download(String src, String dest, boolean overwrite) throws Exception {
-        return createRunner(src, dest, overwrite, false)
+    protected BuildTask download(String src, String dest, boolean overwrite,
+            boolean onlyIfNewer) throws Exception {
+        return createRunner(src, dest, overwrite, onlyIfNewer)
             .withArguments("download")
             .build()
             .task(":download");
@@ -124,11 +161,13 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * @param src the src from which to download
      * @param dest the destination file
      * @param overwrite true if the overwrite flag should be set
+     * @param onlyIfNewer true if the onlyIfNewer flag should be set
      * @return the download task
      * @throws IOException if anything went wrong
      */
-    protected BuildTask downloadOffline(String src, String dest, boolean overwrite) throws IOException {
-        return createRunner(src, dest, overwrite, false)
+    protected BuildTask downloadOffline(String src, String dest, boolean overwrite,
+            boolean onlyIfNewer) throws IOException {
+        return createRunner(src, dest, overwrite, onlyIfNewer)
             .withArguments("--offline", "download")
             .build()
             .task(":download");
@@ -143,7 +182,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * @return the runner
      * @throws IOException if the build file could not be created
      */
-    protected GradleRunner createRunner(String src, String dest, boolean overwrite, boolean onlyIfNewer) throws IOException {
+    protected GradleRunner createRunner(String src, String dest, boolean overwrite,
+            boolean onlyIfNewer) throws IOException {
         return createRunnerWithBuildFile(
             "plugins { id 'de.undercouch.download' }\n" +
             "task download(type: de.undercouch.gradle.tasks.download.Download) { \n" +
@@ -151,6 +191,6 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 "dest " + dest + "\n" +
                 "overwrite " + Boolean.toString(overwrite) + "\n" +
                 "onlyIfNewer " + Boolean.toString(onlyIfNewer) + "\n" +
-            "}\n");
+            "}\n", false);
     }
 }
