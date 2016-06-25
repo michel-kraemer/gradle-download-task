@@ -125,7 +125,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * @param dest the destination file
      * @param overwrite true if the overwrite flag should be set
      * @return the download task
-     * @throws Exception if anything went wrong
+     * @throws IOException if anything went wrong
      */
     protected BuildTask downloadOffline(String src, String dest, boolean overwrite) throws IOException {
         return createRunner(src, dest, overwrite, false)

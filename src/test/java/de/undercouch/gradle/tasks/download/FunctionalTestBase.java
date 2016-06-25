@@ -34,6 +34,9 @@ import static org.junit.Assert.assertEquals;
  * @author Jan Berkel
  */
 public abstract class FunctionalTestBase extends TestBase {
+    /**
+     * A temporary folder for test files
+     */
     @Rule
     public final TemporaryFolder testProjectDir = new TemporaryFolder();
     private File buildFile;
