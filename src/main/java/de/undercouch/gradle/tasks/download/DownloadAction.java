@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Array;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.KeyManagementException;
@@ -42,6 +41,7 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.AuthCache;
@@ -215,7 +215,7 @@ public class DownloadAction implements DownloadSpec {
             //check if file on server was modified
             long lastModified = parseLastModified(response);
             int code = response.getStatusLine().getStatusCode();
-            if (code == HttpURLConnection.HTTP_NOT_MODIFIED ||
+            if (code == HttpStatus.SC_NOT_MODIFIED ||
                     (lastModified != 0 && timestamp >= lastModified)) {
                 if (!quiet) {
                     project.getLogger().info("Not modified. Skipping '" + src + "'");
@@ -360,7 +360,7 @@ public class DownloadAction implements DownloadSpec {
      * greater than 0.
      * @param httpHost the HTTP host to connect to
      * @param file the file to request
-     * @param timestamp the timestamp of the destination file
+     * @param timestamp the timestamp of the destination file, in milliseconds
      * @param client the HTTP client to use to perform the request
      * @return the URLConnection or null if the download should be skipped
      * @throws IOException if the connection could not be opened
@@ -399,7 +399,7 @@ public class DownloadAction implements DownloadSpec {
         
         //set If-Modified-Since header
         if (timestamp > 0) {
-            get.setHeader("If-Modified-Since", String.valueOf(timestamp));
+            get.setHeader("If-Modified-Since", DateUtils.formatDate(new Date(timestamp)));
         }
         
         //set headers
@@ -419,7 +419,7 @@ public class DownloadAction implements DownloadSpec {
         
         //handle response
         int code = response.getStatusLine().getStatusCode();
-        if (code < 200 || code > 299) {
+        if ((code < 200 || code > 299) && code != HttpStatus.SC_NOT_MODIFIED) {
             throw new ClientProtocolException(response.getStatusLine().getReasonPhrase());
         }
         
