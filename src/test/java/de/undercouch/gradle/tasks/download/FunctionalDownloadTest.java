@@ -168,8 +168,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     }
 
     @Test
-    public void fileDependenciesTriggersDownload() throws Exception {
-        assertTaskSuccess(runTask(":processFiles", new Parameters(singleSrc, dest, true, false)));
+    public void fileDependenciesTriggersDownloadTask() throws Exception {
+        assertTaskSuccess(runTask(":processTask", new Parameters(singleSrc, dest, true, false)));
         assertTrue(destFile.exists());
     }
 
@@ -180,7 +180,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * @throws Exception if anything went wrong
      */
     protected BuildTask download(Parameters parameters) throws Exception {
-        return runTask(":download", parameters);
+        return runTask(":downloadTask", parameters);
     }
 
     /**
@@ -205,7 +205,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     protected GradleRunner createRunner(Parameters parameters) throws IOException {
         return createRunnerWithBuildFile(
             "plugins { id 'de.undercouch.download' }\n" +
-            "task download(type: de.undercouch.gradle.tasks.download.Download) { \n" +
+            "task downloadTask(type: de.undercouch.gradle.tasks.download.Download) { \n" +
                 "src(" + parameters.src + ")\n" +
                 "dest " + parameters.dest + "\n" +
                 "overwrite " + Boolean.toString(parameters.overwrite) + "\n" +
@@ -213,11 +213,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 "compress " + Boolean.toString(parameters.compress) + "\n" +
                 "quiet " + Boolean.toString(parameters.quiet) + "\n" +
             "}\n" +
-            "task processFiles {\n" +
-                "inputs.files files(download)\n" +
-                 "doLast {\n" +
-                    "print(inputs.files)\n" +
-                 "}\n" +
+            "task processTask {\n" +
+                "inputs.files downloadTask\n" +
             "}\n", false);
     }
 
