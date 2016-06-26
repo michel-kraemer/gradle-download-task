@@ -17,6 +17,7 @@ package de.undercouch.gradle.tasks.download;
 import org.apache.commons.io.FileUtils;
 import org.gradle.testkit.runner.BuildTask;
 import org.gradle.testkit.runner.GradleRunner;
+import org.junit.After;
 import org.junit.Test;
 
 import java.io.File;
@@ -166,6 +167,12 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
     }
 
+    @Test
+    public void fileDependenciesTriggersDownload() throws Exception {
+        assertTaskSuccess(runTask(":processFiles", new Parameters(singleSrc, dest, true, false)));
+        assertTrue(destFile.exists());
+    }
+
     /**
      * Create a download task
      * @param parameters the download parameters
@@ -173,10 +180,20 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * @throws Exception if anything went wrong
      */
     protected BuildTask download(Parameters parameters) throws Exception {
+        return runTask(":download", parameters);
+    }
+
+    /**
+     * Create a task
+     * @param parameters the download parameters
+     * @return the task
+     * @throws Exception if anything went wrong
+     */
+    protected BuildTask runTask(String taskName, Parameters parameters) throws Exception {
         return createRunner(parameters)
-            .withArguments(parameters.offline ? asList("--offline", "download") : singletonList("download"))
-            .build()
-            .task(":download");
+                .withArguments(parameters.offline ? asList("--offline", taskName) : singletonList(taskName))
+                .build()
+                .task(taskName);
     }
 
     /**
@@ -195,6 +212,12 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 "onlyIfNewer " + Boolean.toString(parameters.onlyIfNewer) + "\n" +
                 "compress " + Boolean.toString(parameters.compress) + "\n" +
                 "quiet " + Boolean.toString(parameters.quiet) + "\n" +
+            "}\n" +
+            "task processFiles {\n" +
+                "inputs.files files(download)\n" +
+                 "doLast {\n" +
+                    "print(inputs.files)\n" +
+                 "}\n" +
             "}\n", false);
     }
 
