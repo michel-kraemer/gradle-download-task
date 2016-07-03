@@ -3,7 +3,8 @@ machine:
     version: oraclejdk6
 test:
   override:
-    - TERM=dumb ./gradlew --console=plain install check
+    - TERM=dumb ./gradlew --console=plain install check jacocoTestReport
   post:
     - mkdir -p $CIRCLE_TEST_REPORTS/junit/
     - find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
+    - bash <(curl -s https://codecov.io/bash)
