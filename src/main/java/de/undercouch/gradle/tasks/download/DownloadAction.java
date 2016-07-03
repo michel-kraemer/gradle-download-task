@@ -119,7 +119,7 @@ public class DownloadAction implements DownloadSpec {
         if (dest == null) {
             throw new IllegalArgumentException("Please provide a download destination");
         }
-        
+
         if (dest.equals(project.getBuildDir())) {
             //make sure build dir exists
             dest.mkdirs();
@@ -139,25 +139,9 @@ public class DownloadAction implements DownloadSpec {
             execute(src);
         }
     }
-    
+
     private void execute(URL src) throws IOException {
-        File destFile = dest;
-        if (destFile.isDirectory()) {
-            //guess name from URL
-            String name = src.toString();
-            if (name.endsWith("/")) {
-                name = name.substring(0, name.length() - 1);
-            }
-            name = name.substring(name.lastIndexOf('/') + 1);
-            destFile = new File(dest, name);
-        } else {
-            //create destination directory
-            File parent = destFile.getParentFile();
-            if (parent != null) {
-                parent.mkdirs();
-            }
-        }
-        
+        final File destFile = makeDestFile(src);
         if (!overwrite && destFile.exists()) {
             if (!quiet) {
                 project.getLogger().info("Destination file already exists. "
@@ -181,11 +165,8 @@ public class DownloadAction implements DownloadSpec {
             throw new IllegalStateException("Unable to download " + src +
                     " in offline mode.");
         }
-        
-        long timestamp = 0;
-        if (onlyIfNewer && destFile.exists()) {
-            timestamp = destFile.lastModified();
-        }
+
+        final long timestamp = onlyIfNewer && destFile.exists() ? destFile.lastModified() : 0;
         
         //create progress logger
         if (!quiet) {
@@ -208,10 +189,6 @@ public class DownloadAction implements DownloadSpec {
             //open URL connection
             CloseableHttpResponse response = openConnection(httpHost, src.getFile(),
                     timestamp, client);
-            if (response == null) {
-                return;
-            }
-            
             //check if file on server was modified
             long lastModified = parseLastModified(response);
             int code = response.getStatusLine().getStatusCode();
@@ -294,6 +271,36 @@ public class DownloadAction implements DownloadSpec {
             destFile.setLastModified(newTimestamp);
         }
     }
+
+    /**
+     * Generates the path to an output file for a given source URL. Creates
+     * all necessary parent directories for the destination file.
+     * @param src the source
+     * @return the path to the output file
+     */
+    private File makeDestFile(URL src) {
+        if (dest == null) {
+            throw new IllegalArgumentException("Please provide a download destination");
+        }
+
+        File destFile = dest;
+        if (destFile.isDirectory()) {
+            //guess name from URL
+            String name = src.toString();
+            if (name.endsWith("/")) {
+                name = name.substring(0, name.length() - 1);
+            }
+            name = name.substring(name.lastIndexOf('/') + 1);
+            destFile = new File(dest, name);
+        } else {
+            //create destination directory
+            File parent = destFile.getParentFile();
+            if (parent != null) {
+                parent.mkdirs();
+            }
+        }
+        return destFile;
+    }
     
     /**
      * Configure proxy for a given HTTP host
@@ -362,7 +369,7 @@ public class DownloadAction implements DownloadSpec {
      * @param file the file to request
      * @param timestamp the timestamp of the destination file, in milliseconds
      * @param client the HTTP client to use to perform the request
-     * @return the URLConnection or null if the download should be skipped
+     * @return the URLConnection
      * @throws IOException if the connection could not be opened
      */
     private CloseableHttpResponse openConnection(HttpHost httpHost, String file,
@@ -546,15 +553,26 @@ public class DownloadAction implements DownloadSpec {
     /**
      * @return true if the download destination is up to date
      */
-    boolean isUpToDate() {
+    public boolean isUpToDate() {
         return upToDate == sources.size();
     }
     
     /**
      * @return true if execution of this task has been skipped
      */
-    boolean isSkipped() {
+    public boolean isSkipped() {
         return skipped == sources.size();
+    }
+
+    /**
+     * @return a list of files created by this action (i.e. the destination files)
+     */
+    public List<File> getOutputFiles() {
+        List<File> files = new ArrayList<File>(sources.size());
+        for (URL src : sources) {
+            files.add(makeDestFile(src));
+        }
+        return files;
     }
     
     @Override

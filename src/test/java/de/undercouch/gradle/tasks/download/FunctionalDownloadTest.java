@@ -14,16 +14,18 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import org.apache.commons.io.FileUtils;
-import org.gradle.testkit.runner.BuildTask;
-import org.gradle.testkit.runner.GradleRunner;
-import org.junit.Test;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertTrue;
+import org.apache.commons.io.FileUtils;
+import org.gradle.testkit.runner.BuildTask;
+import org.gradle.testkit.runner.GradleRunner;
+import org.junit.Test;
 
 /**
  * Tests the plugin's functionality
@@ -54,7 +56,29 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFile() throws Exception {
-        assertTaskSuccess(download(singleSrc, dest, true, false));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
+        assertTrue(destFile.exists());
+        assertArrayEquals(contents, FileUtils.readFileToByteArray(destFile));
+    }
+
+    /**
+     * Test if a single file can be downloaded successfully with quiet mode
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void downloadSingleFileWithQuietMode() throws Exception {
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false, true, false, true)));
+        assertTrue(destFile.exists());
+        assertArrayEquals(contents, FileUtils.readFileToByteArray(destFile));
+    }
+
+    /**
+     * Test if a single file can be downloaded successfully with quiet mode
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void downloadSingleFileWithoutCompress() throws Exception {
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false, false, false, false)));
         assertTrue(destFile.exists());
         assertArrayEquals(contents, FileUtils.readFileToByteArray(destFile));
     }
@@ -65,7 +89,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadMultipleFiles() throws Exception {
-        assertTaskSuccess(download(multipleSrc, dest, true, false));
+        assertTaskSuccess(download(new Parameters(multipleSrc, dest, true, false)));
         assertTrue(destFile.isDirectory());
         assertArrayEquals(contents, FileUtils.readFileToByteArray(
                 new File(destFile, TEST_FILE_NAME)));
@@ -79,8 +103,9 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileTwiceMarksTaskAsUpToDate() throws Exception {
-        assertTaskSuccess(download(singleSrc, dest, false, false));
-        assertTaskUpToDate(download(singleSrc, dest, false, false));
+        final Parameters parameters = new Parameters(singleSrc, dest, false, false);
+        assertTaskSuccess(download(parameters));
+        assertTaskUpToDate(download(parameters));
     }
 
     /**
@@ -89,8 +114,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileTwiceWithOverwriteExecutesTwice() throws Exception {
-        assertTaskSuccess(download(singleSrc, dest, false, false));
-        assertTaskSuccess(download(singleSrc, dest, true, false));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, false)));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
     }
 
     /**
@@ -100,8 +125,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileTwiceWithOfflineMode() throws Exception {
-        assertTaskSuccess(download(singleSrc, dest, false, false));
-        assertTaskSkipped(downloadOffline(singleSrc, dest, true, false));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, false)));
+        assertTaskSkipped(download(new Parameters(singleSrc, dest, true, false, true, true, false)));
     }
 
     /**
@@ -110,8 +135,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadOnlyIfNewer() throws Exception {
-        assertTaskSuccess(download(singleSrc, dest, false, false));
-        assertTaskUpToDate(download(singleSrc, dest, true, true));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, false)));
+        assertTaskUpToDate(download(new Parameters(singleSrc, dest, true, true)));
     }
 
     /**
@@ -121,10 +146,10 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadOnlyIfNewerRedownloadsIfFileHasBeenUpdated() throws Exception {
-        assertTaskSuccess(download(singleSrc, dest, false, false));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, false)));
         File src = new File(folder.getRoot(), TEST_FILE_NAME);
         assertTrue(src.setLastModified(src.lastModified() + 5000));
-        assertTaskSuccess(download(singleSrc, dest, true, true));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, true)));
     }
 
     /**
@@ -136,61 +161,89 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         File testFile = new File(folder.getRoot(), TEST_FILE_NAME);
         FileUtils.writeByteArrayToFile(destFile, contents);
         assertTrue(destFile.setLastModified(testFile.lastModified()));
-        assertTaskSuccess(download(singleSrc, dest, true, false));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
+    }
+
+    /**
+     * Test if the download task is triggered if another task depends on its
+     * output files
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void fileDependenciesTriggersDownloadTask() throws Exception {
+        assertTaskSuccess(runTask(":processTask", new Parameters(singleSrc, dest, true, false)));
+        assertTrue(destFile.exists());
     }
 
     /**
      * Create a download task
-     * @param src the src from which to download
-     * @param dest the destination file
-     * @param overwrite true if the overwrite flag should be set
-     * @param onlyIfNewer true if the onlyIfNewer flag should be set
+     * @param parameters the download parameters
      * @return the download task
      * @throws Exception if anything went wrong
      */
-    protected BuildTask download(String src, String dest, boolean overwrite,
-            boolean onlyIfNewer) throws Exception {
-        return createRunner(src, dest, overwrite, onlyIfNewer)
-            .withArguments("download")
-            .build()
-            .task(":download");
+    protected BuildTask download(Parameters parameters) throws Exception {
+        return runTask(":downloadTask", parameters);
     }
 
     /**
-     * Create a download task in offline mode
-     * @param src the src from which to download
-     * @param dest the destination file
-     * @param overwrite true if the overwrite flag should be set
-     * @param onlyIfNewer true if the onlyIfNewer flag should be set
-     * @return the download task
-     * @throws IOException if anything went wrong
+     * Create a task
+     * @param taskName the task's name
+     * @param parameters the download parameters
+     * @return the task
+     * @throws Exception if anything went wrong
      */
-    protected BuildTask downloadOffline(String src, String dest, boolean overwrite,
-            boolean onlyIfNewer) throws IOException {
-        return createRunner(src, dest, overwrite, onlyIfNewer)
-            .withArguments("--offline", "download")
-            .build()
-            .task(":download");
+    protected BuildTask runTask(String taskName, Parameters parameters) throws Exception {
+        return createRunner(parameters)
+                .withArguments(parameters.offline ? asList("--offline", taskName) :
+                    singletonList(taskName))
+                .build()
+                .task(taskName);
     }
 
     /**
      * Create a gradle runner to test against
-     * @param src the src from which to download
-     * @param dest the destination file
-     * @param overwrite true if the overwrite flag should be set
-     * @param onlyIfNewer true if the onlyIfNewer flag should be set
+     * @param parameters the download parameters
      * @return the runner
      * @throws IOException if the build file could not be created
      */
-    protected GradleRunner createRunner(String src, String dest, boolean overwrite,
-            boolean onlyIfNewer) throws IOException {
+    protected GradleRunner createRunner(Parameters parameters) throws IOException {
         return createRunnerWithBuildFile(
             "plugins { id 'de.undercouch.download' }\n" +
-            "task download(type: de.undercouch.gradle.tasks.download.Download) { \n" +
-                "src(" + src + ")\n" +
-                "dest " + dest + "\n" +
-                "overwrite " + Boolean.toString(overwrite) + "\n" +
-                "onlyIfNewer " + Boolean.toString(onlyIfNewer) + "\n" +
+            "task downloadTask(type: de.undercouch.gradle.tasks.download.Download) { \n" +
+                "src(" + parameters.src + ")\n" +
+                "dest " + parameters.dest + "\n" +
+                "overwrite " + Boolean.toString(parameters.overwrite) + "\n" +
+                "onlyIfNewer " + Boolean.toString(parameters.onlyIfNewer) + "\n" +
+                "compress " + Boolean.toString(parameters.compress) + "\n" +
+                "quiet " + Boolean.toString(parameters.quiet) + "\n" +
+            "}\n" +
+            "task processTask {\n" +
+                "inputs.files downloadTask\n" +
             "}\n", false);
+    }
+
+    private static class Parameters {
+        final String src;
+        final String dest;
+        final boolean overwrite;
+        final boolean onlyIfNewer;
+        final boolean compress;
+        final boolean quiet;
+        final boolean offline;
+
+        Parameters(String src, String dest, boolean overwrite, boolean onlyIfNewer) {
+            this(src, dest, overwrite, onlyIfNewer, true, false, false);
+        }
+
+        Parameters(String src, String dest, boolean overwrite, boolean onlyIfNewer,
+                boolean compress, boolean offline, boolean quiet) {
+            this.src = src;
+            this.dest = dest;
+            this.overwrite = overwrite;
+            this.onlyIfNewer = onlyIfNewer;
+            this.compress = compress;
+            this.offline = offline;
+            this.quiet = quiet;
+        }
     }
 }

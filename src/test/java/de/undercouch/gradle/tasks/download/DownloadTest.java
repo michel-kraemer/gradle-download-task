@@ -110,7 +110,7 @@ public class DownloadTest extends TestBase {
     }
     
     /**
-     * Tests if a multiple files can be downloaded to a directory
+     * Tests if multiple files can be downloaded to a directory
      * @throws Exception if anything goes wrong
      */
     @Test
@@ -128,6 +128,23 @@ public class DownloadTest extends TestBase {
         byte[] dstContents2 = FileUtils.readFileToByteArray(
                 new File(dst, TEST_FILE_NAME2));
         assertArrayEquals(contents2, dstContents2);
+    }
+
+    /**
+     * Tests if a destination directory is automatically created if multiple
+     * files are downloaded
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void downloadMultipleFilesCreatesDestDirAutomatically() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(Arrays.asList(makeSrc(TEST_FILE_NAME), makeSrc(TEST_FILE_NAME2)));
+
+        File dst = folder.newFolder();
+        assertTrue(dst.delete());
+        t.dest(dst);
+        t.execute();
+        assertTrue(dst.isDirectory());
     }
     
     /**
@@ -205,5 +222,57 @@ public class DownloadTest extends TestBase {
         // contents must not be changed
         byte[] dstContents = FileUtils.readFileToByteArray(dst);
         assertArrayEquals("Hello".getBytes(), dstContents);
+    }
+
+    /**
+     * Test if the plugin throws an exception if the 'src' property is invalid
+     * @throws Exception if the test succeeds
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvalidSrc() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(new Object());
+    }
+
+    /**
+     * Test if the plugin throws an exception if the 'src' property is empty
+     */
+    @Test(expected = TaskExecutionException.class)
+    public void testExecuteEmptySrc() {
+        Download t = makeProjectAndTask();
+        t.execute();
+    }
+
+    /**
+     * Test if the plugin throws an exception if the 'dest' property is invalid
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvalidDest() {
+        Download t = makeProjectAndTask();
+        t.dest(new Object());
+    }
+
+    /**
+     * Test if the plugin throws an exception if the 'dest' property is empty
+     * @throws Exception if the test succeeds
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testExecuteEmptyDest() throws Exception {
+        Download t = makeProjectAndTask();
+        String src = makeSrc(TEST_FILE_NAME);
+        t.src(src);
+        t.execute();
+    }
+
+    /**
+     * Test if the plugin can handle an array containing one string as source
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void testArraySrc() throws Exception {
+        Download t = makeProjectAndTask();
+        String src = makeSrc(TEST_FILE_NAME);
+        t.src(new Object[] { src });
+        assertTrue(t.getSrc() instanceof URL);
     }
 }

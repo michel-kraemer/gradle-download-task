@@ -14,20 +14,21 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import org.gradle.testkit.runner.BuildTask;
-import org.gradle.testkit.runner.GradleRunner;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
+import static org.gradle.testkit.runner.TaskOutcome.SKIPPED;
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS;
+import static org.gradle.testkit.runner.TaskOutcome.UP_TO_DATE;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-import static org.gradle.testkit.runner.TaskOutcome.SKIPPED;
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS;
-import static org.gradle.testkit.runner.TaskOutcome.UP_TO_DATE;
-import static org.junit.Assert.assertEquals;
+import org.gradle.testkit.runner.BuildTask;
+import org.gradle.testkit.runner.GradleRunner;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 
 /**
  * Base class for functional tests
@@ -72,6 +73,7 @@ public abstract class FunctionalTestBase extends TestBase {
      * @param task the task
      */
     protected void assertTaskSuccess(BuildTask task) {
+        assertNotNull("task is null", task);
         assertEquals("task " + task + " state should be success", SUCCESS, task.getOutcome());
     }
 
@@ -80,6 +82,7 @@ public abstract class FunctionalTestBase extends TestBase {
      * @param task the task
      */
     protected void assertTaskUpToDate(BuildTask task) {
+        assertNotNull("task is null", task);
         assertEquals("task " + task + " state should be up-to-date", UP_TO_DATE, task.getOutcome());
     }
 
@@ -88,6 +91,7 @@ public abstract class FunctionalTestBase extends TestBase {
      * @param task the task
      */
     protected void assertTaskSkipped(BuildTask task) {
+        assertNotNull("task is null", task);
         assertEquals("task " + task + " state should be skipped", SKIPPED, task.getOutcome());
     }
 
