@@ -14,21 +14,18 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import org.apache.commons.io.FileUtils;
-import org.gradle.testkit.runner.BuildTask;
-import org.gradle.testkit.runner.GradleRunner;
-import org.junit.After;
-import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
+
+import java.io.File;
+import java.io.IOException;
+
+import org.apache.commons.io.FileUtils;
+import org.gradle.testkit.runner.BuildTask;
+import org.gradle.testkit.runner.GradleRunner;
+import org.junit.Test;
 
 /**
  * Tests the plugin's functionality
@@ -167,6 +164,11 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
     }
 
+    /**
+     * Test if the download task is triggered if another task depends on its
+     * output files
+     * @throws Exception if anything went wrong
+     */
     @Test
     public void fileDependenciesTriggersDownloadTask() throws Exception {
         assertTaskSuccess(runTask(":processTask", new Parameters(singleSrc, dest, true, false)));
@@ -185,13 +187,15 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
 
     /**
      * Create a task
+     * @param taskName the task's name
      * @param parameters the download parameters
      * @return the task
      * @throws Exception if anything went wrong
      */
     protected BuildTask runTask(String taskName, Parameters parameters) throws Exception {
         return createRunner(parameters)
-                .withArguments(parameters.offline ? asList("--offline", taskName) : singletonList(taskName))
+                .withArguments(parameters.offline ? asList("--offline", taskName) :
+                    singletonList(taskName))
                 .build()
                 .task(taskName);
     }
@@ -231,7 +235,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
             this(src, dest, overwrite, onlyIfNewer, true, false, false);
         }
 
-        Parameters(String src, String dest, boolean overwrite, boolean onlyIfNewer, boolean compress, boolean offline, boolean quiet) {
+        Parameters(String src, String dest, boolean overwrite, boolean onlyIfNewer,
+                boolean compress, boolean offline, boolean quiet) {
             this.src = src;
             this.dest = dest;
             this.overwrite = overwrite;

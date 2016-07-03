@@ -110,7 +110,7 @@ public class DownloadTest extends TestBase {
     }
     
     /**
-     * Tests if a multiple files can be downloaded to a directory
+     * Tests if multiple files can be downloaded to a directory
      * @throws Exception if anything goes wrong
      */
     @Test
@@ -130,6 +130,11 @@ public class DownloadTest extends TestBase {
         assertArrayEquals(contents2, dstContents2);
     }
 
+    /**
+     * Tests if a destination directory is automatically created if multiple
+     * files are downloaded
+     * @throws Exception if anything goes wrong
+     */
     @Test
     public void downloadMultipleFilesCreatesDestDirAutomatically() throws Exception {
         Download t = makeProjectAndTask();
@@ -219,24 +224,38 @@ public class DownloadTest extends TestBase {
         assertArrayEquals("Hello".getBytes(), dstContents);
     }
 
+    /**
+     * Test if the plugin throws an exception if the 'src' property is invalid
+     * @throws Exception if the test succeeds
+     */
     @Test(expected = IllegalArgumentException.class)
     public void testInvalidSrc() throws Exception {
         Download t = makeProjectAndTask();
         t.src(new Object());
     }
 
+    /**
+     * Test if the plugin throws an exception if the 'src' property is empty
+     */
     @Test(expected = TaskExecutionException.class)
-    public void testExecuteEmptySrc() throws Exception {
+    public void testExecuteEmptySrc() {
         Download t = makeProjectAndTask();
         t.execute();
     }
 
+    /**
+     * Test if the plugin throws an exception if the 'dest' property is invalid
+     */
     @Test(expected = IllegalArgumentException.class)
-    public void testInvalidDest() throws Exception {
+    public void testInvalidDest() {
         Download t = makeProjectAndTask();
         t.dest(new Object());
     }
 
+    /**
+     * Test if the plugin throws an exception if the 'dest' property is empty
+     * @throws Exception if the test succeeds
+     */
     @Test(expected = IllegalArgumentException.class)
     public void testExecuteEmptyDest() throws Exception {
         Download t = makeProjectAndTask();
@@ -245,6 +264,10 @@ public class DownloadTest extends TestBase {
         t.execute();
     }
 
+    /**
+     * Test if the plugin can handle an array containing one string as source
+     * @throws Exception if anything goes wrong
+     */
     @Test
     public void testArraySrc() throws Exception {
         Download t = makeProjectAndTask();

@@ -85,6 +85,9 @@ public class Download extends DefaultTask implements DownloadSpec {
         }
     }
 
+    /**
+     * @return a list of files created by this task (i.e. the destination files)
+     */
     @OutputFiles
     public List<File> getOutputFiles() {
         return action.getOutputFiles();

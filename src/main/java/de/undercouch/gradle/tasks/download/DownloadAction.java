@@ -116,6 +116,9 @@ public class DownloadAction implements DownloadSpec {
         if (sources.isEmpty()) {
             throw new IllegalArgumentException("Please provide a download source");
         }
+        if (dest == null) {
+            throw new IllegalArgumentException("Please provide a download destination");
+        }
 
         if (dest.equals(project.getBuildDir())) {
             //make sure build dir exists
@@ -138,7 +141,7 @@ public class DownloadAction implements DownloadSpec {
     }
 
     private void execute(URL src) throws IOException {
-        final File destFile = destFile(src);
+        final File destFile = makeDestFile(src);
         if (!overwrite && destFile.exists()) {
             if (!quiet) {
                 project.getLogger().info("Destination file already exists. "
@@ -269,7 +272,13 @@ public class DownloadAction implements DownloadSpec {
         }
     }
 
-    private File destFile(URL src) {
+    /**
+     * Generates the path to an output file for a given source URL. Creates
+     * all necessary parent directories for the destination file.
+     * @param src the source
+     * @return the path to the output file
+     */
+    private File makeDestFile(URL src) {
         if (dest == null) {
             throw new IllegalArgumentException("Please provide a download destination");
         }
@@ -544,21 +553,24 @@ public class DownloadAction implements DownloadSpec {
     /**
      * @return true if the download destination is up to date
      */
-    boolean isUpToDate() {
+    public boolean isUpToDate() {
         return upToDate == sources.size();
     }
     
     /**
      * @return true if execution of this task has been skipped
      */
-    boolean isSkipped() {
+    public boolean isSkipped() {
         return skipped == sources.size();
     }
 
-    List<File> getOutputFiles() {
+    /**
+     * @return a list of files created by this action (i.e. the destination files)
+     */
+    public List<File> getOutputFiles() {
         List<File> files = new ArrayList<File>(sources.size());
         for (URL src : sources) {
-            files.add(destFile(src));
+            files.add(makeDestFile(src));
         }
         return files;
     }
