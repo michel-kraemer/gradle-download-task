@@ -56,6 +56,13 @@ task wrapper(type: Wrapper) {
     gradleVersion = '2.14'
 }
 
+jacocoTestReport {
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
+}
+
 jar {
     // include license into jar
     from 'LICENSE.txt'
