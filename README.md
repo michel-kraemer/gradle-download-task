@@ -5,7 +5,7 @@ This is a simple download task for [Gradle](http://www.gradle.org/).
 It displays progress information just as Gradle does when it retrieves
 an artifact from a repository.
 
-The plugin has been sucessfully tested with Gradle 1.0 up to 2.13.
+The plugin has been sucessfully tested with Gradle 1.0 up to 2.14.
 It should work with newer versions as well.
 
 <img width="686" src="https://raw.githubusercontent.com/michel-kraemer/gradle-download-task/6714ce9acecf735404960317bec7ecc31a2bbafa/gradle-download-task.gif">
@@ -17,7 +17,7 @@ Apply plugin configuration
 
 ```groovy
 plugins {
-    id "de.undercouch.download" version "3.0.0"
+    id "de.undercouch.download" version "3.1.0"
 }
 ```
 
@@ -29,7 +29,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'de.undercouch:gradle-download-task:3.0.0'
+        classpath 'de.undercouch:gradle-download-task:3.1.0'
     }
 }
 
