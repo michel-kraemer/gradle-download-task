@@ -199,6 +199,16 @@ task verifyFile(type: Verify) {
     checksum 'ce114e4501d2f4e2dcea3e17b546f339'
 }
 ```
+or using md5 file
+```groovy
+import de.undercouch.gradle.tasks.download.Verify
+
+task verifyFile(type: Verify) {
+    src new File(buildDir, 'file.ext')
+    algorithm 'MD5'
+    checksumFile new File(buildDir, 'file.ext.md5')
+}
+```
 
 You can combine the download task and the verify task as follows:
 
@@ -224,7 +234,9 @@ The verify task supports the following properties:
 <dt>src</dt>
 <dd>The file to verify <em>(required)</em></dd>
 <dt>checksum</dt>
-<dd>The actual checksum to verify against <em>(required)</em></dd>
+<dd>The actual checksum to verify against <em>(required or checksumFile)</em></dd>
+<dt>checksumFile</dt>
+<dd>The checksumFile containing actual checksum to verify against <em>(required or checksum)</em></dd>
 <dt>algorithm</dt>
 <dd>The algorithm to use to compute the checksum. See the
 <a href="http://docs.oracle.com/javase/7/docs/technotes/guides/security/StandardNames.html#MessageDigest">list of algorithm names</a>
