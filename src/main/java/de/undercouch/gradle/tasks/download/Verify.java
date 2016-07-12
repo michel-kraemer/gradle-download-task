@@ -68,6 +68,11 @@ public class Verify extends DefaultTask implements VerifySpec {
     }
 
     @Override
+    public void checksumFile(Object checksumFile) {
+        action.checksumFile(checksumFile);
+    }
+
+    @Override
     public File getSrc() {
         return action.getSrc();
     }
@@ -80,5 +85,10 @@ public class Verify extends DefaultTask implements VerifySpec {
     @Override
     public String getChecksum() {
         return action.getChecksum();
+    }
+
+    @Override
+    public File getChecksumFile() {
+        return action.getChecksumFile();
     }
 }
