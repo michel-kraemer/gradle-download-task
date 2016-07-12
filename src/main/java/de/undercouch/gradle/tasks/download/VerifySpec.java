@@ -42,6 +42,12 @@ public interface VerifySpec {
     void checksum(String checksum);
     
     /**
+     * Set checksum file to verify against
+     * @param checksumFile the file (either a filename or a {@link java.io.File} object)
+     */
+    void checksumFile(Object checksumFile);
+    
+    /**
      * @return the file to verify
      */
     File getSrc();
@@ -55,4 +61,9 @@ public interface VerifySpec {
      * @return the actual checksum to verify against (in hex)
      */
     String getChecksum();
+    
+    /**
+     * @return the checkSum file to use for verification
+     */
+    File getChecksumFile();
 }
