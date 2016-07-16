@@ -17,9 +17,11 @@ package de.undercouch.gradle.tasks.download;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.testfixtures.ProjectBuilder;
@@ -43,6 +45,16 @@ public abstract class TestBase {
      * File name of the first test file
      */
     protected final static String TEST_FILE_NAME = "test.txt";
+    
+    /**
+     * File name of the first test file MD5 checksum file
+     */
+    protected final static String TEST_FILE_NAME_MD5 = "test.txt.md5";
+    
+    /**
+     * File name of the first test file MD5 checksum file with bad data
+     */
+    protected final static String TEST_FILE_NAME_MD5_BAD = "test.txt.md5bad";
     
     /**
      * File name of the second test file
@@ -114,6 +126,16 @@ public abstract class TestBase {
         
         File testFile = folder.newFile(TEST_FILE_NAME);
         FileUtils.writeByteArrayToFile(testFile, contents);
+		
+        File testFileMd5 = folder.newFile(TEST_FILE_NAME_MD5);
+        MessageDigest md5 = MessageDigest.getInstance("MD5");
+        md5.update(contents);
+        String calculatedChecksum = Hex.encodeHexString(md5.digest());
+        FileUtils.writeStringToFile(testFileMd5, calculatedChecksum+" *"+TEST_FILE_NAME);
+		
+        File testFileMd5Bad = folder.newFile(TEST_FILE_NAME_MD5_BAD);
+        FileUtils.writeStringToFile(testFileMd5Bad, "WRONG *"+TEST_FILE_NAME_MD5_BAD);
+		
         File testFile2 = folder.newFile(TEST_FILE_NAME2);
         FileUtils.writeByteArrayToFile(testFile2, contents2);
     }

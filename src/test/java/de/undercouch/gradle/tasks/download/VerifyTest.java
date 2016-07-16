@@ -83,4 +83,98 @@ public class VerifyTest extends TestBase {
         t.execute();
         v.execute(); // should throw
     }
+
+    /**
+     * Tests if the Verify task can verify a file using its MD5 checksum file
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void verifyMD5FromFile() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(TEST_FILE_NAME));
+		t.src(makeSrc(TEST_FILE_NAME_MD5));
+        File dst = folder.newFolder();
+        t.dest(dst);
+        
+        Verify v = makeVerifyTask(t);
+        v.algorithm("MD5");
+        MessageDigest md5 = MessageDigest.getInstance("MD5");
+        md5.update(contents);
+        String calculatedChecksum = Hex.encodeHexString(md5.digest());
+        v.checksumFile(new File(dst, TEST_FILE_NAME_MD5));
+        v.src(new File(dst, TEST_FILE_NAME));
+        
+        t.execute();
+        v.execute(); // will throw if the checksum is not OK
+    }
+    
+    /**
+     * Tests if the Verify task fails if the checksum in file is wrong
+     * @throws Exception if anything goes wrong
+     */
+    @Test(expected = TaskExecutionException.class)
+    public void verifyWrongMD5File() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(TEST_FILE_NAME));
+		t.src(makeSrc(TEST_FILE_NAME_MD5_BAD));
+        File dst = folder.newFolder();
+        t.dest(dst);
+        
+        Verify v = makeVerifyTask(t);
+        v.algorithm("MD5");
+        MessageDigest md5 = MessageDigest.getInstance("MD5");
+        md5.update(contents);
+        String calculatedChecksum = Hex.encodeHexString(md5.digest());
+        v.checksumFile(new File(dst, TEST_FILE_NAME_MD5_BAD));
+        v.src(new File(dst, TEST_FILE_NAME));
+        
+        t.execute();
+        v.execute(); // should throw
+    }
+    
+    /**
+     * Tests if the Verify task fails if no checksum specified
+     * @throws Exception if anything goes wrong
+     */
+    @Test(expected = TaskExecutionException.class)
+    public void verifyNoChecksumSpecified() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(TEST_FILE_NAME));
+		t.src(makeSrc(TEST_FILE_NAME_MD5_BAD));
+        File dst = folder.newFolder();
+        t.dest(dst);
+        
+        Verify v = makeVerifyTask(t);
+        v.algorithm("MD5");
+        v.src(new File(dst, TEST_FILE_NAME));
+        
+        t.execute();
+        v.execute(); // should throw
+    }
+	
+    /**
+     * Tests if the Verify task fails if bot checksums specified
+     * @throws Exception if anything goes wrong
+     */
+    @Test(expected = TaskExecutionException.class)
+    public void verifyBothChecksumsSpecified() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(TEST_FILE_NAME));
+		t.src(makeSrc(TEST_FILE_NAME_MD5_BAD));
+        File dst = folder.newFolder();
+        t.dest(dst);
+        
+        Verify v = makeVerifyTask(t);
+        v.algorithm("MD5");
+        MessageDigest md5 = MessageDigest.getInstance("MD5");
+        md5.update(contents);
+        String calculatedChecksum = Hex.encodeHexString(md5.digest());
+        v.checksumFile(new File(dst, TEST_FILE_NAME_MD5_BAD));
+        v.checksum(calculatedChecksum);
+        v.src(new File(dst, TEST_FILE_NAME));
+        
+        t.execute();
+        v.execute(); // should throw
+    }
+    
 }
