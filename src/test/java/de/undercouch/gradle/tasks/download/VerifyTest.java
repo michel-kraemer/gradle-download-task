@@ -94,7 +94,7 @@ public class VerifyTest extends TestBase {
     public void verifyMD5FromFile() throws Exception {
         Download t = makeProjectAndTask();
         t.src(makeSrc(TEST_FILE_NAME));
-		t.src(makeSrc(TEST_FILE_NAME_MD5));
+        t.src(makeSrc(TEST_FILE_NAME_MD5));
         File dst = folder.newFolder();
         t.dest(dst);
         
@@ -118,7 +118,7 @@ public class VerifyTest extends TestBase {
     public void verifyWrongMD5File() throws Exception {
         Download t = makeProjectAndTask();
         t.src(makeSrc(TEST_FILE_NAME));
-		t.src(makeSrc(TEST_FILE_NAME_MD5_BAD));
+        t.src(makeSrc(TEST_FILE_NAME_MD5_BAD));
         File dst = folder.newFolder();
         t.dest(dst);
         
@@ -142,7 +142,7 @@ public class VerifyTest extends TestBase {
     public void verifyNoChecksumSpecified() throws Exception {
         Download t = makeProjectAndTask();
         t.src(makeSrc(TEST_FILE_NAME));
-		t.src(makeSrc(TEST_FILE_NAME_MD5_BAD));
+        t.src(makeSrc(TEST_FILE_NAME_MD5_BAD));
         File dst = folder.newFolder();
         t.dest(dst);
         
@@ -153,7 +153,7 @@ public class VerifyTest extends TestBase {
         t.execute();
         v.execute(); // should throw
     }
-	
+    
     /**
      * Tests if the Verify task fails if bot checksums specified
      * @throws Exception if anything goes wrong
@@ -162,7 +162,7 @@ public class VerifyTest extends TestBase {
     public void verifyBothChecksumsSpecified() throws Exception {
         Download t = makeProjectAndTask();
         t.src(makeSrc(TEST_FILE_NAME));
-		t.src(makeSrc(TEST_FILE_NAME_MD5_BAD));
+        t.src(makeSrc(TEST_FILE_NAME_MD5_BAD));
         File dst = folder.newFolder();
         t.dest(dst);
         
@@ -187,10 +187,10 @@ public class VerifyTest extends TestBase {
     public void testChecksumSetGet() throws Exception {
         Download t = makeProjectAndTask();
         Verify v = makeVerifyTask(t);
-		v.checksum("TEST");
-		assertEquals("TEST", v.getChecksum());
-	}
-	
+        v.checksum("TEST");
+        assertEquals("TEST", v.getChecksum());
+    }
+    
     /**
      * Tests checksumFile set/get
      * @throws Exception if anything goes wrong
@@ -199,13 +199,13 @@ public class VerifyTest extends TestBase {
     public void testChecksumFileSetGet() throws Exception {
         Download t = makeProjectAndTask();
         Verify v = makeVerifyTask(t);
-		
-		File dst = folder.newFolder();
-		File md5File = new File(dst, TEST_FILE_NAME_MD5);
-		v.checksumFile(md5File);
-		assertEquals(md5File, v.getChecksumFile());
-	}
-	
+        
+        File dst = folder.newFolder();
+        File md5File = new File(dst, TEST_FILE_NAME_MD5);
+        v.checksumFile(md5File);
+        assertEquals(md5File, v.getChecksumFile());
+    }
+    
     /**
      * Tests checksumFile set/get from String
      * @throws Exception if anything goes wrong
@@ -214,10 +214,10 @@ public class VerifyTest extends TestBase {
     public void testChecksumFileSetAsString() throws Exception {
         Download t = makeProjectAndTask();
         Verify v = makeVerifyTask(t);
-		
-		File dst = folder.newFolder();
-		File md5File = new File(dst, TEST_FILE_NAME_MD5);
-		v.checksumFile(md5File.getName());
-		assertEquals(TEST_FILE_NAME_MD5, v.getChecksumFile().getCanonicalFile().getName());
-	}
+        
+        File dst = folder.newFolder();
+        File md5File = new File(dst, TEST_FILE_NAME_MD5);
+        v.checksumFile(md5File.getName());
+        assertEquals(TEST_FILE_NAME_MD5, v.getChecksumFile().getCanonicalFile().getName());
+    }
 }
