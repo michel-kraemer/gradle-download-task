@@ -17,6 +17,7 @@ package de.undercouch.gradle.tasks.download.internal;
 import java.io.IOException;
 
 import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpResponseInterceptor;
@@ -58,10 +59,13 @@ public class ContentEncodingNoneInterceptor implements HttpResponseInterceptor {
         }
 
         //replace (cached) Content-Encoding in HttpEntity
-        Header ce = response.getEntity().getContentEncoding();
-        if (isNone(ce)) {
-            response.setEntity(new CustomContentEncodingEntity(
-                    response.getEntity(), IDENTITY));
+        HttpEntity entity = response.getEntity();
+        if (entity != null) {
+            Header ce = entity.getContentEncoding();
+            if (isNone(ce)) {
+                response.setEntity(new CustomContentEncodingEntity(
+                        entity, IDENTITY));
+            }
         }
     }
 }
