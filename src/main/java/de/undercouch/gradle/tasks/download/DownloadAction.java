@@ -65,6 +65,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.gradle.api.Project;
 
+import de.undercouch.gradle.tasks.download.internal.ContentEncodingNoneInterceptor;
 import de.undercouch.gradle.tasks.download.internal.InsecureHostnameVerifier;
 import de.undercouch.gradle.tasks.download.internal.InsecureTrustManager;
 import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
@@ -357,6 +358,10 @@ public class DownloadAction implements DownloadSpec {
             builder.setConnectionManager(cm);
         }
         
+        //add an interceptor that replaces the invalid Content-Type
+        //'none' by 'identity'
+        builder.addInterceptorFirst(new ContentEncodingNoneInterceptor());
+
         CloseableHttpClient client = builder.build();
         return client;
     }
