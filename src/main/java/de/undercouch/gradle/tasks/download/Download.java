@@ -134,6 +134,21 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
 
     @Override
+    public void authType(String authType) {
+        action.authType(authType);
+    }
+
+    @Override
+    public void workstation(String workstation) {
+        action.workstation(workstation);
+    }
+
+    @Override
+    public void domain(String domain) {
+        action.domain(domain);
+    }
+
+    @Override
     public void headers(Map<String, String> headers) {
         action.headers(headers);
     }
