@@ -39,7 +39,8 @@ public class AuthenticationTest extends TestBase {
     private static final String PASSWORD = "testpass456";
     private static final String USERNAME = "testuser123";
     private static final String AUTHENTICATE = "authenticate";
-    
+    public static final String INVALID_AUTHENTICATION_TYPE = "Invalid Authentication";
+
     @Override
     protected Handler[] makeHandlers() throws IOException {
         ContextHandler authenticationHandler = new ContextHandler("/" + AUTHENTICATE) {
@@ -55,7 +56,7 @@ public class AuthenticationTest extends TestBase {
                 }
                 if (!ahdr.startsWith("Basic ")) {
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                            "Authorization header does not start with 'Basic '");
+                            "Authorization header does not start with 'Basic '" + ahdr);
                     return;
                 }
                 
@@ -100,6 +101,22 @@ public class AuthenticationTest extends TestBase {
         t.src(makeSrc(AUTHENTICATE));
         File dst = folder.newFile();
         t.dest(dst);
+        t.username(USERNAME + "!");
+        t.password(PASSWORD + "!");
+        t.execute();
+    }
+
+    /**
+     * Tests if the plugin doesn't accept invalid authentication type
+     * @throws Exception if anything goes wrong
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void invalidAuthType() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(AUTHENTICATE));
+        File dst = folder.newFile();
+        t.dest(dst);
+        t.authType(INVALID_AUTHENTICATION_TYPE);
         t.username(USERNAME + "!");
         t.password(PASSWORD + "!");
         t.execute();

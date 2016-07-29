@@ -86,8 +86,6 @@ public class DownloadAction implements DownloadSpec {
     private static final HostnameVerifier INSECURE_HOSTNAME_VERIFIER = new InsecureHostnameVerifier();
     private static final TrustManager[] INSECURE_TRUST_MANAGERS = { new InsecureTrustManager() };
 
-    private static final String BASIC_AUTH_TYPE = "Basic";
-    private static final String NTLM_AUTH_TYPE = "NTLM";
     private static final String DEFAULT_AUTH_TYPE = BASIC_AUTH_TYPE;
 
     private static final Set<String> VALID_AUTH_TYPES = new HashSet<String>(){

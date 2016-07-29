@@ -23,6 +23,17 @@ import java.util.Map;
  * @author Michel Kraemer
  */
 public interface DownloadSpec {
+
+    /**
+     * <code>Basic</code> authType constant
+     */
+    String BASIC_AUTH_TYPE = "Basic";
+
+    /**
+     * <code>Basic</code> authType constant
+     */
+    String NTLM_AUTH_TYPE = "NTLM";
+
     /**
      * Sets the download source URL
      * @param src the URL
