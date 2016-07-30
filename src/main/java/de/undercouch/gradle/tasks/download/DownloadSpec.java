@@ -23,6 +23,17 @@ import java.util.Map;
  * @author Michel Kraemer
  */
 public interface DownloadSpec {
+
+    /**
+     * <code>Basic</code> authType constant
+     */
+    String BASIC_AUTH_TYPE = "Basic";
+
+    /**
+     * <code>Basic</code> authType constant
+     */
+    String NTLM_AUTH_TYPE = "NTLM";
+
     /**
      * Sets the download source URL
      * @param src the URL
@@ -62,16 +73,36 @@ public interface DownloadSpec {
     void compress(boolean compress);
     
     /**
-     * Sets the username for <code>Basic</code> authentication
+     * Sets the username for <code>Basic</code> and <code>NTLM</code> authentication
      * @param username the username
      */
     void username(String username);
     
     /**
-     * Sets the password for <code>Basic</code> authentication
+     * Sets the password for <code>Basic</code> and <code>NTLM</code> authentication
      * @param password the password
      */
     void password(String password);
+
+    /**
+     * Specifies authentication type to be used.
+     * Currently valid values are <code>Basic</code> and <code>NTLM</code>
+     *
+     * @param authType the authType, default is <code>Basic</code>
+     */
+    void authType(String authType);
+
+    /**
+     * Sets the domain for <code>NTLM</code> authentication
+     * @param domain the domain
+     */
+    void domain(String domain);
+
+    /**
+     * Sets the workstation for <code>NTLM</code> authentication
+     * @param workstation the workstation
+     */
+    void workstation(String workstation);
 
     /**
      * Sets the HTTP request headers to us when downloading

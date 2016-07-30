@@ -28,9 +28,12 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
 import javax.net.ssl.HostnameVerifier;
@@ -42,7 +45,10 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.auth.AuthScheme;
 import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.NTCredentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.AuthCache;
 import org.apache.http.client.ClientProtocolException;
@@ -58,6 +64,7 @@ import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.auth.NTLMScheme;
 import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -78,6 +85,15 @@ import groovy.lang.Closure;
 public class DownloadAction implements DownloadSpec {
     private static final HostnameVerifier INSECURE_HOSTNAME_VERIFIER = new InsecureHostnameVerifier();
     private static final TrustManager[] INSECURE_TRUST_MANAGERS = { new InsecureTrustManager() };
+
+    private static final String DEFAULT_AUTH_TYPE = BASIC_AUTH_TYPE;
+
+    private static final Set<String> VALID_AUTH_TYPES = new HashSet<String>(){
+        {
+            add(BASIC_AUTH_TYPE);
+            add(NTLM_AUTH_TYPE);
+        }
+    };
     
     private final Project project;
     private List<URL> sources = new ArrayList<URL>(1);
@@ -88,6 +104,9 @@ public class DownloadAction implements DownloadSpec {
     private boolean compress = true;
     private String username;
     private String password;
+    private String workstation;
+    private String domain;
+    private String authType = DEFAULT_AUTH_TYPE;
     private Map<String, String> headers;
     private boolean acceptAnyCertificate = false;
 
@@ -383,9 +402,23 @@ public class DownloadAction implements DownloadSpec {
         HttpClientContext context = null;
         if (username != null && password != null) {
             context = HttpClientContext.create();
-            addAuthentication(httpHost, username, password, true, context);
+
+            Credentials credentials;
+            AuthScheme authScheme;
+
+            if (NTLM_AUTH_TYPE.equals(authType)) {
+                credentials = new NTCredentials(username, password, workstation, domain);
+                authScheme = new NTLMScheme();
+            } else if (BASIC_AUTH_TYPE.equals(authType)) {
+                credentials = new UsernamePasswordCredentials(username, password);
+                authScheme = new BasicScheme();
+            } else {
+                throw new IllegalStateException("Internal plugin error. Usage of not supported authType: " + authType);
+            }
+
+            addAuthentication(httpHost, credentials, authScheme, context);
         }
-        
+
         //create request
         HttpGet get = new HttpGet(file);
         
@@ -405,7 +438,8 @@ public class DownloadAction implements DownloadSpec {
                 if (context == null) {
                     context = HttpClientContext.create();
                 }
-                addAuthentication(proxy, proxyUser, proxyPassword, false, context);
+                Credentials credentials = new UsernamePasswordCredentials(proxyUser, proxyPassword);
+                addAuthentication(proxy, credentials, null, context);
             }
         }
         
@@ -441,16 +475,15 @@ public class DownloadAction implements DownloadSpec {
     /**
      * Add authentication information for the given host
      * @param host the host
-     * @param username the username
-     * @param password the password
-     * @param preAuthenticate <code>true</code> if the authentication scheme
-     * should be set to <code>Basic</code> preemptively (should be
-     * <code>false</code> if adding authentication for a proxy server)
+     * @param credentials credentials for given authentication type
+     * @param preAuthScheme <code>not null</code> if the authentication scheme
+     * should be set preemptively (should be
+     * <code>null</code> if adding authentication for a proxy server)
      * @param context the context in which the authentication information
      * should be saved
      */
-    private void addAuthentication(HttpHost host, String username,
-            String password, boolean preAuthenticate, HttpClientContext context) {
+    private void addAuthentication(HttpHost host, Credentials credentials, AuthScheme preAuthScheme,
+                                   HttpClientContext context) {
         AuthCache authCache = context.getAuthCache();
         if (authCache == null) {
             authCache = new BasicAuthCache();
@@ -463,11 +496,10 @@ public class DownloadAction implements DownloadSpec {
             context.setCredentialsProvider(credsProvider);
         }
         
-        credsProvider.setCredentials(new AuthScope(host),
-                new UsernamePasswordCredentials(username, password));
+        credsProvider.setCredentials(new AuthScope(host), credentials);
         
-        if (preAuthenticate) {
-            authCache.put(host, new BasicScheme());
+        if (preAuthScheme != null) {
+            authCache.put(host, preAuthScheme);
         }
     }
     
@@ -655,6 +687,40 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public void password(String password) {
         this.password = password;
+    }
+
+    @Override
+    public void authType(String authType) {
+        if (authType == null) {
+            this.authType = DEFAULT_AUTH_TYPE;
+        } else if (VALID_AUTH_TYPES.contains(authType)) {
+            this.authType = authType;
+        } else {
+            assertInvalidAuthType(authType);
+        }
+    }
+
+    private void assertInvalidAuthType(String authType) {
+        StringBuilder builder = new StringBuilder("Authentication type: ");
+        builder.append(authType).append(" is not supported. Use one of: [ ");
+        for (Iterator<String> iterator = VALID_AUTH_TYPES.iterator(); iterator.hasNext();) {
+            String type = iterator.next();
+            builder.append(type);
+
+            if (iterator.hasNext()) {
+                builder.append(", ");
+            }
+        }
+        builder.append(" ]");
+        throw new IllegalArgumentException(builder.toString());
+    }
+
+    public void domain(String domain) {
+        this.domain = domain;
+    }
+
+    public void workstation(String workstation) {
+        this.workstation = workstation;
     }
 
     @Override
