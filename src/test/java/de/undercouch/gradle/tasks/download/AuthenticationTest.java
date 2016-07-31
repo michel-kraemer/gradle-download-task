@@ -15,6 +15,7 @@
 package de.undercouch.gradle.tasks.download;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -28,6 +29,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.auth.DigestScheme;
 import org.apache.http.impl.auth.NTLMScheme;
@@ -187,7 +190,7 @@ public class AuthenticationTest extends TestBase {
      * @throws Exception if anything goes wrong
      */
     @Test
-    public void validCredentials() throws Exception {
+    public void validUserAndPass() throws Exception {
         Download t = makeProjectAndTask();
         t.src(makeSrc(AUTHENTICATE));
         File dst = folder.newFile();
@@ -195,6 +198,26 @@ public class AuthenticationTest extends TestBase {
         t.username(USERNAME);
         t.password(PASSWORD);
         t.execute();
+        
+        String dstContents = FileUtils.readFileToString(dst);
+        assertEquals("auth: " + USERNAME + ":" + PASSWORD, dstContents);
+    }
+
+    /**
+     * Tests if the plugin can access a protected resource
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void validCredentials() throws Exception {
+        Credentials cred = new UsernamePasswordCredentials(USERNAME, PASSWORD);
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(AUTHENTICATE));
+        File dst = folder.newFile();
+        t.dest(dst);
+        t.credentials(cred);
+        t.execute();
+        
+        assertEquals(cred, t.getCredentials());
         
         String dstContents = FileUtils.readFileToString(dst);
         assertEquals("auth: " + USERNAME + ":" + PASSWORD, dstContents);
@@ -282,5 +305,38 @@ public class AuthenticationTest extends TestBase {
         Download t = makeProjectAndTask();
         t.authScheme("Digest");
         assertTrue(t.getAuthScheme() instanceof DigestScheme);
+    }
+    
+    /**
+     * Tests if the plugin correctly converts the credentials
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void convertCredentials() throws Exception {
+        Download t = makeProjectAndTask();
+        t.username(USERNAME);
+        t.password(PASSWORD);
+        assertEquals(new UsernamePasswordCredentials(USERNAME, PASSWORD),
+                t.getCredentials());
+    }
+
+    /**
+     * Tests if the plugin has no credentials set by default
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void noDefaultCredentials() throws Exception {
+        Download t = makeProjectAndTask();
+        assertNull(t.getCredentials());
+    }
+    
+    /**
+     * Tests if the plugin has no authentications scheme set by default
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void noDefaultAuthScheme() throws Exception {
+        Download t = makeProjectAndTask();
+        assertNull(t.getAuthScheme());
     }
 }

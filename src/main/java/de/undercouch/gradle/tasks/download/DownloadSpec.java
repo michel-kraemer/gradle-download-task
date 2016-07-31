@@ -19,6 +19,7 @@ import java.net.MalformedURLException;
 import java.util.Map;
 
 import org.apache.http.auth.AuthScheme;
+import org.apache.http.auth.Credentials;
 
 /**
  * An interface for classes that perform file downloads
@@ -90,6 +91,15 @@ public interface DownloadSpec {
     void authScheme(Object authScheme);
 
     /**
+     * Sets the credentials used for authentication. Can be called as an
+     * alternative to {@link #username(String)} and {@link #password(String)}.
+     * Allows for setting credentials for authentication schemes other than
+     * <code>Basic</code> or <code>Digest</code>.
+     * @param credentials the credentials
+     */
+    void credentials(Credentials credentials);
+
+    /**
      * Sets the HTTP request headers to us when downloading
      * @param headers a Map of header names to values
      */
@@ -157,6 +167,12 @@ public interface DownloadSpec {
      * no authentication is performed)
      */
     AuthScheme getAuthScheme();
+    
+    /**
+     * @return the credentials used for authentication (or <code>null</code> if
+     * no authentication is performed)
+     */
+    Credentials getCredentials();
 
     /**
      * @return the HTTP request headers to use when downloading

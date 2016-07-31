@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.http.auth.AuthScheme;
+import org.apache.http.auth.Credentials;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
 import org.gradle.api.specs.Spec;
@@ -140,6 +141,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
 
     @Override
+    public void credentials(Credentials credentials) {
+        action.credentials(credentials);
+    }
+
+    @Override
     public void headers(Map<String, String> headers) {
         action.headers(headers);
     }
@@ -197,6 +203,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public AuthScheme getAuthScheme() {
         return action.getAuthScheme();
+    }
+
+    @Override
+    public Credentials getCredentials() {
+        return action.getCredentials();
     }
 
     @Override

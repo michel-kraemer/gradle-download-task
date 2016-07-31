@@ -158,19 +158,27 @@ properties to calculate their value at runtime.
 
 **Authentication**
 
+<dl>
 <dt>username</dt>
 <dd>The username for <code>Basic</code> or <code>Digest</code> authentication
 <em>(optional)</em></dd>
 <dt>password</dt>
 <dd>The password for <code>Basic</code> or <code>Digest</code> authentication
 <em>(optional)</em></dd>
+<dt>credentials</dt>
+<dd>The credentials to use for authentication. This property is an alternative to
+<code>username</code> and <code>password</code>. The value is expected to be an instance of
+<a href="https://hc.apache.org/httpcomponents-client-4.5.x/httpclient/apidocs/org/apache/http/auth/Credentials.html">Credentials</a>.
+<em>(optional)</em></dd>
 <dt>authScheme</dt>
 <dd>The authentication scheme to use. Either a string (valid values are
 <code>Basic</code> and <code>Digest</code>) or an instance of
 <a href="https://hc.apache.org/httpcomponents-client-4.5.x/httpclient/apidocs/org/apache/http/auth/AuthScheme.html">AuthScheme</a>.
-If <code>username</code> and <code>password</code> are set the default value of
+If credentials are configured (either through <code>username</code> and
+<code>password</code> or through <code>credentials</code>) the default value of
 this property will be <code>Basic</code>. Otherwise this property has no default
 value. <em>(optional)</em></dd>
+</dl>
 
 Verify task
 -----------
