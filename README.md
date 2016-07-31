@@ -120,7 +120,7 @@ Download task
 
 The download task and the extension support the following properties.
 
-**General**
+### General
 
 <dl>
 <dt>src</dt>
@@ -156,7 +156,7 @@ and any certificate (even an invalid one) should be accepted.
 <em>Tip!</em> You may provide Groovy Closures to the `src` and `dest`
 properties to calculate their value at runtime.
 
-**Authentication**
+### Authentication
 
 <dl>
 <dt>username</dt>
