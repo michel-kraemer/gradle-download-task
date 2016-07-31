@@ -21,6 +21,7 @@ import java.net.MalformedURLException;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.http.auth.AuthScheme;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
 import org.gradle.api.specs.Spec;
@@ -132,6 +133,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     public void password(String password) {
         action.password(password);
     }
+    
+    @Override
+    public void authScheme(Object authScheme) {
+        action.authScheme(authScheme);
+    }
 
     @Override
     public void headers(Map<String, String> headers) {
@@ -186,6 +192,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public String getPassword() {
         return action.getPassword();
+    }
+    
+    @Override
+    public AuthScheme getAuthScheme() {
+        return action.getAuthScheme();
     }
 
     @Override

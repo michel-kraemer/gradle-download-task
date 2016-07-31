@@ -15,6 +15,7 @@
 package de.undercouch.gradle.tasks.download;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,8 +26,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.auth.DigestScheme;
+import org.apache.http.impl.auth.NTLMScheme;
 import org.gradle.api.tasks.TaskExecutionException;
+import org.junit.Before;
 import org.junit.Test;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.handler.ContextHandler;
@@ -39,6 +45,20 @@ public class AuthenticationTest extends TestBase {
     private static final String PASSWORD = "testpass456";
     private static final String USERNAME = "testuser123";
     private static final String AUTHENTICATE = "authenticate";
+    private static final String REALM = "Gradle";
+    private static final String NONCE = "ABCDEF0123456789";
+    
+    private boolean basic = true;
+    
+    /**
+     * Set up the test
+     * @throws Exception if anything goes wrong
+     */
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        basic = true;
+    }
     
     @Override
     protected Handler[] makeHandlers() throws IOException {
@@ -49,10 +69,25 @@ public class AuthenticationTest extends TestBase {
                             throws IOException, ServletException {
                 String ahdr = request.getHeader("Authorization");
                 if (ahdr == null) {
+                    if (!basic) {
+                        response.setHeader("WWW-Authenticate",
+                                "Digest realm=\"" + REALM + "\"," +
+                                "nonce=\"" + NONCE + "\"");
+                    }
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
                             "No authorization header given");
                     return;
                 }
+                
+                if (basic) {
+                    checkBasic(ahdr, response);
+                } else {
+                    checkDigest(ahdr, response);
+                }
+            }
+            
+            private void checkBasic(String ahdr, HttpServletResponse response)
+                    throws IOException {
                 if (!ahdr.startsWith("Basic ")) {
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
                             "Authorization header does not start with 'Basic '");
@@ -71,6 +106,48 @@ public class AuthenticationTest extends TestBase {
                 response.setStatus(200);
                 PrintWriter rw = response.getWriter();
                 rw.write("auth: " + ahdr);
+                rw.close();
+            }
+            
+            private void checkDigest(String ahdr, HttpServletResponse response)
+                    throws IOException {
+                if (!ahdr.startsWith("Digest ")) {
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
+                            "Authorization header does not start with 'Digest '");
+                    return;
+                }
+                
+                String expectedResponse = USERNAME + ":" + REALM + ":" + PASSWORD;
+                expectedResponse = DigestUtils.md5Hex(expectedResponse);
+                
+                ahdr = ahdr.substring(7);
+                String[] parts = ahdr.split(",");
+                for (String p : parts) {
+                    if (p.startsWith("username") &&
+                            !p.equals("username=\"" + USERNAME + "\"")) {
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
+                                "Wrong username");
+                        return;
+                    } else if (p.startsWith("nonce") &&
+                            !p.equals("nonce=\"" + NONCE + "\"")) {
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
+                                "Wrong nonce");
+                        return;
+                    } else if (p.startsWith("realm") &&
+                            !p.equals("realm=\"" + REALM + "\"")) {
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
+                                "Wrong realm");
+                        return;
+                    } else if (p.startsWith("response") &&
+                            !p.equals("response=\"" + expectedResponse + "\"")) {
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
+                                "Wrong response");
+                        return;
+                    }
+                }
+                
+                response.setStatus(200);
+                PrintWriter rw = response.getWriter();
                 rw.close();
             }
         };
@@ -121,5 +198,89 @@ public class AuthenticationTest extends TestBase {
         
         String dstContents = FileUtils.readFileToString(dst);
         assertEquals("auth: " + USERNAME + ":" + PASSWORD, dstContents);
+    }
+
+    /**
+     * Tests if the plugin can access a protected resource
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void validDigest() throws Exception {
+        basic = false;
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(AUTHENTICATE));
+        File dst = folder.newFile();
+        t.dest(dst);
+        t.username(USERNAME);
+        t.password(PASSWORD);
+        t.authScheme("Digest");
+        t.execute();
+    }
+    
+    /**
+     * Make sure the plugin rejects an invalid authentication scheme
+     * @throws Exception if anything goes wrong
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void invalidAuthSchemeString() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(AUTHENTICATE));
+        File dst = folder.newFile();
+        t.dest(dst);
+        t.authScheme("Foobar");
+        t.execute();
+    }
+    
+    /**
+     * Make sure the plugin rejects an invalid authentication scheme
+     * @throws Exception if anything goes wrong
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void invalidAuthSchemeType() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(AUTHENTICATE));
+        File dst = folder.newFile();
+        t.dest(dst);
+        t.authScheme(new File(""));
+        t.execute();
+    }
+    
+    /**
+     * Make sure the plugin rejects an invalid authentication scheme if
+     * username and password are set
+     * @throws Exception if anything goes wrong
+     */
+    @Test(expected = TaskExecutionException.class)
+    public void invalidAuthSchemeWithUserAndPass() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(AUTHENTICATE));
+        File dst = folder.newFile();
+        t.dest(dst);
+        t.username(USERNAME);
+        t.password(PASSWORD);
+        t.authScheme(new NTLMScheme());
+        t.execute();
+    }
+    
+    /**
+     * Tests if the plugin correctly converts the Basic authentication scheme
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void convertBasic() throws Exception {
+        Download t = makeProjectAndTask();
+        t.authScheme("Basic");
+        assertTrue(t.getAuthScheme() instanceof BasicScheme);
+    }
+    
+    /**
+     * Tests if the plugin correctly converts the Digest authentication scheme
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void convertDigest() throws Exception {
+        Download t = makeProjectAndTask();
+        t.authScheme("Digest");
+        assertTrue(t.getAuthScheme() instanceof DigestScheme);
     }
 }

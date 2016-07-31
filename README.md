@@ -118,7 +118,9 @@ Please have a look at the `examples` directory for more code samples.
 Download task
 -------------
 
-The download task and the extension support the following properties
+The download task and the extension support the following properties.
+
+**General**
 
 <dl>
 <dt>src</dt>
@@ -139,10 +141,6 @@ has been modified on the server since the last download <em>(default:
 <dt>compress</dt>
 <dd><code>true</code> if compression should be used during download <em>(default:
 <code>true</code>)</em></dd>
-<dt>username</dt>
-<dd>The username for <code>Basic</code> authentication <em>(optional)</em></dd>
-<dt>password</dt>
-<dd>The password for <code>Basic</code> authentication <em>(optional)</em></dd>
 <dt>header</dt>
 <dd>The name and value of a request header to set when making the download
 request <em>(optional)</em></dd>
@@ -157,6 +155,22 @@ and any certificate (even an invalid one) should be accepted.
 
 <em>Tip!</em> You may provide Groovy Closures to the `src` and `dest`
 properties to calculate their value at runtime.
+
+**Authentication**
+
+<dt>username</dt>
+<dd>The username for <code>Basic</code> or <code>Digest</code> authentication
+<em>(optional)</em></dd>
+<dt>password</dt>
+<dd>The password for <code>Basic</code> or <code>Digest</code> authentication
+<em>(optional)</em></dd>
+<dt>authScheme</dt>
+<dd>The authentication scheme to use. Either a string (valid values are
+<code>Basic</code> and <code>Digest</code>) or an instance of
+<a href="https://hc.apache.org/httpcomponents-client-4.5.x/httpclient/apidocs/org/apache/http/auth/AuthScheme.html">AuthScheme</a>.
+If <code>username</code> and <code>password</code> are set the default value of
+this property will be <code>Basic</code>. Otherwise this property has no default
+value. <em>(optional)</em></dd>
 
 Verify task
 -----------

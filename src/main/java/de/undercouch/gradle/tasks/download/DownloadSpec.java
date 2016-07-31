@@ -18,6 +18,8 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.util.Map;
 
+import org.apache.http.auth.AuthScheme;
+
 /**
  * An interface for classes that perform file downloads
  * @author Michel Kraemer
@@ -62,16 +64,30 @@ public interface DownloadSpec {
     void compress(boolean compress);
     
     /**
-     * Sets the username for <code>Basic</code> authentication
+     * Sets the username for <code>Basic</code> or <code>Digest</code>
+     * authentication
      * @param username the username
      */
     void username(String username);
     
     /**
-     * Sets the password for <code>Basic</code> authentication
+     * Sets the password for <code>Basic</code> or <code>Digest</code>
+     * authentication
      * @param password the password
      */
     void password(String password);
+    
+    /**
+     * <p>Sets the authentication scheme to use. This method accepts
+     * either a <code>String</code> (valid values are <code>"Basic"</code>
+     * and <code>"Digest"</code>) or an instance of {@link AuthScheme}.</p>
+     * <p>If <code>username</code> and <code>password</code> are set this
+     * method will only accept <code>"Basic"</code> or <code>"Digest"</code>
+     * as valid values. The default value will be <code>"Basic"</code> in
+     * this case.</p>
+     * @param authScheme the authentication scheme
+     */
+    void authScheme(Object authScheme);
 
     /**
      * Sets the HTTP request headers to us when downloading
@@ -125,14 +141,22 @@ public interface DownloadSpec {
     boolean isCompress();
     
     /**
-     * @return the username for <code>Basic</code> authentication
+     * @return the username for <code>Basic</code> or <code>Digest</code>
+     * authentication
      */
     String getUsername();
     
     /**
-     * @return the password for <code>Basic</code> authentication
+     * @return the password for <code>Basic</code> or <code>Digest</code>
+     * authentication
      */
     String getPassword();
+    
+    /**
+     * @return the authentication scheme used (or <code>null</code> if
+     * no authentication is performed)
+     */
+    AuthScheme getAuthScheme();
 
     /**
      * @return the HTTP request headers to use when downloading

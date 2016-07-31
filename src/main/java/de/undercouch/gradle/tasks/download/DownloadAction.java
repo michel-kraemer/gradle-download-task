@@ -42,6 +42,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.auth.AuthScheme;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.AuthCache;
@@ -58,6 +59,7 @@ import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.auth.DigestScheme;
 import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -88,6 +90,7 @@ public class DownloadAction implements DownloadSpec {
     private boolean compress = true;
     private String username;
     private String password;
+    private AuthScheme authScheme;
     private Map<String, String> headers;
     private boolean acceptAnyCertificate = false;
 
@@ -383,7 +386,15 @@ public class DownloadAction implements DownloadSpec {
         HttpClientContext context = null;
         if (username != null && password != null) {
             context = HttpClientContext.create();
-            addAuthentication(httpHost, username, password, true, context);
+            AuthScheme as = authScheme;
+            if (as == null) {
+                as = new BasicScheme();
+            }
+            if (!(as instanceof BasicScheme) && !(as instanceof DigestScheme)) {
+                throw new IllegalArgumentException("If 'username' and 'password' "
+                        + "are set 'authScheme' must be either 'Basic' or 'Digest'.");
+            }
+            addAuthentication(httpHost, username, password, as, context);
         }
         
         //create request
@@ -405,7 +416,7 @@ public class DownloadAction implements DownloadSpec {
                 if (context == null) {
                     context = HttpClientContext.create();
                 }
-                addAuthentication(proxy, proxyUser, proxyPassword, false, context);
+                addAuthentication(proxy, proxyUser, proxyPassword, null, context);
             }
         }
         
@@ -443,14 +454,13 @@ public class DownloadAction implements DownloadSpec {
      * @param host the host
      * @param username the username
      * @param password the password
-     * @param preAuthenticate <code>true</code> if the authentication scheme
-     * should be set to <code>Basic</code> preemptively (should be
-     * <code>false</code> if adding authentication for a proxy server)
+     * @param authScheme the scheme for preemptive authentication (should be
+     * <code>null</code> if adding authentication for a proxy server)
      * @param context the context in which the authentication information
      * should be saved
      */
     private void addAuthentication(HttpHost host, String username,
-            String password, boolean preAuthenticate, HttpClientContext context) {
+            String password, AuthScheme authScheme, HttpClientContext context) {
         AuthCache authCache = context.getAuthCache();
         if (authCache == null) {
             authCache = new BasicAuthCache();
@@ -466,8 +476,8 @@ public class DownloadAction implements DownloadSpec {
         credsProvider.setCredentials(new AuthScope(host),
                 new UsernamePasswordCredentials(username, password));
         
-        if (preAuthenticate) {
-            authCache.put(host, new BasicScheme());
+        if (authScheme != null) {
+            authCache.put(host, authScheme);
         }
     }
     
@@ -658,6 +668,27 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
+    public void authScheme(Object authScheme) {
+        if (authScheme instanceof AuthScheme) {
+            this.authScheme = (AuthScheme)authScheme;
+        } else if (authScheme instanceof String) {
+            String sa = (String)authScheme;
+            if (sa.equalsIgnoreCase("Basic")) {
+                this.authScheme = new BasicScheme();
+            } else if (sa.equalsIgnoreCase("Digest")) {
+                this.authScheme = new DigestScheme();
+            } else {
+                throw new IllegalArgumentException("Invalid authentication scheme: "
+                        + "'" + sa + "'. Valid values are 'Basic' and 'Digest'.");
+            }
+        } else {
+            throw new IllegalArgumentException("Invalid authentication "
+                    + "scheme. Provide either a String or an instance of "
+                    + AuthScheme.class.getName() + ".");
+        }
+    }
+
+    @Override
     public void headers(Map<String, String> headers) {
         if (this.headers == null) {
             this.headers = new LinkedHashMap<String, String>();
@@ -723,6 +754,11 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public String getPassword() {
         return password;
+    }
+
+    @Override
+    public AuthScheme getAuthScheme() {
+        return authScheme;
     }
 
     @Override
