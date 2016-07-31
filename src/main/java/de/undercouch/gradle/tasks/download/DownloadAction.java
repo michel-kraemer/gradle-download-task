@@ -31,7 +31,6 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.GZIPInputStream;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -242,9 +241,6 @@ public class DownloadAction implements DownloadSpec {
         
         //open stream and start downloading
         InputStream is = entity.getContent();
-        if (isContentCompressed(entity)) {
-            is = new GZIPInputStream(is);
-        }
         try {
             startProgress();
             OutputStream os = new FileOutputStream(destFile);
@@ -526,23 +522,6 @@ public class DownloadAction implements DownloadSpec {
             return 0;
         }
         return date.getTime();
-    }
-    
-    /**
-     * Checks if the content of the given {@link HttpEntity} is compressed
-     * @param entity the entity to check
-     * @return true if it is compressed, false otherwise
-     */
-    private boolean isContentCompressed(HttpEntity entity) {
-        Header header = entity.getContentEncoding();
-        if (header == null) {
-            return false;
-        }
-        String value = header.getValue();
-        if (value == null || value.isEmpty()) {
-            return false;
-        }
-        return value.equalsIgnoreCase("gzip");
     }
     
     private void startProgress() {
