@@ -209,6 +209,16 @@ task verifyFile(type: Verify) {
     checksumFile new File(buildDir, 'file.ext.md5')
 }
 ```
+or using md5 file
+```groovy
+import de.undercouch.gradle.tasks.download.Verify
+
+task verifyFile(type: Verify) {
+    src new File(buildDir, 'file.ext')
+    algorithm 'MD5'
+    checksumFile new File(buildDir, 'file.ext.md5')
+}
+```
 
 You can combine the download task and the verify task as follows:
 
