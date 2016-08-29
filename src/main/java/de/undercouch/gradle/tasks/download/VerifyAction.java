@@ -18,6 +18,7 @@ import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -74,18 +75,6 @@ public class VerifyAction implements VerifySpec {
             throw new IllegalArgumentException("Please provide either checksum to verify against or a file containing one");
         }
         
-        // checksum retrieval
-        String localChecksum = this.checksum;
-        if (localChecksum == null) {
-        	Scanner scanner = new Scanner(checksumFile);
-        	try {
-        		String line = scanner.next();
-                localChecksum = line.substring(0,32);
-        	} finally {
-        		scanner.close(); 
-        	}
-        }
-		
         // calculate file's checksum
         MessageDigest md = MessageDigest.getInstance(algorithm);
         FileInputStream fis = new FileInputStream(src);
@@ -102,12 +91,53 @@ public class VerifyAction implements VerifySpec {
         }
         
         // verify checksum
-        if (!calculatedChecksum.equalsIgnoreCase(localChecksum)) {
+        boolean verified = false;
+        if (calculatedChecksum.equalsIgnoreCase(getChecksumMD5SumFormat())) verified = true;
+        if (!verified && calculatedChecksum.equalsIgnoreCase(getChecksumGPGMD5Format())) verified = true;
+        if (!verified) {
             throw new GradleException("Invalid checksum for file '" +
-                    src.getName() + "'. Expected " + localChecksum.toLowerCase() + 
-                    " but got " + calculatedChecksum.toLowerCase() + ".");
+                    src.getName() + "'. Calculated " + calculatedChecksum.toLowerCase() + ".");
         }
     }
+
+	private String getChecksumMD5SumFormat() throws FileNotFoundException {
+		String localChecksum = this.checksum;
+        if (localChecksum == null) {
+        	Scanner scanner = new Scanner(checksumFile);
+        	try {
+        		String line = scanner.next();
+        		if (line.length()>=32)
+        			localChecksum = line.substring(0,32);
+        	} finally {
+        		scanner.close(); 
+        	}
+        }
+		return localChecksum;
+	}
+    
+	private String getChecksumGPGMD5Format() throws FileNotFoundException {
+		String localChecksum = this.checksum;
+        if (localChecksum == null) {
+        	Scanner scanner = new Scanner(checksumFile);
+        	scanner.useDelimiter(System.getProperty("line.separator"));
+        	try {
+        		String line = scanner.next();
+        		int pos=-1;
+        		if ((pos=line.lastIndexOf("="))>=0) {
+        			line = line.substring(pos+1);
+        			localChecksum = line.replace(" ", "");
+        		} else {
+            		if ((pos=line.lastIndexOf(":"))>=0) {
+            			line = line.substring(pos+1);
+            			localChecksum = line.replace(" ", "");
+            		}
+        		}
+        	} finally {
+        		scanner.close(); 
+        	}
+        }
+		return localChecksum;
+	}
     
     @Override
     public void src(Object src) {

@@ -91,10 +91,10 @@ public class VerifyTest extends TestBase {
      * @throws Exception if anything goes wrong
      */
     @Test
-    public void verifyMD5FromFile() throws Exception {
+    public void verifyMD5FromMD5SumFile() throws Exception {
         Download t = makeProjectAndTask();
         t.src(makeSrc(TEST_FILE_NAME));
-        t.src(makeSrc(TEST_FILE_NAME_MD5));
+        t.src(makeSrc(TEST_FILE_NAME_MD5SUM_MD5));
         File dst = folder.newFolder();
         t.dest(dst);
         
@@ -102,8 +102,53 @@ public class VerifyTest extends TestBase {
         v.algorithm("MD5");
         MessageDigest md5 = MessageDigest.getInstance("MD5");
         md5.update(contents);
-        String calculatedChecksum = Hex.encodeHexString(md5.digest());
-        v.checksumFile(new File(dst, TEST_FILE_NAME_MD5));
+        v.checksumFile(new File(dst, TEST_FILE_NAME_MD5SUM_MD5));
+        v.src(new File(dst, TEST_FILE_NAME));
+        
+        t.execute();
+        v.execute(); // will throw if the checksum is not OK
+    }
+    
+    /**
+     * Tests if the Verify task can verify a file using its GPG MD5 checksum file format 1
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void verifyMD5FromGPGFileFormat1() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(TEST_FILE_NAME));
+        t.src(makeSrc(TEST_FILE_NAME1_GPGMD5_MD5));
+        File dst = folder.newFolder();
+        t.dest(dst);
+        
+        Verify v = makeVerifyTask(t);
+        v.algorithm("MD5");
+        MessageDigest md5 = MessageDigest.getInstance("MD5");
+        md5.update(contents);
+        v.checksumFile(new File(dst, TEST_FILE_NAME1_GPGMD5_MD5));
+        v.src(new File(dst, TEST_FILE_NAME));
+        
+        t.execute();
+        v.execute(); // will throw if the checksum is not OK
+    }
+    
+    /**
+     * Tests if the Verify task can verify a file using its GPG MD5 checksum file format 2
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void verifyMD5FromGPGFileFormat2() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(TEST_FILE_NAME));
+        t.src(makeSrc(TEST_FILE_NAME2_GPGMD5_MD5));
+        File dst = folder.newFolder();
+        t.dest(dst);
+        
+        Verify v = makeVerifyTask(t);
+        v.algorithm("MD5");
+        MessageDigest md5 = MessageDigest.getInstance("MD5");
+        md5.update(contents);
+        v.checksumFile(new File(dst, TEST_FILE_NAME2_GPGMD5_MD5));
         v.src(new File(dst, TEST_FILE_NAME));
         
         t.execute();
@@ -118,7 +163,7 @@ public class VerifyTest extends TestBase {
     public void verifyWrongMD5File() throws Exception {
         Download t = makeProjectAndTask();
         t.src(makeSrc(TEST_FILE_NAME));
-        t.src(makeSrc(TEST_FILE_NAME_MD5_BAD));
+        t.src(makeSrc(TEST_FILE_NAME_MD5SUM_MD5_BAD));
         File dst = folder.newFolder();
         t.dest(dst);
         
@@ -126,8 +171,7 @@ public class VerifyTest extends TestBase {
         v.algorithm("MD5");
         MessageDigest md5 = MessageDigest.getInstance("MD5");
         md5.update(contents);
-        String calculatedChecksum = Hex.encodeHexString(md5.digest());
-        v.checksumFile(new File(dst, TEST_FILE_NAME_MD5_BAD));
+        v.checksumFile(new File(dst, TEST_FILE_NAME_MD5SUM_MD5_BAD));
         v.src(new File(dst, TEST_FILE_NAME));
         
         t.execute();
@@ -142,7 +186,7 @@ public class VerifyTest extends TestBase {
     public void verifyNoChecksumSpecified() throws Exception {
         Download t = makeProjectAndTask();
         t.src(makeSrc(TEST_FILE_NAME));
-        t.src(makeSrc(TEST_FILE_NAME_MD5_BAD));
+        t.src(makeSrc(TEST_FILE_NAME_MD5SUM_MD5_BAD));
         File dst = folder.newFolder();
         t.dest(dst);
         
@@ -162,7 +206,7 @@ public class VerifyTest extends TestBase {
     public void verifyBothChecksumsSpecified() throws Exception {
         Download t = makeProjectAndTask();
         t.src(makeSrc(TEST_FILE_NAME));
-        t.src(makeSrc(TEST_FILE_NAME_MD5_BAD));
+        t.src(makeSrc(TEST_FILE_NAME_MD5SUM_MD5_BAD));
         File dst = folder.newFolder();
         t.dest(dst);
         
@@ -171,7 +215,7 @@ public class VerifyTest extends TestBase {
         MessageDigest md5 = MessageDigest.getInstance("MD5");
         md5.update(contents);
         String calculatedChecksum = Hex.encodeHexString(md5.digest());
-        v.checksumFile(new File(dst, TEST_FILE_NAME_MD5_BAD));
+        v.checksumFile(new File(dst, TEST_FILE_NAME_MD5SUM_MD5_BAD));
         v.checksum(calculatedChecksum);
         v.src(new File(dst, TEST_FILE_NAME));
         
@@ -201,7 +245,7 @@ public class VerifyTest extends TestBase {
         Verify v = makeVerifyTask(t);
         
         File dst = folder.newFolder();
-        File md5File = new File(dst, TEST_FILE_NAME_MD5);
+        File md5File = new File(dst, TEST_FILE_NAME_MD5SUM_MD5);
         v.checksumFile(md5File);
         assertEquals(md5File, v.getChecksumFile());
     }
@@ -216,8 +260,8 @@ public class VerifyTest extends TestBase {
         Verify v = makeVerifyTask(t);
         
         File dst = folder.newFolder();
-        File md5File = new File(dst, TEST_FILE_NAME_MD5);
+        File md5File = new File(dst, TEST_FILE_NAME_MD5SUM_MD5);
         v.checksumFile(md5File.getName());
-        assertEquals(TEST_FILE_NAME_MD5, v.getChecksumFile().getCanonicalFile().getName());
+        assertEquals(TEST_FILE_NAME_MD5SUM_MD5, v.getChecksumFile().getCanonicalFile().getName());
     }
 }
