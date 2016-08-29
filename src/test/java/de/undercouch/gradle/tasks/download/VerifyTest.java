@@ -193,6 +193,27 @@ public class VerifyTest extends TestBase {
     }
     
     /**
+     * Tests if the Verify task fails if the checksum file parameter has wrong type
+     * @throws Exception if anything goes wrong
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void verifyWrongChecksumFileType() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(TEST_FILE_NAME));
+        t.src(makeSrc(TEST_FILE_NAME_MD5SUM_MD5_BAD));
+        File dst = folder.newFolder();
+        t.dest(dst);
+        
+        Verify v = makeVerifyTask(t);
+        v.algorithm("MD5");
+        v.checksumFile(new Object());
+        v.src(new File(dst, TEST_FILE_NAME));
+        
+        t.execute();
+        v.execute(); // should throw
+    }
+    
+    /**
      * Tests if the Verify task fails if no checksum specified
      * @throws Exception if anything goes wrong
      */
