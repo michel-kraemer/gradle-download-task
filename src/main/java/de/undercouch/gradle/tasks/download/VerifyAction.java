@@ -77,8 +77,13 @@ public class VerifyAction implements VerifySpec {
         // checksum retrieval
         String localChecksum = this.checksum;
         if (localChecksum == null) {
-            String line = new Scanner(checksumFile).next();
-            localChecksum = line.substring(0,32);
+        	Scanner scanner = new Scanner(checksumFile);
+        	try {
+        		String line = scanner.next();
+                localChecksum = line.substring(0,32);
+        	} finally {
+        		scanner.close(); 
+        	}
         }
 		
         // calculate file's checksum
