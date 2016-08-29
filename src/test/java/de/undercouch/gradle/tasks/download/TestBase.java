@@ -41,6 +41,12 @@ import org.mortbay.resource.Resource;
  * @author Michel Kraemer
  */
 public abstract class TestBase {
+	
+    /**
+     * File separator
+     */
+    protected final static String FILE_SEPARATOR = System.getProperty("file.separator");
+    
     /**
      * File name of the first test file
      */

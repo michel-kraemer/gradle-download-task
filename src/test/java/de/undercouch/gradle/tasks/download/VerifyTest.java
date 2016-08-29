@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.codec.binary.Hex;
+import org.codehaus.groovy.runtime.MethodClosure;
 import org.gradle.api.tasks.TaskExecutionException;
 import org.junit.Test;
 
@@ -125,11 +126,24 @@ public class VerifyTest extends TestBase {
         v.algorithm("MD5");
         MessageDigest md5 = MessageDigest.getInstance("MD5");
         md5.update(contents);
-        v.checksumFile(new File(dst, TEST_FILE_NAME1_GPGMD5_MD5));
-        v.src(new File(dst, TEST_FILE_NAME));
+        verifyMD5FromGPGFileFormat1Dest = dst;
+        v.checksumFile(new MethodClosure(this, "getChecksumFileInVerifyMD5FromGPGFileFormat1"));
+        v.src(new MethodClosure(this, "getSrcFileInVerifyMD5FromGPGFileFormat1"));
         
         t.execute();
         v.execute(); // will throw if the checksum is not OK
+    }
+    
+    // this code is used for closure testing in verifyMD5FromGPGFileFormat1
+    File verifyMD5FromGPGFileFormat1Dest = null;
+    @SuppressWarnings("unused")
+	private File getChecksumFileInVerifyMD5FromGPGFileFormat1() {
+    	return new File(verifyMD5FromGPGFileFormat1Dest, TEST_FILE_NAME1_GPGMD5_MD5);
+    }
+    
+    @SuppressWarnings("unused")
+	private File getSrcFileInVerifyMD5FromGPGFileFormat1() {
+    	return new File(verifyMD5FromGPGFileFormat1Dest, TEST_FILE_NAME);
     }
     
     /**
@@ -148,7 +162,7 @@ public class VerifyTest extends TestBase {
         v.algorithm("MD5");
         MessageDigest md5 = MessageDigest.getInstance("MD5");
         md5.update(contents);
-        v.checksumFile(new File(dst, TEST_FILE_NAME2_GPGMD5_MD5));
+        v.checksumFile(dst.getAbsolutePath() + FILE_SEPARATOR + TEST_FILE_NAME2_GPGMD5_MD5);
         v.src(new File(dst, TEST_FILE_NAME));
         
         t.execute();
