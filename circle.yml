@@ -1,6 +1,6 @@
 machine:
   java:
-    version: oraclejdk6
+    version: oraclejdk7
 test:
   override:
     - TERM=dumb ./gradlew --console=plain install check jacocoTestReport
