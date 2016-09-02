@@ -123,7 +123,7 @@ task integrationTest << {
             }
             exec {
                 workingDir testProjectDir
-                commandLine gradlew + 'wrapper'
+                commandLine gradlew + ['--no-daemon', 'wrapper']
             }
             
             //execute test project
@@ -133,7 +133,7 @@ task integrationTest << {
             }
             exec {
                 workingDir testProjectDir
-                commandLine gradlew + ['downloadFile', 'downloadFile2', 'verifyFile']
+                commandLine gradlew + ['--no-daemon', 'downloadFile', 'downloadFile2', 'verifyFile']
             }
             
             //check test files
