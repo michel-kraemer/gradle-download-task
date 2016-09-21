@@ -128,9 +128,11 @@ public class ProxyTest extends TestBase {
     /**
      * Tests if a single file can be downloaded through a proxy server
      * @param authenticating true if the proxy should require authentication
+     * @param newNonProxyHosts new value of the "http.nonProxyHosts" system property
+     * @param expectedProxyCounter number of times the request is expected to hit the proxy
      * @throws Exception if anything goes wrong
      */
-    private void testProxy(boolean authenticating) throws Exception {
+    private void testProxy(boolean authenticating, String newNonProxyHosts, int expectedProxyCounter) throws Exception {
         String proxyHost = System.getProperty("http.proxyHost");
         String proxyPort = System.getProperty("http.proxyPort");
         String nonProxyHosts = System.getProperty("http.nonProxyHosts");
@@ -141,7 +143,10 @@ public class ProxyTest extends TestBase {
         try {
             System.setProperty("http.proxyHost", "127.0.0.1");
             System.setProperty("http.proxyPort", String.valueOf(this.proxyPort));
-            String newNonProxyHosts = findNonProxyHosts();
+            
+            if (newNonProxyHosts == null) {
+                newNonProxyHosts = findNonProxyHosts();
+            }
             if (newNonProxyHosts == null) {
                 System.err.println("Could not configure nonProxyHosts that "
                         + "bypasses localhost. Please use a newer JDK version "
@@ -164,7 +169,7 @@ public class ProxyTest extends TestBase {
             
             byte[] dstContents = FileUtils.readFileToByteArray(dst);
             assertArrayEquals(contents, dstContents);
-            assertEquals(1, proxyCounter);
+            assertEquals(expectedProxyCounter, proxyCounter);
         } finally {
             stopProxy();
             if (proxyHost == null) {
@@ -201,7 +206,7 @@ public class ProxyTest extends TestBase {
      */
     @Test
     public void normalProxy() throws Exception {
-        testProxy(false);
+        testProxy(false, null, 1);
     }
     
     /**
@@ -210,6 +215,15 @@ public class ProxyTest extends TestBase {
      */
     @Test
     public void authenticationProxy() throws Exception {
-        testProxy(true);
+        testProxy(true, null, 1);
+    }
+    
+    /**
+     * Tests if the "http.nonProxyHosts" system property is respected 
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void nonProxyHosts() throws Exception {
+        testProxy(false, "localhost", 0);
     }
 }
