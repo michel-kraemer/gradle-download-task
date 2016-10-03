@@ -180,5 +180,6 @@ public class ProxyTest extends TestBase {
     @Test
     public void nonProxyHosts() throws Exception {
         testProxy(false, "localhost.localdomain", 0);
+        testProxy(false, "localhost2.localdomain", 1);
     }
 }
