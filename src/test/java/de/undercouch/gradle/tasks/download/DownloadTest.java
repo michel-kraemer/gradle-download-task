@@ -177,7 +177,7 @@ public class DownloadTest extends TestBase {
             private static final long serialVersionUID = -4463658999363261400L;
             
             @SuppressWarnings("unused")
-            public Object doCall() {
+            public Object doCall() throws Exception {
                 srcCalled[0] = true;
                 return makeSrc(TEST_FILE_NAME);
             }

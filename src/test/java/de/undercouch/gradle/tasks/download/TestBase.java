@@ -16,7 +16,9 @@ package de.undercouch.gradle.tasks.download;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -186,8 +188,9 @@ public abstract class TestBase {
      * Makes a URL for a file provided by the embedded HTTP server
      * @param fileName the file's name
      * @return the URL
+     * @throws UnknownHostException 
      */
-    protected String makeSrc(String fileName) {
-        return "http://localhost:" + getServerPort() + "/" + fileName;
+    protected String makeSrc(String fileName) throws UnknownHostException {
+        return "http://" + InetAddress.getLocalHost().getCanonicalHostName() + ":" + getServerPort() + "/" + fileName;
     }
 }
