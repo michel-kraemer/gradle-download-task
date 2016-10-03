@@ -16,14 +16,8 @@ package de.undercouch.gradle.tasks.download;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
-import java.net.Proxy;
-import java.net.ProxySelector;
-import java.net.URI;
-import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
@@ -98,34 +92,6 @@ public class ProxyTest extends TestBase {
     }
     
     /**
-     * <p>Find a setting for the "http.nonProxyHosts" system property that does
-     * not bypass "localhost".</p>
-     * <p>See http://bugs.java.com/view_bug.do?bug_id=6737819</p>
-     * @return the new setting or <code>null</code> if no setting was found
-     * on the current JVM
-     * @throws Exception should never happen
-     */
-    private static String findNonProxyHosts() throws Exception {
-        URI u = new URI("http://localhost");
-        
-        System.setProperty("http.nonProxyHosts", "");
-        List<Proxy> l = ProxySelector.getDefault().select(u);
-        assertFalse(l.isEmpty());
-        if (l.get(0).type() != Proxy.Type.DIRECT) {
-            return "";
-        }
-        
-        System.setProperty("http.nonProxyHosts", "~localhost");
-        l = ProxySelector.getDefault().select(u);
-        assertFalse(l.isEmpty());
-        if (l.get(0).type() != Proxy.Type.DIRECT) {
-            return "~localhost";
-        }
-        
-        return null;
-    }
-    
-    /**
      * Tests if a single file can be downloaded through a proxy server
      * @param authenticating true if the proxy should require authentication
      * @param newNonProxyHosts new value of the "http.nonProxyHosts" system property
@@ -143,17 +109,6 @@ public class ProxyTest extends TestBase {
         try {
             System.setProperty("http.proxyHost", "127.0.0.1");
             System.setProperty("http.proxyPort", String.valueOf(this.proxyPort));
-            
-            if (newNonProxyHosts == null) {
-                newNonProxyHosts = findNonProxyHosts();
-            }
-            if (newNonProxyHosts == null) {
-                System.err.println("Could not configure nonProxyHosts that "
-                        + "bypasses localhost. Please use a newer JDK version "
-                        + "to run this test.");
-                assumeTrue(false);
-                return;
-            }
             System.setProperty("http.nonProxyHosts", newNonProxyHosts);
             
             if (authenticating) {
@@ -206,7 +161,7 @@ public class ProxyTest extends TestBase {
      */
     @Test
     public void normalProxy() throws Exception {
-        testProxy(false, null, 1);
+        testProxy(false, "", 1);
     }
     
     /**
@@ -215,7 +170,7 @@ public class ProxyTest extends TestBase {
      */
     @Test
     public void authenticationProxy() throws Exception {
-        testProxy(true, null, 1);
+        testProxy(true, "", 1);
     }
     
     /**
@@ -224,6 +179,7 @@ public class ProxyTest extends TestBase {
      */
     @Test
     public void nonProxyHosts() throws Exception {
-        testProxy(false, "localhost", 0);
+        testProxy(false, localHostName, 0);
+        testProxy(false, "example.com", 1);
     }
 }
