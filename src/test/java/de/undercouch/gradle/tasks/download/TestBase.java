@@ -188,6 +188,6 @@ public abstract class TestBase {
      * @return the URL
      */
     protected String makeSrc(String fileName) {
-        return "http://localhost:" + getServerPort() + "/" + fileName;
+        return "http://localhost.localdomain:" + getServerPort() + "/" + fileName;
     }
 }
