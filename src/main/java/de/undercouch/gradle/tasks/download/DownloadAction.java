@@ -22,19 +22,12 @@ import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -53,23 +46,15 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.DateUtils;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.conn.HttpClientConnectionManager;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.auth.DigestScheme;
 import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.gradle.api.Project;
 
-import de.undercouch.gradle.tasks.download.internal.ContentEncodingNoneInterceptor;
-import de.undercouch.gradle.tasks.download.internal.InsecureHostnameVerifier;
-import de.undercouch.gradle.tasks.download.internal.InsecureTrustManager;
+import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
+import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
 import groovy.lang.Closure;
 
@@ -78,9 +63,6 @@ import groovy.lang.Closure;
  * @author Michel Kraemer
  */
 public class DownloadAction implements DownloadSpec {
-    private static final HostnameVerifier INSECURE_HOSTNAME_VERIFIER = new InsecureHostnameVerifier();
-    private static final TrustManager[] INSECURE_TRUST_MANAGERS = { new InsecureTrustManager() };
-    
     private final Project project;
     private List<URL> sources = new ArrayList<URL>(1);
     private File dest;
@@ -103,8 +85,6 @@ public class DownloadAction implements DownloadSpec {
     private int upToDate = 0;
     private int skipped = 0;
 
-    private SSLConnectionSocketFactory insecureSSLSocketFactory = null;
-    
     /**
      * Creates a new download action
      * @param project the project to be built
@@ -140,12 +120,17 @@ public class DownloadAction implements DownloadSpec {
             }
         }
         
-        for (URL src : sources) {
-            execute(src);
+        CachingHttpClientFactory clientFactory = new CachingHttpClientFactory();
+        try {
+            for (URL src : sources) {
+                execute(src, clientFactory);
+            }
+        } finally {
+            clientFactory.close();
         }
     }
 
-    private void execute(URL src) throws IOException {
+    private void execute(URL src, HttpClientFactory clientFactory) throws IOException {
         final File destFile = makeDestFile(src);
         if (!overwrite && destFile.exists()) {
             if (!quiet) {
@@ -188,32 +173,29 @@ public class DownloadAction implements DownloadSpec {
         HttpHost httpHost = new HttpHost(src.getHost(), src.getPort(), src.getProtocol());
         
         //create HTTP client
-        CloseableHttpClient client = createHttpClient(httpHost);
+        CloseableHttpClient client = clientFactory.createHttpClient(
+                httpHost, acceptAnyCertificate);
         
+        //open URL connection
+        CloseableHttpResponse response = openConnection(httpHost, src.getFile(),
+                timestamp, client);
+        //check if file on server was modified
+        long lastModified = parseLastModified(response);
+        int code = response.getStatusLine().getStatusCode();
+        if (code == HttpStatus.SC_NOT_MODIFIED ||
+                (lastModified != 0 && timestamp >= lastModified)) {
+            if (!quiet) {
+                project.getLogger().info("Not modified. Skipping '" + src + "'");
+            }
+            ++upToDate;
+            return;
+        }
+        
+        //perform the download
         try {
-            //open URL connection
-            CloseableHttpResponse response = openConnection(httpHost, src.getFile(),
-                    timestamp, client);
-            //check if file on server was modified
-            long lastModified = parseLastModified(response);
-            int code = response.getStatusLine().getStatusCode();
-            if (code == HttpStatus.SC_NOT_MODIFIED ||
-                    (lastModified != 0 && timestamp >= lastModified)) {
-                if (!quiet) {
-                    project.getLogger().info("Not modified. Skipping '" + src + "'");
-                }
-                ++upToDate;
-                return;
-            }
-            
-            //perform the download
-            try {
-                performDownload(response, destFile);
-            } finally {
-                response.close();
-            }
+            performDownload(response, destFile);
         } finally {
-            client.close();
+            response.close();
         }
     }
 
@@ -336,35 +318,6 @@ public class DownloadAction implements DownloadSpec {
         }
         
         return proxy;
-    }
-    
-    /**
-     * Creates an HTTP client for the given host
-     * @param httpHost the host to connect to
-     * @return the HTTP client
-     */
-    private CloseableHttpClient createHttpClient(HttpHost httpHost) {
-        HttpClientBuilder builder = HttpClientBuilder.create();
-        
-        //accept any certificate if necessary
-        if ("https".equals(httpHost.getSchemeName()) && acceptAnyCertificate) {
-            SSLConnectionSocketFactory icsf = getInsecureSSLSocketFactory();
-            builder.setSSLSocketFactory(icsf);
-            Registry<ConnectionSocketFactory> registry =
-                    RegistryBuilder.<ConnectionSocketFactory>create()
-                        .register("https", icsf)
-                        .build();
-            HttpClientConnectionManager cm =
-                    new BasicHttpClientConnectionManager(registry);
-            builder.setConnectionManager(cm);
-        }
-        
-        //add an interceptor that replaces the invalid Content-Type
-        //'none' by 'identity'
-        builder.addInterceptorFirst(new ContentEncodingNoneInterceptor());
-
-        CloseableHttpClient client = builder.build();
-        return client;
     }
     
     /**
@@ -780,22 +733,5 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public boolean isAcceptAnyCertificate() {
         return acceptAnyCertificate;
-    }
-
-    private SSLConnectionSocketFactory getInsecureSSLSocketFactory() {
-        if (insecureSSLSocketFactory == null) {
-            SSLContext sc;
-            try {
-                sc = SSLContext.getInstance("SSL");
-                sc.init(null, INSECURE_TRUST_MANAGERS, new SecureRandom());
-                insecureSSLSocketFactory = new SSLConnectionSocketFactory(
-                        sc, INSECURE_HOSTNAME_VERIFIER);
-            } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
-            } catch (KeyManagementException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return insecureSSLSocketFactory;
     }
 }
