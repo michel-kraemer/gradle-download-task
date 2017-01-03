@@ -22,6 +22,8 @@ import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.CopyOption;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -52,6 +54,7 @@ import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.gradle.api.Project;
+import org.gradle.internal.impldep.com.google.common.io.Files;
 
 import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
@@ -168,7 +171,23 @@ public class DownloadAction implements DownloadSpec {
                         + "progress will not be displayed.");
             }
         }
-        
+
+        if ("file".equals(src.getProtocol())) {
+            if (destFile.exists() && !overwrite) {
+                throw new IllegalStateException("destFile already exists. Use overwrite=true to continue. ");
+            }
+
+            if (!quiet) {
+                project.getLogger().info("Copying from file '" + src + "'");
+            }
+
+            InputStream fileStream = src.openStream();
+            java.nio.file.Files.copy(fileStream, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            fileStream.close();
+
+            return;
+        }
+
         //create HTTP host from URL
         HttpHost httpHost = new HttpHost(src.getHost(), src.getPort(), src.getProtocol());
         
