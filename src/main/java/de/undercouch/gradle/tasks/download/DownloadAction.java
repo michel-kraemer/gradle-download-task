@@ -14,16 +14,17 @@
 
 package de.undercouch.gradle.tasks.download;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.CopyOption;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -54,7 +55,6 @@ import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.gradle.api.Project;
-import org.gradle.internal.impldep.com.google.common.io.Files;
 
 import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
@@ -173,21 +173,27 @@ public class DownloadAction implements DownloadSpec {
         }
 
         if ("file".equals(src.getProtocol())) {
-            if (destFile.exists() && !overwrite) {
-                throw new IllegalStateException("destFile already exists. Use overwrite=true to continue. ");
-            }
+            executeFileProtocol(src, destFile);
+        }
+        else {
+            executeHttpProtocol(src, clientFactory, timestamp, destFile);
+        }
+    }
 
-            if (!quiet) {
-                project.getLogger().info("Copying from file '" + src + "'");
-            }
-
-            InputStream fileStream = src.openStream();
-            java.nio.file.Files.copy(fileStream, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            fileStream.close();
-
-            return;
+    private void executeFileProtocol(URL src, File destFile) throws IOException {
+        try {
+            File srcFile = new File(src.toURI());
+            size = toLengthText(srcFile.length());
+        } catch (URISyntaxException e) {
+            project.getLogger().warn("Unable to determine file length.");
         }
 
+        try (BufferedInputStream fileStream = new BufferedInputStream(src.openStream())) {
+                stream(new BufferedInputStream(src.openStream()), destFile);
+        }
+    }
+
+    private void executeHttpProtocol(URL src, HttpClientFactory clientFactory, long timestamp, File destFile) throws IOException {
         //create HTTP host from URL
         HttpHost httpHost = new HttpHost(src.getHost(), src.getPort(), src.getProtocol());
         
@@ -242,6 +248,15 @@ public class DownloadAction implements DownloadSpec {
         
         //open stream and start downloading
         InputStream is = entity.getContent();
+        stream(is, destFile);
+
+        long newTimestamp = parseLastModified(response);
+        if (onlyIfNewer && newTimestamp > 0) {
+            destFile.setLastModified(newTimestamp);
+        }
+    }
+
+    private void stream(InputStream is, File destFile) throws FileNotFoundException, IOException {
         try {
             startProgress();
             OutputStream os = new FileOutputStream(destFile);
@@ -267,11 +282,6 @@ public class DownloadAction implements DownloadSpec {
         } finally {
             is.close();
             completeProgress();
-        }
-        
-        long newTimestamp = parseLastModified(response);
-        if (onlyIfNewer && newTimestamp > 0) {
-            destFile.setLastModified(newTimestamp);
         }
     }
 
