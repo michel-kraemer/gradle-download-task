@@ -21,6 +21,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Arrays;
 
 import org.apache.commons.io.FileUtils;
@@ -274,5 +277,54 @@ public class DownloadTest extends TestBase {
         String src = makeSrc(TEST_FILE_NAME);
         t.src(new Object[] { src });
         assertTrue(t.getSrc() instanceof URL);
+    }
+
+    /**
+     * Test if a file can be "downloaded" from a file:// url
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void testFileDownloadURL() throws Exception {
+        Download t = makeProjectAndTask();
+
+        String testContent = "file content";
+        File src = folder.newFile();
+        FileUtils.writeStringToFile(src, testContent, StandardCharsets.UTF_8);
+
+        URL url = src.toURI().toURL();
+
+        t.src(new Object[] { url.toExternalForm() });
+        File dst = folder.newFile();
+
+        assertTrue(dst.delete());
+
+        t.dest(dst);
+        t.execute();
+        String content = Files.readAllLines(dst.toPath(), StandardCharsets.UTF_8).iterator().next();
+
+        assertEquals(testContent, content);
+    }
+
+    @Test
+    public void testFileDownloadURLOverwriteTrue() throws Exception {
+        Download t = makeProjectAndTask();
+
+        String testContent = "file content";
+        File src = folder.newFile();
+        FileUtils.writeStringToFile(src, testContent, StandardCharsets.UTF_8);
+
+        URL url = src.toURI().toURL();
+
+        t.src(new Object[] { url.toExternalForm() });
+        File dst = folder.newFile();
+
+        assertTrue(dst.exists());
+
+        t.dest(dst);
+        t.overwrite(true);
+        t.execute();
+        String content = Files.readAllLines(dst.toPath(), Charset.defaultCharset()).iterator().next();
+
+        assertEquals(testContent, content);
     }
 }
