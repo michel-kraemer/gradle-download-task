@@ -190,7 +190,7 @@ public class DownloadAction implements DownloadSpec {
 
         BufferedInputStream fileStream = new BufferedInputStream(src.openStream());
         try {
-            stream(new BufferedInputStream(src.openStream()), destFile);
+            stream(fileStream, destFile);
         } finally {
             fileStream.close();
         }
