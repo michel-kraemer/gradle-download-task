@@ -14,6 +14,7 @@
 
 package de.undercouch.gradle.tasks.download;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -21,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -168,7 +170,28 @@ public class DownloadAction implements DownloadSpec {
                         + "progress will not be displayed.");
             }
         }
-        
+
+        if ("file".equals(src.getProtocol())) {
+            executeFileProtocol(src, destFile);
+        } else {
+            executeHttpProtocol(src, clientFactory, timestamp, destFile);
+        }
+    }
+
+    private void executeFileProtocol(URL src, File destFile) throws IOException {
+        try {
+            File srcFile = new File(src.toURI());
+            size = toLengthText(srcFile.length());
+        } catch (URISyntaxException e) {
+            project.getLogger().warn("Unable to determine file length.");
+        }
+
+        BufferedInputStream fileStream = new BufferedInputStream(src.openStream());
+        stream(fileStream, destFile);
+    }
+
+    private void executeHttpProtocol(URL src, HttpClientFactory clientFactory,
+            long timestamp, File destFile) throws IOException {
         //create HTTP host from URL
         HttpHost httpHost = new HttpHost(src.getHost(), src.getPort(), src.getProtocol());
         
@@ -223,6 +246,21 @@ public class DownloadAction implements DownloadSpec {
         
         //open stream and start downloading
         InputStream is = entity.getContent();
+        stream(is, destFile);
+
+        long newTimestamp = parseLastModified(response);
+        if (onlyIfNewer && newTimestamp > 0) {
+            destFile.setLastModified(newTimestamp);
+        }
+    }
+
+    /**
+     * Copy bytes from an input stream to a file and log progress
+     * @param is the input stream to read
+     * @param destFile the file to write to
+     * @throws IOException if an I/O error occurs
+     */
+    private void stream(InputStream is, File destFile) throws IOException {
         try {
             startProgress();
             OutputStream os = new FileOutputStream(destFile);
@@ -248,11 +286,6 @@ public class DownloadAction implements DownloadSpec {
         } finally {
             is.close();
             completeProgress();
-        }
-        
-        long newTimestamp = parseLastModified(response);
-        if (onlyIfNewer && newTimestamp > 0) {
-            destFile.setLastModified(newTimestamp);
         }
     }
 
