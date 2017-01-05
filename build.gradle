@@ -22,12 +22,12 @@ apply from: "gradle/integrationTest.gradle"
 
 group = 'de.undercouch'
 version = '3.2.0-SNAPSHOT'
-sourceCompatibility = '1.7'
-targetCompatibility = '1.7'
+sourceCompatibility = '1.6'
+targetCompatibility = '1.6'
 
 idea {
   project {
-    languageLevel = '1.7'
+    languageLevel = '1.6'
     ipr {
       withXml { provider ->
         provider.node.component

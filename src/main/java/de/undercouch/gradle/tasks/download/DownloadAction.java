@@ -188,8 +188,11 @@ public class DownloadAction implements DownloadSpec {
             project.getLogger().warn("Unable to determine file length.");
         }
 
-        try (BufferedInputStream fileStream = new BufferedInputStream(src.openStream())) {
-                stream(new BufferedInputStream(src.openStream()), destFile);
+        BufferedInputStream fileStream = new BufferedInputStream(src.openStream());
+        try {
+            stream(new BufferedInputStream(src.openStream()), destFile);
+        } finally {
+            fileStream.close();
         }
     }
 

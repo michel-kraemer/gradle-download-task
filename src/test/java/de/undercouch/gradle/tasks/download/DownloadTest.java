@@ -21,9 +21,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.Arrays;
 
 import org.apache.commons.io.FileUtils;
@@ -289,7 +286,7 @@ public class DownloadTest extends TestBase {
 
         String testContent = "file content";
         File src = folder.newFile();
-        FileUtils.writeStringToFile(src, testContent, StandardCharsets.UTF_8);
+        FileUtils.writeStringToFile(src, testContent, "UTF-8");
 
         URL url = src.toURI().toURL();
 
@@ -300,18 +297,23 @@ public class DownloadTest extends TestBase {
 
         t.dest(dst);
         t.execute();
-        String content = Files.readAllLines(dst.toPath(), StandardCharsets.UTF_8).iterator().next();
+        String content = FileUtils.readFileToString(dst, "UTF-8");
 
         assertEquals(testContent, content);
     }
 
+    /**
+     * Test if a file can be "downloaded" from a file:// url with the
+     * overwrite flag set to true
+     * @throws Exception if anything goes wrong
+     */
     @Test
     public void testFileDownloadURLOverwriteTrue() throws Exception {
         Download t = makeProjectAndTask();
 
         String testContent = "file content";
         File src = folder.newFile();
-        FileUtils.writeStringToFile(src, testContent, StandardCharsets.UTF_8);
+        FileUtils.writeStringToFile(src, testContent, "UTF-8");
 
         URL url = src.toURI().toURL();
 
@@ -323,7 +325,7 @@ public class DownloadTest extends TestBase {
         t.dest(dst);
         t.overwrite(true);
         t.execute();
-        String content = Files.readAllLines(dst.toPath(), Charset.defaultCharset()).iterator().next();
+        String content = FileUtils.readFileToString(dst, "UTF-8");
 
         assertEquals(testContent, content);
     }
