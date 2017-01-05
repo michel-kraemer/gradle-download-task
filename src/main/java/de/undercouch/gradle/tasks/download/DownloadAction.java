@@ -187,11 +187,7 @@ public class DownloadAction implements DownloadSpec {
         }
 
         BufferedInputStream fileStream = new BufferedInputStream(src.openStream());
-        try {
-            stream(fileStream, destFile);
-        } finally {
-            fileStream.close();
-        }
+        stream(fileStream, destFile);
     }
 
     private void executeHttpProtocol(URL src, HttpClientFactory clientFactory,
