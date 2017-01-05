@@ -199,6 +199,26 @@ task verifyFile(type: Verify) {
     checksum 'ce114e4501d2f4e2dcea3e17b546f339'
 }
 ```
+or using md5 file
+```groovy
+import de.undercouch.gradle.tasks.download.Verify
+
+task verifyFile(type: Verify) {
+    src new File(buildDir, 'file.ext')
+    algorithm 'MD5'
+    checksumFile new File(buildDir, 'file.ext.md5')
+}
+```
+or using md5 file
+```groovy
+import de.undercouch.gradle.tasks.download.Verify
+
+task verifyFile(type: Verify) {
+    src new File(buildDir, 'file.ext')
+    algorithm 'MD5'
+    checksumFile new File(buildDir, 'file.ext.md5')
+}
+```
 
 You can combine the download task and the verify task as follows:
 
@@ -224,7 +244,19 @@ The verify task supports the following properties:
 <dt>src</dt>
 <dd>The file to verify <em>(required)</em></dd>
 <dt>checksum</dt>
-<dd>The actual checksum to verify against <em>(required)</em></dd>
+<dd>The actual checksum to verify against <em>(this value or checksumFile is required)</em></dd>
+<dt>checksumFile</dt>
+<dd>The checksumFile containing actual checksum to verify against <em>(this value or checksum is required)</em>
+<p>There appear to be at least 2 different file formats (md5sum and gpg) created by those tools. This property supports both. The files look a like this.</p>
+<p>md5sum<br/>
+30e007b86ecfa21a5a710efaec83873b
+</p>
+<p>gpg<br/>
+testfile.tgz: 09 32 D6 CE 2A D7 01 45  B8 0A 09 D8 49 45 32 7C</br>
+or</br>
+testfile.tgz: MD5 = 09 32 D6 CE 2A D7 01 45  B8 0A 09 D8 49 45 32 7C
+</p>
+</dd>
 <dt>algorithm</dt>
 <dd>The algorithm to use to compute the checksum. See the
 <a href="http://docs.oracle.com/javase/7/docs/technotes/guides/security/StandardNames.html#MessageDigest">list of algorithm names</a>

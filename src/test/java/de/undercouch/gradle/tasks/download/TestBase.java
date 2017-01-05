@@ -17,9 +17,11 @@ package de.undercouch.gradle.tasks.download;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.testfixtures.ProjectBuilder;
@@ -39,10 +41,46 @@ import org.mortbay.resource.Resource;
  * @author Michel Kraemer
  */
 public abstract class TestBase {
+	
+    /**
+     * File separator
+     */
+    protected final static String FILE_SEPARATOR = System.getProperty("file.separator");
+    
     /**
      * File name of the first test file
      */
     protected final static String TEST_FILE_NAME = "test.txt";
+    
+    /**
+     * File name of the first test file MD5 checksum file in MD5Sum format
+     */
+    protected final static String TEST_FILE_NAME_MD5SUM_MD5 = "test.txt.md5sum.md5";
+    
+    /**
+     * File name of the first test file MD5 checksum file in MD5Sum format with bad data
+     */
+    protected final static String TEST_FILE_NAME_MD5SUM_MD5_BAD = "test.txt.md5sum.md5bad";
+    
+    /**
+     * File name of the first test file MD5 checksum file in GPG MD5 format <file>: <MD5 sum>
+     */
+    protected final static String TEST_FILE_NAME1_GPGMD5_MD5 = "test1.txt.gpgmd5.md5";
+    
+    /**
+     * File name of the first test file MD5 checksum file in GPG MD5 format <file>: <MD5 sum> with bad data
+     */
+    protected final static String TEST_FILE_NAME1_GPGMD5_MD5_BAD = "test1.txt.gpgmd5.md5bad";
+    
+    /**
+     * File name of the first test file MD5 checksum file in GPG MD5 format <file>: <hash algo> = <MD5 sum>
+     */
+    protected final static String TEST_FILE_NAME2_GPGMD5_MD5 = "test2.txt.gpgmd5.md5";
+    
+    /**
+     * File name of the first test file MD5 checksum file in GPG MD5 format <file>: <hash algo> = <MD5 sum> with bad data
+     */
+    protected final static String TEST_FILE_NAME2_GPGMD5_MD5_BAD = "test2.txt.gpgmd5.md5.bad";
     
     /**
      * File name of the second test file
@@ -114,6 +152,32 @@ public abstract class TestBase {
         
         File testFile = folder.newFile(TEST_FILE_NAME);
         FileUtils.writeByteArrayToFile(testFile, contents);
+		
+        File testFileMd5 = folder.newFile(TEST_FILE_NAME_MD5SUM_MD5);
+        MessageDigest md5 = MessageDigest.getInstance("MD5");
+        md5.update(contents);
+        String calculatedChecksum = Hex.encodeHexString(md5.digest());
+        FileUtils.writeStringToFile(testFileMd5, calculatedChecksum+" *"+TEST_FILE_NAME);
+		
+        testFileMd5 = folder.newFile(TEST_FILE_NAME1_GPGMD5_MD5);
+        StringBuilder output = new StringBuilder(TEST_FILE_NAME);
+        output.append(": ");
+        for (int pos = 0; pos< 16 ; pos+=2) output.append(calculatedChecksum.substring(pos, pos+2)).append(" ");
+        output.append(" ");
+        for (int pos = 16; pos< 32 ; pos+=2) output.append(calculatedChecksum.substring(pos, pos+2)).append(" ");
+        FileUtils.writeStringToFile(testFileMd5, output.toString().trim());
+		
+        testFileMd5 = folder.newFile(TEST_FILE_NAME2_GPGMD5_MD5);
+        output = new StringBuilder(TEST_FILE_NAME);
+        output.append(": MD5 = ");
+        for (int pos = 0; pos< 16 ; pos+=2) output.append(calculatedChecksum.substring(pos, pos+2)).append(" ");
+        output.append(" ");
+        for (int pos = 16; pos< 32 ; pos+=2) output.append(calculatedChecksum.substring(pos, pos+2)).append(" ");
+        FileUtils.writeStringToFile(testFileMd5, output.toString().trim());
+		
+        File testFileMd5Bad = folder.newFile(TEST_FILE_NAME_MD5SUM_MD5_BAD);
+        FileUtils.writeStringToFile(testFileMd5Bad, "WRONG *"+TEST_FILE_NAME_MD5SUM_MD5_BAD);
+		
         File testFile2 = folder.newFile(TEST_FILE_NAME2);
         FileUtils.writeByteArrayToFile(testFile2, contents2);
     }

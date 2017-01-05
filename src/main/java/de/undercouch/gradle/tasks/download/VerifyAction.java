@@ -18,9 +18,11 @@ import groovy.lang.Closure;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Scanner;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
@@ -34,6 +36,7 @@ public class VerifyAction implements VerifySpec {
     private File src;
     private String algorithm = "MD5";
     private String checksum;
+    private File checksumFile;
     
     /**
      * Creates a new verify action
@@ -64,8 +67,12 @@ public class VerifyAction implements VerifySpec {
             throw new IllegalArgumentException("Please provide the algorithm to "
                     + "use to calculate the checksum");
         }
-        if (checksum == null) {
-            throw new IllegalArgumentException("Please provide a checksum to verify against");
+        if ((checksum == null) && (checksumFile == null)){
+            throw new IllegalArgumentException("Please provide a checksum to verify against or a file containing one");
+        }
+        
+        if ((checksum != null) && (checksumFile != null)){
+            throw new IllegalArgumentException("Please provide either checksum to verify against or a file containing one");
         }
         
         // calculate file's checksum
@@ -84,12 +91,53 @@ public class VerifyAction implements VerifySpec {
         }
         
         // verify checksum
-        if (!calculatedChecksum.equalsIgnoreCase(checksum)) {
+        boolean verified = false;
+        if (calculatedChecksum.equalsIgnoreCase(getChecksumMD5SumFormat())) verified = true;
+        if (!verified && calculatedChecksum.equalsIgnoreCase(getChecksumGPGMD5Format())) verified = true;
+        if (!verified) {
             throw new GradleException("Invalid checksum for file '" +
-                    src.getName() + "'. Expected " + checksum.toLowerCase() + 
-                    " but got " + calculatedChecksum.toLowerCase() + ".");
+                    src.getName() + "'. Calculated " + calculatedChecksum.toLowerCase() + ".");
         }
     }
+
+	private String getChecksumMD5SumFormat() throws FileNotFoundException {
+		String localChecksum = this.checksum;
+        if (localChecksum == null) {
+        	Scanner scanner = new Scanner(checksumFile);
+        	try {
+        		String line = scanner.next();
+        		if (line.length()>=32)
+        			localChecksum = line.substring(0,32);
+        	} finally {
+        		scanner.close(); 
+        	}
+        }
+		return localChecksum;
+	}
+    
+	private String getChecksumGPGMD5Format() throws FileNotFoundException {
+		String localChecksum = this.checksum;
+        if (localChecksum == null) {
+        	Scanner scanner = new Scanner(checksumFile);
+        	scanner.useDelimiter(System.getProperty("line.separator"));
+        	try {
+        		String line = scanner.next();
+        		int pos=-1;
+        		if ((pos=line.lastIndexOf("="))>=0) {
+        			line = line.substring(pos+1);
+        			localChecksum = line.replace(" ", "");
+        		} else {
+            		if ((pos=line.lastIndexOf(":"))>=0) {
+            			line = line.substring(pos+1);
+            			localChecksum = line.replace(" ", "");
+            		}
+        		}
+        	} finally {
+        		scanner.close(); 
+        	}
+        }
+		return localChecksum;
+	}
     
     @Override
     public void src(Object src) {
@@ -120,6 +168,25 @@ public class VerifyAction implements VerifySpec {
         this.checksum = checksum;
     }
     
+    @Override
+    public void checksumFile(Object checksumFile) {
+        if (checksumFile instanceof Closure) {
+            //lazily evaluate closure
+            Closure<?> closure = (Closure<?>)checksumFile;
+            checksumFile = closure.call();
+        }
+        
+        if (checksumFile instanceof CharSequence) {
+            checksumFile = project.file(checksumFile.toString());
+        }
+        if (checksumFile instanceof File) {
+            this.checksumFile = (File)checksumFile;
+        } else {
+            throw new IllegalArgumentException("ChecksumFile must "
+                    + "either be a CharSequence or a File");
+        }
+    }
+    
     public File getSrc() {
         return src;
     }
@@ -130,5 +197,9 @@ public class VerifyAction implements VerifySpec {
     
     public String getChecksum() {
         return checksum;
+    }
+    
+    public File getChecksumFile() {
+        return checksumFile;
     }
 }
