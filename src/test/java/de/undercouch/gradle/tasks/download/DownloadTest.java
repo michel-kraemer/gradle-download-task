@@ -290,15 +290,14 @@ public class DownloadTest extends TestBase {
 
         URL url = src.toURI().toURL();
 
-        t.src(new Object[] { url.toExternalForm() });
         File dst = folder.newFile();
-
         assertTrue(dst.delete());
 
+        t.src(new Object[] { url.toExternalForm() });
         t.dest(dst);
         t.execute();
-        String content = FileUtils.readFileToString(dst, "UTF-8");
 
+        String content = FileUtils.readFileToString(dst, "UTF-8");
         assertEquals(testContent, content);
     }
 
@@ -317,16 +316,15 @@ public class DownloadTest extends TestBase {
 
         URL url = src.toURI().toURL();
 
-        t.src(new Object[] { url.toExternalForm() });
         File dst = folder.newFile();
-
         assertTrue(dst.exists());
 
+        t.src(new Object[] { url.toExternalForm() });
         t.dest(dst);
         t.overwrite(true);
         t.execute();
-        String content = FileUtils.readFileToString(dst, "UTF-8");
 
+        String content = FileUtils.readFileToString(dst, "UTF-8");
         assertEquals(testContent, content);
     }
 }

@@ -16,7 +16,6 @@ package de.undercouch.gradle.tasks.download;
 
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -174,8 +173,7 @@ public class DownloadAction implements DownloadSpec {
 
         if ("file".equals(src.getProtocol())) {
             executeFileProtocol(src, destFile);
-        }
-        else {
+        } else {
             executeHttpProtocol(src, clientFactory, timestamp, destFile);
         }
     }
@@ -196,7 +194,8 @@ public class DownloadAction implements DownloadSpec {
         }
     }
 
-    private void executeHttpProtocol(URL src, HttpClientFactory clientFactory, long timestamp, File destFile) throws IOException {
+    private void executeHttpProtocol(URL src, HttpClientFactory clientFactory,
+            long timestamp, File destFile) throws IOException {
         //create HTTP host from URL
         HttpHost httpHost = new HttpHost(src.getHost(), src.getPort(), src.getProtocol());
         
@@ -259,7 +258,13 @@ public class DownloadAction implements DownloadSpec {
         }
     }
 
-    private void stream(InputStream is, File destFile) throws FileNotFoundException, IOException {
+    /**
+     * Copy bytes from an input stream to a file and log progress
+     * @param is the input stream to read
+     * @param destFile the file to write to
+     * @throws IOException if an I/O error occurs
+     */
+    private void stream(InputStream is, File destFile) throws IOException {
         try {
             startProgress();
             OutputStream os = new FileOutputStream(destFile);
