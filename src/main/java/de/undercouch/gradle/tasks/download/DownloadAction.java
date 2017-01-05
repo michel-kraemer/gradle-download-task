@@ -43,7 +43,6 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.AuthCache;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -320,40 +319,6 @@ public class DownloadAction implements DownloadSpec {
     }
     
     /**
-     * Configure proxy for a given HTTP host
-     * @param httpHost the HTTP host
-     * @return the proxy or <code>null</code> if not proxy is necessary
-     * @throws IOException if the proxy could not be configured
-     */
-    private HttpHost configureProxy(HttpHost httpHost) throws IOException {
-        HttpHost proxy = null;
-        
-        String scheme = httpHost.getSchemeName();
-        if (!"http".equals(scheme) && !"https".equals(scheme) &&
-                !"ftp".equals(scheme)) {
-            return proxy;
-        }
-        
-        String host = System.getProperty(scheme + ".proxyHost");
-        if (host != null) {
-            String portStr = System.getProperty(scheme + ".proxyPort");
-            if (portStr != null) {
-                int port;
-                try {
-                    port = Integer.parseInt(portStr);
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Illegal proxy port: " + portStr);
-                }
-                proxy = new HttpHost(host, port);
-            } else {
-                proxy = new HttpHost(host);
-            }
-        }
-        
-        return proxy;
-    }
-    
-    /**
      * Opens a connection to the given HTTP host and requests a file. Checks
      * the last-modified header on the server if the given timestamp is
      * greater than 0.
@@ -391,26 +356,21 @@ public class DownloadAction implements DownloadSpec {
         //create request
         HttpGet get = new HttpGet(file);
         
-        //configure proxy
-        HttpHost proxy = configureProxy(httpHost);
-        if (proxy != null) {
-            RequestConfig config = RequestConfig.custom()
-                .setProxy(proxy)
-                .build();
-            get.setConfig(config);
-            
-            //add authentication information for proxy
-            String scheme = httpHost.getSchemeName();
-            String proxyUser = System.getProperty(scheme + ".proxyUser");
-            String proxyPassword = System.getProperty(scheme + ".proxyPassword");
-            if (proxyUser != null && proxyPassword != null) {
-                if (context == null) {
-                    context = HttpClientContext.create();
-                }
-                Credentials credentials =
-                        new UsernamePasswordCredentials(proxyUser, proxyPassword);
-                addAuthentication(proxy, credentials, null, context);
+        //add authentication information for proxy
+        String scheme = httpHost.getSchemeName();
+        String proxyHost = System.getProperty(scheme + ".proxyHost");
+        String proxyPort = System.getProperty(scheme + ".proxyPort");
+        String proxyUser = System.getProperty(scheme + ".proxyUser");
+        String proxyPassword = System.getProperty(scheme + ".proxyPassword");
+        if (proxyHost != null && proxyPort != null && proxyUser != null && proxyPassword != null) {
+            if (context == null) {
+                context = HttpClientContext.create();
             }
+            HttpHost proxy = 
+                    new HttpHost(proxyHost, Integer.parseInt(proxyPort), scheme);
+            Credentials credentials =
+                    new UsernamePasswordCredentials(proxyUser, proxyPassword);
+            addAuthentication(proxy, credentials, null, context);
         }
         
         //set If-Modified-Since header
