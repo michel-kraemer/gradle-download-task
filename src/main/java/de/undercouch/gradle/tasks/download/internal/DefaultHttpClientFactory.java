@@ -52,6 +52,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
             boolean acceptAnyCertificate) {
         HttpClientBuilder builder = HttpClientBuilder.create();
         
+        //configure proxy from system environment
         builder.setRoutePlanner(new SystemDefaultRoutePlanner(null));
         
         //accept any certificate if necessary

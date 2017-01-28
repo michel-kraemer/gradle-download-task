@@ -94,11 +94,21 @@ public class ProxyTest extends TestBase {
     /**
      * Tests if a single file can be downloaded through a proxy server
      * @param authenticating true if the proxy should require authentication
+     * @throws Exception if anything goes wrong
+     */
+    private void testProxy(boolean authenticating) throws Exception {
+        testProxy(authenticating, "", 1);
+    }
+    
+    /**
+     * Tests if a single file can be downloaded through a proxy server
+     * @param authenticating true if the proxy should require authentication
      * @param newNonProxyHosts new value of the "http.nonProxyHosts" system property
      * @param expectedProxyCounter number of times the request is expected to hit the proxy
      * @throws Exception if anything goes wrong
      */
-    private void testProxy(boolean authenticating, String newNonProxyHosts, int expectedProxyCounter) throws Exception {
+    private void testProxy(boolean authenticating, String newNonProxyHosts,
+            int expectedProxyCounter) throws Exception {
         String proxyHost = System.getProperty("http.proxyHost");
         String proxyPort = System.getProperty("http.proxyPort");
         String nonProxyHosts = System.getProperty("http.nonProxyHosts");
@@ -161,7 +171,7 @@ public class ProxyTest extends TestBase {
      */
     @Test
     public void normalProxy() throws Exception {
-        testProxy(false, "", 1);
+        testProxy(false);
     }
     
     /**
@@ -170,7 +180,7 @@ public class ProxyTest extends TestBase {
      */
     @Test
     public void authenticationProxy() throws Exception {
-        testProxy(true, "", 1);
+        testProxy(true);
     }
     
     /**

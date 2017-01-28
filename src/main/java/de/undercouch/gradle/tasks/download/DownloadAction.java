@@ -362,14 +362,15 @@ public class DownloadAction implements DownloadSpec {
         String proxyPort = System.getProperty(scheme + ".proxyPort");
         String proxyUser = System.getProperty(scheme + ".proxyUser");
         String proxyPassword = System.getProperty(scheme + ".proxyPassword");
-        if (proxyHost != null && proxyPort != null && proxyUser != null && proxyPassword != null) {
+        if (proxyHost != null && proxyPort != null &&
+                proxyUser != null && proxyPassword != null) {
             if (context == null) {
                 context = HttpClientContext.create();
             }
-            HttpHost proxy = 
-                    new HttpHost(proxyHost, Integer.parseInt(proxyPort), scheme);
-            Credentials credentials =
-                    new UsernamePasswordCredentials(proxyUser, proxyPassword);
+            int nProxyPort = Integer.parseInt(proxyPort);
+            HttpHost proxy = new HttpHost(proxyHost, nProxyPort, scheme);
+            Credentials credentials = new UsernamePasswordCredentials(
+                    proxyUser, proxyPassword);
             addAuthentication(proxy, credentials, null, context);
         }
         

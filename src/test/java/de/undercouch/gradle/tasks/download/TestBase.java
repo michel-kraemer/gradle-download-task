@@ -128,16 +128,15 @@ public abstract class TestBase {
     
     /**
      * Gets the local host name to use for the tests
-     * @throws UnknownHostException if the local host name could not be resolved into an address
+     * @throws UnknownHostException if the local host name could not be
+     * resolved into an address
      */
     @BeforeClass
     public static void setUpClass() throws UnknownHostException {
         try {
             InetAddress.getByName("localhost.localdomain");
-            
             localHostName = "localhost.localdomain";
-        }
-        catch (UnknownHostException uoe) {
+        } catch (UnknownHostException e) {
             localHostName = InetAddress.getLocalHost().getCanonicalHostName();
         }
     }
