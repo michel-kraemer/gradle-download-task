@@ -31,6 +31,7 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
+import org.apache.http.impl.conn.SystemDefaultRoutePlanner;
 
 /**
  * Default implementation of {@link HttpClientFactory}. Creates a new client
@@ -50,6 +51,9 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
     public CloseableHttpClient createHttpClient(HttpHost httpHost,
             boolean acceptAnyCertificate) {
         HttpClientBuilder builder = HttpClientBuilder.create();
+        
+        //configure proxy from system environment
+        builder.setRoutePlanner(new SystemDefaultRoutePlanner(null));
         
         //accept any certificate if necessary
         if ("https".equals(httpHost.getSchemeName()) && acceptAnyCertificate) {
