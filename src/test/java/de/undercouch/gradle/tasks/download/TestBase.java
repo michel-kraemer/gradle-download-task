@@ -16,9 +16,13 @@ package de.undercouch.gradle.tasks.download;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -130,15 +134,41 @@ public abstract class TestBase {
      * Gets the local host name to use for the tests
      * @throws UnknownHostException if the local host name could not be
      * resolved into an address
+     * @throws SocketException if an I/O error occurs
      */
     @BeforeClass
-    public static void setUpClass() throws UnknownHostException {
+    public static void setUpClass() throws UnknownHostException, SocketException {
         try {
             InetAddress.getByName("localhost.localdomain");
             localHostName = "localhost.localdomain";
         } catch (UnknownHostException e) {
-            localHostName = InetAddress.getLocalHost().getCanonicalHostName();
+            localHostName = findSiteLocal();
+            if (localHostName == null) {
+                localHostName = InetAddress.getLocalHost().getCanonicalHostName();
+            }
         }
+    }
+    
+    /**
+     * Get a site local IP4 address from the current node's interfaces
+     * @return the IP address or <code>null</code> if the address
+     * could not be obtained
+     * @throws SocketException if an I/O error occurs
+     */
+    private static String findSiteLocal() throws SocketException {
+        Enumeration<NetworkInterface> interfaces =
+                NetworkInterface.getNetworkInterfaces();
+        while (interfaces.hasMoreElements()) {
+            NetworkInterface n = interfaces.nextElement();
+            Enumeration<InetAddress> addresses = n.getInetAddresses();
+            while (addresses.hasMoreElements()) {
+                InetAddress i = addresses.nextElement();
+                if (i.isSiteLocalAddress() && i instanceof Inet4Address) {
+                    return i.getHostAddress();
+                }
+            }
+        }
+        return null;
     }
     
     /**
