@@ -21,21 +21,35 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.testkit.runner.BuildTask;
 import org.gradle.testkit.runner.GradleRunner;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Tests the plugin's functionality
  * @author Jan Berkel
  */
+@RunWith(value = Parameterized.class)
 public class FunctionalDownloadTest extends FunctionalTestBase {
     private String singleSrc;
     private String multipleSrc;
     private String dest;
     private File destFile;
+
+    public FunctionalDownloadTest(String gradleVersion) {
+        this.gradleVersion = gradleVersion;
+    }
+
+    @Parameterized.Parameters(name = "Gradle {0}")
+    public static List<String> versionsToTest() {
+        return Arrays.asList("2.14.1", "3.0", "3.1", "3.2", "3.2.1", "3.3", "3.4", "3.4.1");
+    }
 
     /**
      * Set up the functional tests
@@ -57,7 +71,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Test
     public void downloadSingleFile() throws Exception {
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
-        assertTrue(destFile.exists());
+        assertTrue(destFile.isFile());
         assertArrayEquals(contents, FileUtils.readFileToByteArray(destFile));
     }
 
@@ -68,7 +82,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Test
     public void downloadSingleFileWithQuietMode() throws Exception {
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false, true, false, true)));
-        assertTrue(destFile.exists());
+        assertTrue(destFile.isFile());
         assertArrayEquals(contents, FileUtils.readFileToByteArray(destFile));
     }
 
@@ -79,7 +93,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Test
     public void downloadSingleFileWithoutCompress() throws Exception {
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false, false, false, false)));
-        assertTrue(destFile.exists());
+        assertTrue(destFile.isFile());
         assertArrayEquals(contents, FileUtils.readFileToByteArray(destFile));
     }
 
@@ -172,7 +186,17 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Test
     public void fileDependenciesTriggersDownloadTask() throws Exception {
         assertTaskSuccess(runTask(":processTask", new Parameters(singleSrc, dest, true, false)));
-        assertTrue(destFile.exists());
+        assertTrue(destFile.isFile());
+    }
+
+    @Test
+    public void fileDependenciesWithMultipleSourcesTriggersDownloadTask() throws Exception {
+        assertTaskSuccess(runTask(":processTask", new Parameters(multipleSrc, dest, true, false)));
+        assertTrue(destFile.isDirectory());
+        assertArrayEquals(contents, FileUtils.readFileToByteArray(
+                new File(destFile, TEST_FILE_NAME)));
+        assertArrayEquals(contents2, FileUtils.readFileToByteArray(
+                new File(destFile, TEST_FILE_NAME2)));
     }
 
     /**
@@ -218,7 +242,10 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 "quiet " + Boolean.toString(parameters.quiet) + "\n" +
             "}\n" +
             "task processTask {\n" +
-                "inputs.files downloadTask\n" +
+                "inputs.files files(downloadTask)\n" +
+                "doLast {  " +
+                    "inputs.files.each { f -> assert f.isFile() }\n" +
+                 "}\n" +
             "}\n", false);
     }
 

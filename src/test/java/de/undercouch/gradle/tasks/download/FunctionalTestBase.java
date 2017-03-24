@@ -40,6 +40,12 @@ public abstract class FunctionalTestBase extends TestBase {
      */
     @Rule
     public final TemporaryFolder testProjectDir = new TemporaryFolder();
+
+    /**
+     * The version of Gradle to run the test with, null for default.
+     */
+    protected String gradleVersion;
+
     private File buildFile;
 
     /**
@@ -62,10 +68,14 @@ public abstract class FunctionalTestBase extends TestBase {
     protected GradleRunner createRunnerWithBuildFile(String buildFile,
             boolean debug) throws IOException {
         writeBuildFile(buildFile);
-        return GradleRunner.create()
+        GradleRunner runner = GradleRunner.create()
             .withPluginClasspath()
             .withDebug(debug)
             .withProjectDir(testProjectDir.getRoot());
+        if (gradleVersion != null) {
+            runner = runner.withGradleVersion(gradleVersion);
+        }
+        return runner;
     }
 
     /**
