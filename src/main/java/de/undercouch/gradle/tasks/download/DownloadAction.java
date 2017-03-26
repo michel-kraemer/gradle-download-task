@@ -43,6 +43,7 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.AuthCache;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -77,6 +78,7 @@ public class DownloadAction implements DownloadSpec {
     private Credentials credentials;
     private Map<String, String> headers;
     private boolean acceptAnyCertificate = false;
+    private int timeoutMs = -1;
 
     private ProgressLoggerWrapper progressLogger;
     private String size;
@@ -355,7 +357,15 @@ public class DownloadAction implements DownloadSpec {
         
         //create request
         HttpGet get = new HttpGet(file);
-        
+
+        //configure timeouts
+        RequestConfig config = RequestConfig.custom()
+                .setConnectTimeout(timeoutMs)
+                .setConnectionRequestTimeout(timeoutMs)
+                .setSocketTimeout(timeoutMs)
+                .build();
+        get.setConfig(config);
+
         //add authentication information for proxy
         String scheme = httpHost.getSchemeName();
         String proxyHost = System.getProperty(scheme + ".proxyHost");
@@ -654,6 +664,11 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
+    public void timeout(int milliseconds) {
+        this.timeoutMs = milliseconds;
+    }
+
+    @Override
     public Object getSrc() {
         if (sources.size() == 1) {
             return sources.get(0);
@@ -727,5 +742,10 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public boolean isAcceptAnyCertificate() {
         return acceptAnyCertificate;
+    }
+
+    @Override
+    public int getTimeout() {
+        return timeoutMs;
     }
 }

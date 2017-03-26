@@ -161,6 +161,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
 
     @Override
+    public void timeout(int milliseconds) {
+        action.timeout(milliseconds);
+    }
+
+    @Override
     public Object getSrc() {
         return action.getSrc();
     }
@@ -223,5 +228,10 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public boolean isAcceptAnyCertificate() {
         return action.isAcceptAnyCertificate();
+    }
+
+    @Override
+    public int getTimeout() {
+        return action.getTimeout();
     }
 }

@@ -138,6 +138,18 @@ multiple files shoud be downloaded. <em>(required)</em></dd>
 <dd><code>true</code> if the file should only be downloaded if it
 has been modified on the server since the last download <em>(default:
 <code>false</code>)</em></dd>
+</dl>
+
+<em>Tip!</em> You may provide Groovy Closures to the `src` and `dest`
+properties to calculate their value at runtime.
+
+### Connection
+
+<dl>
+<dt>acceptAnyCertificate</dt>
+<dd><code>true</code> if HTTPS certificate verification errors should be ignored
+and any certificate (even an invalid one) should be accepted.
+<em>(default: <code>false</code>)</em></dd>
 <dt>compress</dt>
 <dd><code>true</code> if compression should be used during download <em>(default:
 <code>true</code>)</em></dd>
@@ -147,14 +159,11 @@ request <em>(optional)</em></dd>
 <dt>headers</dt>
 <dd>A map of request headers to set when making the download
 request <em>(optional)</em></dd>
-<dt>acceptAnyCertificate</dt>
-<dd><code>true</code> if HTTPS certificate verification errors should be ignored
-and any certificate (even an invalid one) should be accepted.
-<em>(default: <code>false</code>)</em>
+<dt>timeout</dt>
+<dd>The maximum time to wait until a connection is established or until the
+server returns data. A value of <code>0</code> (zero) means infinite timeout. A negative value
+is interpreted as undefined. <em>(default: <code>-1</code>)</em></dd>
 </dl>
-
-<em>Tip!</em> You may provide Groovy Closures to the `src` and `dest`
-properties to calculate their value at runtime.
 
 ### Authentication
 

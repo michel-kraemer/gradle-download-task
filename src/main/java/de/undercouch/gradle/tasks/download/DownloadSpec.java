@@ -121,6 +121,15 @@ public interface DownloadSpec {
     void acceptAnyCertificate(boolean accept);
 
     /**
+     * Specifies a timeout in milliseconds which is the maximum time to wait
+     * until a connection is established or until the server returns data. A
+     * value of zero means infinite timeout. A negative value is interpreted
+     * as undefined.
+     * @param milliseconds the timeout in milliseconds (default: -1)
+     */
+    void timeout(int milliseconds);
+
+    /**
      * @return the download source(s), either a URL or a list of URLs
      */
     Object getSrc();
@@ -190,4 +199,10 @@ public interface DownloadSpec {
      * default value is false
      */
     boolean isAcceptAnyCertificate();
+
+    /**
+     * @return the timeout in milliseconds which is the maximum time to wait
+     * until a connection is established or until the server returns data.
+     */
+    int getTimeout();
 }
