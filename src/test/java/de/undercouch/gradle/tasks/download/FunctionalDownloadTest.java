@@ -42,13 +42,21 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     private String dest;
     private File destFile;
 
+    /**
+     * Constructs a new functional test
+     * @param gradleVersion the Gradle version to test against (null for default)
+     */
     public FunctionalDownloadTest(String gradleVersion) {
         this.gradleVersion = gradleVersion;
     }
 
+    /**
+     * @return the Gradle versions to test against
+     */
     @Parameterized.Parameters(name = "Gradle {0}")
     public static List<String> versionsToTest() {
-        return Arrays.asList("2.14.1", "3.0", "3.1", "3.2", "3.2.1", "3.3", "3.4", "3.4.1");
+        return Arrays.asList("2.14.1", "3.0", "3.1", "3.2", "3.2.1", "3.3",
+                "3.4", "3.4.1");
     }
 
     /**
@@ -180,7 +188,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
 
     /**
      * Test if the download task is triggered if another task depends on its
-     * output files
+     * output file
      * @throws Exception if anything went wrong
      */
     @Test
@@ -189,6 +197,11 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         assertTrue(destFile.isFile());
     }
 
+    /**
+     * Test if the download task is triggered if another tasks depends on its
+     * output files
+     * @throws Exception if anything went wrong
+     */
     @Test
     public void fileDependenciesWithMultipleSourcesTriggersDownloadTask() throws Exception {
         assertTaskSuccess(runTask(":processTask", new Parameters(multipleSrc, dest, true, false)));
@@ -233,7 +246,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     protected GradleRunner createRunner(Parameters parameters) throws IOException {
         return createRunnerWithBuildFile(
             "plugins { id 'de.undercouch.download' }\n" +
-            "task downloadTask(type: de.undercouch.gradle.tasks.download.Download) { \n" +
+            "task downloadTask(type: de.undercouch.gradle.tasks.download.Download) {\n" +
                 "src(" + parameters.src + ")\n" +
                 "dest " + parameters.dest + "\n" +
                 "overwrite " + Boolean.toString(parameters.overwrite) + "\n" +
@@ -243,9 +256,9 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
             "}\n" +
             "task processTask {\n" +
                 "inputs.files files(downloadTask)\n" +
-                "doLast {  " +
+                "doLast {\n" +
                     "inputs.files.each { f -> assert f.isFile() }\n" +
-                 "}\n" +
+                "}\n" +
             "}\n", false);
     }
 
