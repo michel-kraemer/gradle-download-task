@@ -14,6 +14,7 @@
 
 package de.undercouch.gradle.tasks.download;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -65,6 +66,7 @@ public class TimeoutTest extends TestBase {
     public void timeout() throws Exception {
         Download t = makeProjectAndTask();
         t.timeout(TIMEOUT_MS);
+        assertEquals(TIMEOUT_MS, t.getTimeout());
         t.src(makeSrc(TIMEOUT));
         File dst = folder.newFile();
         t.dest(dst);
