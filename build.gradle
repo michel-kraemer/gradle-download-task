@@ -66,8 +66,9 @@ jacocoTestReport {
 }
 
 // improve test output when we're using a plain console (e.g. on the CI server)
-if (gradle.startParameter.consoleOutput == ConsoleOutput.Plain) {
-    test {
+test {
+    jvmArgs += ['-Xmx512M', '-XX:MaxPermSize=256M']
+    if (gradle.startParameter.consoleOutput == ConsoleOutput.Plain) {
         testLogging {
             events "passed", "skipped", "failed"
         }
