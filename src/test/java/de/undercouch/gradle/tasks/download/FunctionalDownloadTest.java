@@ -56,7 +56,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Parameterized.Parameters(name = "Gradle {0}")
     public static List<String> versionsToTest() {
         return Arrays.asList("2.14.1", "3.0", "3.1", "3.2", "3.2.1", "3.3",
-                "3.4", "3.4.1");
+                "3.4", "3.4.1", "3.5");
     }
 
     /**
