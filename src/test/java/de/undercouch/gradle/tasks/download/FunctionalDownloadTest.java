@@ -204,6 +204,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void fileDependenciesWithMultipleSourcesTriggersDownloadTask() throws Exception {
+        destFile.mkdirs();
         assertTaskSuccess(runTask(":processTask", new Parameters(multipleSrc, dest, true, false)));
         assertTrue(destFile.isDirectory());
         assertArrayEquals(contents, FileUtils.readFileToByteArray(
