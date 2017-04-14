@@ -19,7 +19,7 @@ import static org.junit.Assert.assertArrayEquals;
 import java.io.File;
 
 import org.apache.commons.io.FileUtils;
-import org.gradle.api.tasks.TaskExecutionException;
+import org.gradle.api.GradleException;
 import org.junit.Test;
 
 /**
@@ -53,7 +53,7 @@ public class OfflineTest extends TestBase {
      * not exist already
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = TaskExecutionException.class)
+    @Test(expected = GradleException.class)
     public void offlineFail() throws Exception {
         Download t = makeProjectAndTask();
         t.getProject().getGradle().getStartParameter().setOffline(true);

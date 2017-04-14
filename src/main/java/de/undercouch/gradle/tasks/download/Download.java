@@ -16,6 +16,7 @@ package de.undercouch.gradle.tasks.download;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.util.List;
@@ -53,6 +54,29 @@ public class Download extends DefaultTask implements DownloadSpec {
                 return !(isOnlyIfNewer() || isOverwrite());
             }
         });
+        
+        onlyIf(new Spec<Task>() {
+            @Override
+            public boolean isSatisfiedBy(Task task) {
+                // in case offline mode is enabled don't try to download if
+                // destination already exists
+                if (getProject().getGradle().getStartParameter().isOffline()) {
+                    for (File f : getOutputFiles()) {
+                        if (f.exists()) {
+                            if (!isQuiet()) {
+                                getProject().getLogger().info("Skipping existing file '" +
+                                        f.getName() + "' in offline mode.");
+                            }
+                        } else {
+                            throw new IllegalStateException("Unable to download file '" +
+                                    f.getName() + "' in offline mode.");
+                        }
+                    }
+                    return false;
+                }
+                return true;
+            }
+        });
     }
     
     /**
@@ -63,28 +87,51 @@ public class Download extends DefaultTask implements DownloadSpec {
     public void download() throws IOException {
         action.execute();
         
-        // handle 'skipped' and 'upToDate'
+        // handle 'upToDate'
         try {
-            if (action.isSkipped()) {
-                //we are about to access an internal class. Use reflection here to provide
-                //as much compatibility to previous Gradle versions as possible (see issue #16)
+            if (action.isUpToDate()) {
                 Method getState = this.getClass().getMethod("getState");
                 Object state = getState.invoke(this);
-                Method skipped = state.getClass().getMethod("skipped", String.class);
-                if (skipped != null) {
-                    skipped.invoke(state, "Download skipped");
-                }
-            } else if (action.isUpToDate()) {
-                Method getState = this.getClass().getMethod("getState");
-                Object state = getState.invoke(this);
-                Method upToDate = state.getClass().getMethod("upToDate");
-                if (upToDate != null) {
+                try {
+                    // prior to Gradle 3.2 we could do this
+                    Method upToDate = state.getClass().getMethod("upToDate");
                     upToDate.invoke(state);
+                } catch (NoSuchMethodException e) {
+                    // since Gradle 3.2 we need to do this
+                    setUpToDate(state);
                 }
             }
         } catch (Exception e) {
             //just ignore
         }
+    }
+    
+    /**
+     * Set the task's outcome to UP_TO_DATE
+     * @param state the task's state
+     * @throws ClassNotFoundException if the class 'TaskExecutionOutcome' was not found
+     * @throws NoSuchMethodException if one of the methods to set the outcome was not found
+     * @throws InvocationTargetException if the outcome could not be set
+     * @throws IllegalAccessException if the outcome could not be set
+     */
+    private void setUpToDate(Object state) throws ClassNotFoundException,
+            NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        // get TaskExecutionOutput.UP_TO_DATE
+        Class<?> TaskExecutionOutcome = Class.forName(
+                "org.gradle.api.internal.tasks.TaskExecutionOutcome");
+        Method valueOf = TaskExecutionOutcome.getMethod(
+                "valueOf", String.class);
+        Object UP_TO_DATE = valueOf.invoke(null, "UP_TO_DATE");
+
+        // set outcome
+        Method setOutcome = state.getClass().getMethod(
+                "setOutcome", TaskExecutionOutcome);
+        setOutcome.invoke(state, UP_TO_DATE);
+
+        // pretend we did not do anything
+        Method setDidWork = state.getClass().getMethod(
+                "setDidWork", boolean.class);
+        setDidWork.invoke(state, false);
     }
 
     /**

@@ -155,8 +155,8 @@ public class DownloadAction implements DownloadSpec {
                 ++skipped;
                 return;
             }
-            throw new IllegalStateException("Unable to download " + src +
-                    " in offline mode.");
+            throw new IllegalStateException("Unable to download file '" + src +
+                    "' in offline mode.");
         }
 
         final long timestamp = onlyIfNewer && destFile.exists() ? destFile.lastModified() : 0;
