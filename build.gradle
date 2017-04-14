@@ -65,6 +65,15 @@ jacocoTestReport {
     }
 }
 
+// improve test output when we're using a plain console (e.g. on the CI server)
+if (gradle.startParameter.consoleOutput == ConsoleOutput.Plain) {
+    test {
+        testLogging {
+            events "passed", "skipped", "failed"
+        }
+    }
+}
+
 jar {
     // include license into jar
     from 'LICENSE.txt'
