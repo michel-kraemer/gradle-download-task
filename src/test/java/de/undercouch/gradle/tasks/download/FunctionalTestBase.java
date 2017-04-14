@@ -47,6 +47,7 @@ public abstract class FunctionalTestBase extends TestBase {
     protected String gradleVersion;
 
     private File buildFile;
+    private File propertiesFile;
 
     /**
      * Set up the functional tests
@@ -56,6 +57,7 @@ public abstract class FunctionalTestBase extends TestBase {
     public void setUp() throws Exception {
         super.setUp();
         buildFile = testProjectDir.newFile("build.gradle");
+        propertiesFile = testProjectDir.newFile("gradle.properties");
     }
 
     /**
@@ -68,6 +70,7 @@ public abstract class FunctionalTestBase extends TestBase {
     protected GradleRunner createRunnerWithBuildFile(String buildFile,
             boolean debug) throws IOException {
         writeBuildFile(buildFile);
+        writePropertiesFile();
         GradleRunner runner = GradleRunner.create()
             .withPluginClasspath()
             .withDebug(debug)
@@ -114,6 +117,27 @@ public abstract class FunctionalTestBase extends TestBase {
         BufferedWriter output = null;
         try {
             output = new BufferedWriter(new FileWriter(buildFile));
+            output.write(content);
+        } finally {
+            if (output != null) {
+                output.close();
+            }
+        }
+    }
+    
+    /**
+     * Write a default 'gradle.properties' file to disk
+     * @throws IOException if the file could not be written
+     */
+    private void writePropertiesFile() throws IOException {
+        // stop gradle daemon immediately and set maximum heap size to
+        // a low value so the functional tests run well on the CI server
+        String content = "org.gradle.daemon.idletimeout=0\n" +
+                "org.gradle.jvmargs=-Xmx128M\n";
+
+        BufferedWriter output = null;
+        try {
+            output = new BufferedWriter(new FileWriter(propertiesFile));
             output.write(content);
         } finally {
             if (output != null) {
