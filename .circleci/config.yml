@@ -3,7 +3,7 @@ jobs:
   build:
     working_directory: /gradle-download-task
 
-    parallelism: 2
+    parallelism: 4
 
     docker:
       - image: java:7-jdk
@@ -16,20 +16,24 @@ jobs:
 
       - restore_cache:
           keys:
-            - v2-gradle-download-task-{{ checksum "build.gradle" }}
+            - v2-gradle-download-task-{{ .Environment.CIRCLE_NODE_INDEX }}-{{ checksum "build.gradle" }}
+            - v2-gradle-download-task-{{ .Environment.CIRCLE_NODE_INDEX }}-
             - v2-gradle-download-task-
 
       - run:
           name: Run tests
           environment:
             TERM: dump
-            GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx512M -XX:MaxPermSize=256M"
           command: |
             ./gradlew --console=plain install
             case $CIRCLE_NODE_INDEX in
               0) ./gradlew --console=plain test
               ;;
-              1) ./gradlew --console=plain integrationTest
+              1) ./gradlew --console=plain integrationTest -PintegrationTestIncludes="^1\\."
+              ;;
+              2) ./gradlew --console=plain integrationTest -PintegrationTestIncludes="^2\\."
+              ;;
+              3) ./gradlew --console=plain integrationTest -PintegrationTestIncludes="^3\\."
               ;;
             esac
             ./gradlew --console=plain jacocoTestReport
@@ -52,7 +56,7 @@ jobs:
             rm -rf ~/.gradle/caches/*/plugin-resolution/
 
       - save_cache:
-          key: v2-gradle-download-task-{{ checksum "build.gradle" }}
+          key: v2-gradle-download-task-{{ .Environment.CIRCLE_NODE_INDEX }}-{{ checksum "build.gradle" }}
           paths:
             - ~/.gradle/caches/
             - ~/.gradle/wrapper/
