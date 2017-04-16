@@ -1,4 +1,4 @@
-Gradle Download Task [![CircleCI](https://img.shields.io/circleci/project/michel-kraemer/gradle-download-task.svg?maxAge=2592000)](https://circleci.com/gh/michel-kraemer/gradle-download-task) [![codecov](https://codecov.io/gh/michel-kraemer/gradle-download-task/branch/master/graph/badge.svg)](https://codecov.io/gh/michel-kraemer/gradle-download-task) [![Apache License, Version 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
+Gradle Download Task [![CircleCI](https://img.shields.io/circleci/project/michel-kraemer/gradle-download-task.svg)](https://circleci.com/gh/michel-kraemer/gradle-download-task) [![codecov](https://codecov.io/gh/michel-kraemer/gradle-download-task/branch/master/graph/badge.svg)](https://codecov.io/gh/michel-kraemer/gradle-download-task) [![Apache License, Version 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 ====================
 
 This is a simple download task for [Gradle](http://www.gradle.org/).
