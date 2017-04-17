@@ -189,6 +189,17 @@ this property will be <code>Basic</code>. Otherwise this property has no default
 value. <em>(optional)</em></dd>
 </dl>
 
+### Advanced
+
+<dl>
+<dt>requestInterceptor</dt>
+<dd>An instance of
+<a href="https://hc.apache.org/httpcomponents-core-4.4.x/httpcore/apidocs/org/apache/http/HttpRequestInterceptor.html">HttpRequestInterceptor</a>. Can be used to intercept and modify outgoing HTTP requests before they are sent to the server. <em>(optional)</em></dd>
+<dt>responseInterceptor</dt>
+<dd>An instance of
+<a href="https://hc.apache.org/httpcomponents-core-4.4.x/httpcore/apidocs/org/apache/http/HttpResponseInterceptor.html">HttpResponseInterceptor</a>. Can be used to intercept and manipulate HTTP responses from the server before they are handled by the plugin. <em>(optional)</em></dd>
+</dl>
+
 Verify task
 -----------
 

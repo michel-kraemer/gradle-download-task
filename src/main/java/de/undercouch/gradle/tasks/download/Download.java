@@ -22,6 +22,8 @@ import java.net.MalformedURLException;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.auth.AuthScheme;
 import org.apache.http.auth.Credentials;
 import org.gradle.api.DefaultTask;
@@ -213,6 +215,16 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
 
     @Override
+    public void requestInterceptor(HttpRequestInterceptor interceptor) {
+        action.requestInterceptor(interceptor);
+    }
+
+    @Override
+    public void responseInterceptor(HttpResponseInterceptor interceptor) {
+        action.responseInterceptor(interceptor);
+    }
+
+    @Override
     public Object getSrc() {
         return action.getSrc();
     }
@@ -280,5 +292,15 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public int getTimeout() {
         return action.getTimeout();
+    }
+
+    @Override
+    public HttpRequestInterceptor getRequestInterceptor() {
+        return action.getRequestInterceptor();
+    }
+
+    @Override
+    public HttpResponseInterceptor getResponseInterceptor() {
+        return action.getResponseInterceptor();
     }
 }

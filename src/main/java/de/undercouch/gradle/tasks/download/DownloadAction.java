@@ -34,7 +34,9 @@ import java.util.Map;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
+import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthScheme;
 import org.apache.http.auth.AuthScope;
@@ -79,6 +81,8 @@ public class DownloadAction implements DownloadSpec {
     private Map<String, String> headers;
     private boolean acceptAnyCertificate = false;
     private int timeoutMs = -1;
+    private HttpRequestInterceptor requestInterceptor;
+    private HttpResponseInterceptor responseInterceptor;
 
     private ProgressLoggerWrapper progressLogger;
     private String size;
@@ -198,7 +202,7 @@ public class DownloadAction implements DownloadSpec {
         
         //create HTTP client
         CloseableHttpClient client = clientFactory.createHttpClient(
-                httpHost, acceptAnyCertificate);
+                httpHost, acceptAnyCertificate, requestInterceptor, responseInterceptor);
         
         //open URL connection
         CloseableHttpResponse response = openConnection(httpHost, src.getFile(),
@@ -669,6 +673,16 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
+    public void requestInterceptor(HttpRequestInterceptor interceptor) {
+        this.requestInterceptor = interceptor;
+    }
+
+    @Override
+    public void responseInterceptor(HttpResponseInterceptor interceptor) {
+        this.responseInterceptor = interceptor;
+    }
+
+    @Override
     public Object getSrc() {
         if (sources.size() == 1) {
             return sources.get(0);
@@ -747,5 +761,15 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public int getTimeout() {
         return timeoutMs;
+    }
+
+    @Override
+    public HttpRequestInterceptor getRequestInterceptor() {
+        return requestInterceptor;
+    }
+
+    @Override
+    public HttpResponseInterceptor getResponseInterceptor() {
+        return responseInterceptor;
     }
 }

@@ -18,6 +18,8 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.util.Map;
 
+import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.auth.AuthScheme;
 import org.apache.http.auth.Credentials;
 
@@ -100,7 +102,7 @@ public interface DownloadSpec {
     void credentials(Credentials credentials);
 
     /**
-     * Sets the HTTP request headers to us when downloading
+     * Sets the HTTP request headers to use when downloading
      * @param headers a Map of header names to values
      */
     void headers(Map<String, String> headers);
@@ -128,6 +130,22 @@ public interface DownloadSpec {
      * @param milliseconds the timeout in milliseconds (default: -1)
      */
     void timeout(int milliseconds);
+
+    /**
+     * Specifies an interceptor that will be called when a request is about
+     * to be sent to the server. This is useful if you want to manipulate
+     * a request beyond the capabilities of the download task.
+     * @param interceptor the interceptor to set
+     */
+    void requestInterceptor(HttpRequestInterceptor interceptor);
+
+    /**
+     * Specifies an interceptor that will be called when a response has been
+     * received from the server. This is useful if you want to manipulate
+     * incoming data before it is handled by the download task.
+     * @param interceptor the interceptor to set
+     */
+    void responseInterceptor(HttpResponseInterceptor interceptor);
 
     /**
      * @return the download source(s), either a URL or a list of URLs
@@ -205,4 +223,16 @@ public interface DownloadSpec {
      * until a connection is established or until the server returns data.
      */
     int getTimeout();
+
+    /**
+     * @return an interceptor that will be called when a request is about to
+     * be sent to the server (or <code>null</code> if no interceptor is specified)
+     */
+    HttpRequestInterceptor getRequestInterceptor();
+
+    /**
+     * @return an interceptor that will be called when a response has been
+     * received from the server (or <code>null</code> if no interceptor is specified)
+     */
+    HttpResponseInterceptor getResponseInterceptor();
 }

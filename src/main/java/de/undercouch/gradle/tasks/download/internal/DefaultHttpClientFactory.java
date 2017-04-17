@@ -23,6 +23,8 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 
 import org.apache.http.HttpHost;
+import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.HttpClientConnectionManager;
@@ -35,8 +37,8 @@ import org.apache.http.impl.conn.SystemDefaultRoutePlanner;
 
 /**
  * Default implementation of {@link HttpClientFactory}. Creates a new client
- * every time {@link #createHttpClient(HttpHost, boolean)} is called. The
- * caller is responsible for closing this client.
+ * every time {@link #createHttpClient(HttpHost, boolean, HttpRequestInterceptor, HttpResponseInterceptor)}
+ * is called. The caller is responsible for closing this client.
  * @author Michel Kraemer
  */
 public class DefaultHttpClientFactory implements HttpClientFactory {
@@ -49,7 +51,8 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
 
     @Override
     public CloseableHttpClient createHttpClient(HttpHost httpHost,
-            boolean acceptAnyCertificate) {
+            boolean acceptAnyCertificate, HttpRequestInterceptor requestInterceptor,
+            HttpResponseInterceptor responseInterceptor) {
         HttpClientBuilder builder = HttpClientBuilder.create();
         
         //configure proxy from system environment
@@ -71,6 +74,14 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         //add an interceptor that replaces the invalid Content-Type
         //'none' by 'identity'
         builder.addInterceptorFirst(new ContentEncodingNoneInterceptor());
+        
+        //add interceptors
+        if (requestInterceptor != null) {
+            builder.addInterceptorLast(requestInterceptor);
+        }
+        if (responseInterceptor != null) {
+            builder.addInterceptorLast(responseInterceptor);
+        }
 
         CloseableHttpClient client = builder.build();
         return client;
