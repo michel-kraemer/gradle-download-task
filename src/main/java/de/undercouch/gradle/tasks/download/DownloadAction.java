@@ -72,7 +72,7 @@ public class DownloadAction implements DownloadSpec {
     private File dest;
     private boolean quiet = false;
     private boolean overwrite = true;
-    private boolean onlyIfNewer = false;
+    private boolean onlyIfModified = false;
     private boolean compress = true;
     private String username;
     private String password;
@@ -163,7 +163,7 @@ public class DownloadAction implements DownloadSpec {
                     "' in offline mode.");
         }
 
-        final long timestamp = onlyIfNewer && destFile.exists() ? destFile.lastModified() : 0;
+        final long timestamp = onlyIfModified && destFile.exists() ? destFile.lastModified() : 0;
         
         //create progress logger
         if (!quiet) {
@@ -254,7 +254,7 @@ public class DownloadAction implements DownloadSpec {
         stream(is, destFile);
 
         long newTimestamp = parseLastModified(response);
-        if (onlyIfNewer && newTimestamp > 0) {
+        if (onlyIfModified && newTimestamp > 0) {
             destFile.setLastModified(newTimestamp);
         }
     }
@@ -597,8 +597,13 @@ public class DownloadAction implements DownloadSpec {
     }
     
     @Override
+    public void onlyIfModified(boolean onlyIfModified) {
+        this.onlyIfModified = onlyIfModified;
+    }
+    
+    @Override
     public void onlyIfNewer(boolean onlyIfNewer) {
-        this.onlyIfNewer = onlyIfNewer;
+        onlyIfModified(onlyIfNewer);
     }
     
     @Override
@@ -706,8 +711,13 @@ public class DownloadAction implements DownloadSpec {
     }
     
     @Override
+    public boolean isOnlyIfModified() {
+        return onlyIfModified;
+    }
+    
+    @Override
     public boolean isOnlyIfNewer() {
-        return onlyIfNewer;
+        return isOnlyIfModified();
     }
     
     @Override

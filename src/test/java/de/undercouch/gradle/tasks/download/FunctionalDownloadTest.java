@@ -152,7 +152,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     }
 
     /**
-     * Download a file once, then download again with 'onlyIfNewer'
+     * Download a file once, then download again with 'onlyIfModified'
      * @throws Exception if anything went wrong
      */
     @Test
@@ -162,7 +162,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     }
 
     /**
-     * Download a file once, then download again with 'onlyIfNewer'.
+     * Download a file once, then download again with 'onlyIfModified'.
      * File changed between downloads.
      * @throws Exception if anything went wrong
      */
@@ -251,7 +251,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 "src(" + parameters.src + ")\n" +
                 "dest " + parameters.dest + "\n" +
                 "overwrite " + Boolean.toString(parameters.overwrite) + "\n" +
-                "onlyIfNewer " + Boolean.toString(parameters.onlyIfNewer) + "\n" +
+                "onlyIfModified " + Boolean.toString(parameters.onlyIfModified) + "\n" +
                 "compress " + Boolean.toString(parameters.compress) + "\n" +
                 "quiet " + Boolean.toString(parameters.quiet) + "\n" +
             "}\n" +
@@ -267,21 +267,21 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         final String src;
         final String dest;
         final boolean overwrite;
-        final boolean onlyIfNewer;
+        final boolean onlyIfModified;
         final boolean compress;
         final boolean quiet;
         final boolean offline;
 
-        Parameters(String src, String dest, boolean overwrite, boolean onlyIfNewer) {
-            this(src, dest, overwrite, onlyIfNewer, true, false, false);
+        Parameters(String src, String dest, boolean overwrite, boolean onlyIfModified) {
+            this(src, dest, overwrite, onlyIfModified, true, false, false);
         }
 
-        Parameters(String src, String dest, boolean overwrite, boolean onlyIfNewer,
+        Parameters(String src, String dest, boolean overwrite, boolean onlyIfModified,
                 boolean compress, boolean offline, boolean quiet) {
             this.src = src;
             this.dest = dest;
             this.overwrite = overwrite;
-            this.onlyIfNewer = onlyIfNewer;
+            this.onlyIfModified = onlyIfModified;
             this.compress = compress;
             this.offline = offline;
             this.quiet = quiet;

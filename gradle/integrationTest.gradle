@@ -103,7 +103,7 @@ task integrationTest << {
                     src '${testFile2Src}'
                     dest buildDir
                     overwrite false
-                    onlyIfNewer true
+                    onlyIfModified true
                 }
                 
                 task verifyFile(type: Verify, dependsOn: downloadFile) {
@@ -117,7 +117,7 @@ task integrationTest << {
             def downloadedTestFile = new File(testProjectDir, 'build/test.txt')
             def downloadedTestFile2 = new File(testProjectDir, 'build/test2.txt')
             
-            //create second destination test file to simulate onlyIfNewer = true and overwrite = false
+            //create second destination test file to simulate onlyIfModified = true and overwrite = false
             downloadedTestFile2.getParentFile().mkdirs()
             downloadedTestFile2.write(testStr2)
             

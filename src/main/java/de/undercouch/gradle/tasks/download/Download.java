@@ -53,7 +53,7 @@ public class Download extends DefaultTask implements DownloadSpec {
         getOutputs().upToDateWhen(new Spec<Task>() {
             @Override
             public boolean isSatisfiedBy(Task task) {
-                return !(isOnlyIfNewer() || isOverwrite());
+                return !(isOnlyIfModified() || isOverwrite());
             }
         });
         
@@ -165,6 +165,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
     
     @Override
+    public void onlyIfModified(boolean onlyIfModified) {
+        action.onlyIfModified(onlyIfModified);
+    }
+    
+    @Override
     public void onlyIfNewer(boolean onlyIfNewer) {
         action.onlyIfNewer(onlyIfNewer);
     }
@@ -242,6 +247,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public boolean isOverwrite() {
         return action.isOverwrite();
+    }
+    
+    @Override
+    public boolean isOnlyIfModified() {
+        return action.isOnlyIfModified();
     }
     
     @Override

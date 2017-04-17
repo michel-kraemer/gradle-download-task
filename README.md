@@ -134,7 +134,7 @@ multiple files shoud be downloaded. <em>(required)</em></dd>
 <dt>overwrite</dt>
 <dd><code>true</code> if existing files should be overwritten <em>(default:
 <code>true</code>)</em></dd>
-<dt>onlyIfNewer</dt>
+<dt>onlyIfModified (alias: onlyIfNewer)</dt>
 <dd><code>true</code> if the file should only be downloaded if it
 has been modified on the server since the last download <em>(default:
 <code>false</code>)</em></dd>

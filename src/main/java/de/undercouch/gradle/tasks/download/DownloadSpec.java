@@ -54,7 +54,15 @@ public interface DownloadSpec {
     void overwrite(boolean overwrite);
     
     /**
-     * Sets the onlyIfNewer flag
+     * Sets the onlyIfModified flag
+     * @param onlyIfModified true if the file should only be downloaded if it
+     * has been modified on the server since the last download
+     */
+    void onlyIfModified(boolean onlyIfModified);
+    
+    /**
+     * Sets the onlyIfNewer flag. This method is an alias for
+     * {@link #onlyIfModified(boolean)}.
      * @param onlyIfNewer true if the file should only be downloaded if it
      * has been modified on the server since the last download
      */
@@ -168,6 +176,13 @@ public interface DownloadSpec {
     boolean isOverwrite();
     
     /**
+     * @return the onlyIfModified flag
+     */
+    boolean isOnlyIfModified();
+    
+    /**
+     * Get the <code>onlyIfNewer</code> flag. This method is an alias for
+     * {@link #isOnlyIfModified()}.
      * @return the onlyIfNewer flag
      */
     boolean isOnlyIfNewer();
