@@ -185,6 +185,20 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         assertTrue(destFile.setLastModified(testFile.lastModified()));
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
     }
+    
+    /**
+     * Copy a file from a file:// URL once, then download again with 'onlyIfModified'
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void downloadFileURLOnlyIfNewer() throws Exception {
+        File srcFile = folder.newFile();
+        FileUtils.writeByteArrayToFile(srcFile, contents);
+        String srcFileUri = "'" + srcFile.toURI().toString() + "'";
+        assertTaskSuccess(download(new Parameters(srcFileUri, dest, true, true)));
+        assertTrue(destFile.setLastModified(srcFile.lastModified()));
+        assertTaskUpToDate(download(new Parameters(srcFileUri, dest, true, true)));
+    }
 
     /**
      * Test if the download task is triggered if another task depends on its

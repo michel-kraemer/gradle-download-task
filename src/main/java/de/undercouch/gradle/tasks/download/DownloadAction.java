@@ -177,22 +177,42 @@ public class DownloadAction implements DownloadSpec {
         }
 
         if ("file".equals(src.getProtocol())) {
-            executeFileProtocol(src, destFile);
+            executeFileProtocol(src, timestamp, destFile);
         } else {
             executeHttpProtocol(src, clientFactory, timestamp, destFile);
         }
     }
 
-    private void executeFileProtocol(URL src, File destFile) throws IOException {
+    private void executeFileProtocol(URL src, long timestamp, File destFile)
+            throws IOException {
+        File srcFile = null;
         try {
-            File srcFile = new File(src.toURI());
+            srcFile = new File(src.toURI());
             size = toLengthText(srcFile.length());
         } catch (URISyntaxException e) {
             project.getLogger().warn("Unable to determine file length.");
         }
+        
+        //check if file was modified
+        long lastModified = 0;
+        if (srcFile != null) {
+            lastModified = srcFile.lastModified();
+            if (lastModified != 0 && timestamp >= lastModified) {
+                if (!quiet) {
+                    project.getLogger().info("Not modified. Skipping '" + src + "'");
+                }
+                ++upToDate;
+                return;
+            }
+        }
 
         BufferedInputStream fileStream = new BufferedInputStream(src.openStream());
         stream(fileStream, destFile);
+        
+        //set last-modified time of destination file
+        if (onlyIfModified && lastModified > 0) {
+            destFile.setLastModified(lastModified);
+        }
     }
 
     private void executeHttpProtocol(URL src, HttpClientFactory clientFactory,
@@ -225,6 +245,12 @@ public class DownloadAction implements DownloadSpec {
         } finally {
             response.close();
         }
+        
+        //set last-modified time of destination file
+        long newTimestamp = parseLastModified(response);
+        if (onlyIfModified && newTimestamp > 0) {
+            destFile.setLastModified(newTimestamp);
+        }
     }
 
     /**
@@ -252,11 +278,6 @@ public class DownloadAction implements DownloadSpec {
         //open stream and start downloading
         InputStream is = entity.getContent();
         stream(is, destFile);
-
-        long newTimestamp = parseLastModified(response);
-        if (onlyIfModified && newTimestamp > 0) {
-            destFile.setLastModified(newTimestamp);
-        }
     }
 
     /**
