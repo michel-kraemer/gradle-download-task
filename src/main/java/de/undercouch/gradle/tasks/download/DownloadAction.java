@@ -20,6 +20,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -60,6 +61,8 @@ import org.gradle.api.Project;
 import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
+import groovy.json.JsonOutput;
+import groovy.json.JsonSlurper;
 import groovy.lang.Closure;
 
 /**
@@ -81,6 +84,9 @@ public class DownloadAction implements DownloadSpec {
     private Map<String, String> headers;
     private boolean acceptAnyCertificate = false;
     private int timeoutMs = -1;
+    private File downloadTaskDir;
+    private boolean useETag = false;
+    private File cachedETagsFile;
     private HttpRequestInterceptor requestInterceptor;
     private HttpResponseInterceptor responseInterceptor;
 
@@ -98,6 +104,7 @@ public class DownloadAction implements DownloadSpec {
      */
     public DownloadAction(Project project) {
         this.project = project;
+        this.downloadTaskDir = new File(project.getBuildDir(), "download-task");
     }
 
     /**
@@ -225,8 +232,12 @@ public class DownloadAction implements DownloadSpec {
                 httpHost, acceptAnyCertificate, requestInterceptor, responseInterceptor);
         
         //open URL connection
+        String etag = null;
+        if (onlyIfModified && useETag) {
+            etag = getCachedETag(httpHost, src.getFile());
+        }
         CloseableHttpResponse response = openConnection(httpHost, src.getFile(),
-                timestamp, client);
+                timestamp, etag, client);
         //check if file on server was modified
         long lastModified = parseLastModified(response);
         int code = response.getStatusLine().getStatusCode();
@@ -250,6 +261,11 @@ public class DownloadAction implements DownloadSpec {
         long newTimestamp = parseLastModified(response);
         if (onlyIfModified && newTimestamp > 0) {
             destFile.setLastModified(newTimestamp);
+        }
+
+        //store ETag
+        if (onlyIfModified && useETag) {
+            storeETag(httpHost, src.getFile(), response);
         }
     }
 
@@ -316,6 +332,99 @@ public class DownloadAction implements DownloadSpec {
     }
 
     /**
+     * Reads the {@link #cachedETagsFile}
+     * @return a map containing the parsed contents of the cached etags file
+     * or an empty map if the file does not exist yet
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> readCachedETags() {
+        File cachedETagsFile = getCachedETagsFile();
+        Map<String, Object> cachedETags;
+        if (cachedETagsFile.exists()) {
+            JsonSlurper slurper = new JsonSlurper();
+            cachedETags = (Map<String, Object>)slurper.parse(cachedETagsFile, "UTF-8");
+        } else {
+            cachedETags = new LinkedHashMap<String, Object>();
+        }
+        return cachedETags;
+    }
+
+    /**
+     * Get the cached ETag for the given host and file
+     * @param host the host
+     * @param file the file
+     * @return the cached ETag or null if there is no ETag in the cache
+     */
+    private String getCachedETag(HttpHost host, String file) {
+        Map<String, Object> cachedETags = readCachedETags();
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> hostMap =
+                (Map<String, Object>)cachedETags.get(host.toURI());
+        if (hostMap == null) {
+            return null;
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, String> etagMap = (Map<String, String>)hostMap.get(file);
+        if (etagMap == null) {
+            return null;
+        }
+
+        return etagMap.get("ETag");
+    }
+
+    /**
+     * Store the ETag header from the given response in the {@link #cachedETagsFile}
+     * @param host the queried host
+     * @param file the queried file
+     * @param response the HTTP response
+     * @throws IOException if the tag could not be written
+     */
+    @SuppressWarnings("unchecked")
+    private void storeETag(HttpHost host, String file, HttpResponse response)
+            throws IOException {
+        //get ETag header
+        Header etagHdr = response.getFirstHeader("ETag");
+        if (etagHdr == null) {
+            project.getLogger().warn("Server response does not include an "
+                    + "entity tag (ETag).");
+            return;
+        }
+
+        //create directory for cached etags file
+        File parent = getCachedETagsFile().getParentFile();
+        if (parent != null) {
+            parent.mkdirs();
+        }
+
+        //read existing cached etags file
+        Map<String, Object> cachedETags = readCachedETags();
+
+        //create new entry in cached ETags file
+        Map<String, String> etagMap = new LinkedHashMap<String, String>();
+        etagMap.put("ETag", etagHdr.getValue());
+
+        String uri = host.toURI();
+        Map<String, Object> hostMap = (Map<String, Object>)cachedETags.get(uri);
+        if (hostMap == null) {
+            hostMap = new LinkedHashMap<String, Object>();
+            cachedETags.put(uri, hostMap);
+        }
+        hostMap.put(file, etagMap);
+
+        //write cached ETags file
+        String cachedETagsContents = JsonOutput.toJson(cachedETags);
+        PrintWriter writer = new PrintWriter(getCachedETagsFile(), "UTF-8");
+        try {
+            writer.write(cachedETagsContents);
+            writer.flush();
+        } finally {
+            writer.close();
+        }
+    }
+
+    /**
      * Generates the path to an output file for a given source URL. Creates
      * all necessary parent directories for the destination file.
      * @param src the source
@@ -352,12 +461,13 @@ public class DownloadAction implements DownloadSpec {
      * @param httpHost the HTTP host to connect to
      * @param file the file to request
      * @param timestamp the timestamp of the destination file, in milliseconds
+     * @param etag the cached ETag for the requested host and file
      * @param client the HTTP client to use to perform the request
      * @return the URLConnection
      * @throws IOException if the connection could not be opened
      */
     private CloseableHttpResponse openConnection(HttpHost httpHost, String file,
-            long timestamp, CloseableHttpClient client) throws IOException {
+            long timestamp, String etag, CloseableHttpClient client) throws IOException {
         //perform preemptive authentication
         HttpClientContext context = null;
         if ((username != null && password != null) || credentials != null) {
@@ -412,6 +522,11 @@ public class DownloadAction implements DownloadSpec {
         //set If-Modified-Since header
         if (timestamp > 0) {
             get.setHeader("If-Modified-Since", DateUtils.formatDate(new Date(timestamp)));
+        }
+        
+        //set If-None-Match header
+        if (etag != null) {
+            get.setHeader("If-None-Match", etag);
         }
         
         //set headers
@@ -699,6 +814,47 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
+    public void downloadTaskDir(Object dir) {
+        if (dir instanceof Closure) {
+            //lazily evaluate closure
+            Closure<?> closure = (Closure<?>)dir;
+            dir = closure.call();
+        }
+
+        if (dir instanceof CharSequence) {
+            this.downloadTaskDir = project.file(dir.toString());
+        } else if (dir instanceof File) {
+            this.downloadTaskDir = (File)dir;
+        } else {
+            throw new IllegalArgumentException("download-task directory must " +
+                "either be a File or a CharSequence");
+        }
+    }
+
+    @Override
+    public void useETag(boolean useETag) {
+        this.useETag = useETag;
+    }
+
+    @Override
+    public void cachedETagsFile(Object location) {
+        if (location instanceof Closure) {
+            //lazily evaluate closure
+            Closure<?> closure = (Closure<?>)location;
+            location = closure.call();
+        }
+        
+        if (location instanceof CharSequence) {
+            this.cachedETagsFile = project.file(location.toString());
+        } else if (location instanceof File) {
+            this.cachedETagsFile = (File)location;
+        } else {
+            throw new IllegalArgumentException("Location for cached ETags must " +
+                "either be a File or a CharSequence");
+        }
+    }
+
+    @Override
     public void requestInterceptor(HttpRequestInterceptor interceptor) {
         this.requestInterceptor = interceptor;
     }
@@ -792,6 +948,24 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public int getTimeout() {
         return timeoutMs;
+    }
+
+    @Override
+    public File getDownloadTaskDir() {
+        return downloadTaskDir;
+    }
+
+    @Override
+    public boolean isUseETag() {
+        return useETag;
+    }
+
+    @Override
+    public File getCachedETagsFile() {
+        if (cachedETagsFile == null) {
+            return new File(this.downloadTaskDir, "etags.json");
+        }
+        return cachedETagsFile;
     }
 
     @Override

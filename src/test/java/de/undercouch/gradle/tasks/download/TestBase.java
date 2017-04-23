@@ -241,6 +241,14 @@ public abstract class TestBase {
      * @return the URL
      */
     protected String makeSrc(String fileName) {
-        return "http://" + localHostName + ":" + getServerPort() + "/" + fileName;
+        return makeHost() + "/" + fileName;
+    }
+    
+    /**
+     * Makes a host string for the embedded HTTP server
+     * @return the host string
+     */
+    protected String makeHost() {
+        return "http://" + localHostName + ":" + getServerPort();
     }
 }

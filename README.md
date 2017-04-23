@@ -192,6 +192,14 @@ value. <em>(optional)</em></dd>
 ### Advanced
 
 <dl>
+<dt>downloadTaskDir</dt>
+<dd>The directory where the plugin stores information that should persist between builds. It will only be created if necessary. <em>(default: <code>${buildDir}/download-task</code>)</em></dd>
+<dt>useETag</dt>
+<dd>Use this flag in combination with <code>onlyIfModified</code>. If both flags are <code>true</code> the plugin will check a file's timestamp as well as its entity tag (ETag) and only download it if it has been modified on the server since the last download. <em>(default:
+<code>false</code>)</em></dd>
+<dt>cachedETagsFile</dt>
+<dd>The location of the file that keeps entity tags (ETags) received
+from the server. <em>(default: <code>${downloadTaskDir}/etags.json</code>)</em></dd>
 <dt>requestInterceptor</dt>
 <dd>An instance of
 <a href="https://hc.apache.org/httpcomponents-core-4.4.x/httpcore/apidocs/org/apache/http/HttpRequestInterceptor.html">HttpRequestInterceptor</a>. Can be used to intercept and modify outgoing HTTP requests before they are sent to the server. <em>(optional)</em></dd>

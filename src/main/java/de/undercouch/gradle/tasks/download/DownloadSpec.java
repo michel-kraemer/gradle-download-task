@@ -140,6 +140,28 @@ public interface DownloadSpec {
     void timeout(int milliseconds);
 
     /**
+     * Specifies the directory where gradle-download-task stores information
+     * that should persist between builds
+     * @param dir the directory (default: ${buildDir}/gradle-download-task)
+     */
+    void downloadTaskDir(Object dir);
+
+    /**
+     * Sets the <code>useETag</code> flag
+     * @param useETag true if the plugin should check if the entity tag (ETag)
+     * of a downloaded file has changed (only effective if <code>onlyIfModified</code>
+     * is also true, default: false)
+     */
+    void useETag(boolean useETag);
+
+    /**
+     * Sets the location of the file that keeps entity tags (ETags) received
+     * from the server
+     * @param location the location (default: ${downloadTaskDir}/etags.json)
+     */
+    void cachedETagsFile(Object location);
+
+    /**
      * Specifies an interceptor that will be called when a request is about
      * to be sent to the server. This is useful if you want to manipulate
      * a request beyond the capabilities of the download task.
@@ -238,6 +260,25 @@ public interface DownloadSpec {
      * until a connection is established or until the server returns data.
      */
     int getTimeout();
+    
+    /**
+     * @return the directory where gradle-download-task stores information
+     * that should persist between builds
+     */
+    File getDownloadTaskDir();
+
+    /**
+     * @return true if the plugin will check if the entity tag (ETag) of a
+     * downloaded file has changed (only effective if <code>onlyIfModified</code>
+     * is also true)
+     */
+    boolean isUseETag();
+
+    /**
+     * @return the location of the file that keeps entity tags (ETags) received
+     * from the server
+     */
+    File getCachedETagsFile();
 
     /**
      * @return an interceptor that will be called when a request is about to

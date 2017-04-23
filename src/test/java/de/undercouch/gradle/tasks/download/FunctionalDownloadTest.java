@@ -173,6 +173,18 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         assertTrue(src.setLastModified(src.lastModified() + 5000));
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, true)));
     }
+    
+    /**
+     * Download a file once, then download again with 'useETag'
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void downloadUseETag() throws Exception {
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, true,
+                false, false, false, true)));
+        assertTaskUpToDate(download(new Parameters(singleSrc, dest, true, true,
+                false, false, false, true)));
+    }
 
     /**
      * Create destination file locally, then run download.
@@ -268,6 +280,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 "onlyIfModified " + Boolean.toString(parameters.onlyIfModified) + "\n" +
                 "compress " + Boolean.toString(parameters.compress) + "\n" +
                 "quiet " + Boolean.toString(parameters.quiet) + "\n" +
+                "useETag " + Boolean.toString(parameters.useETag) + "\n" +
             "}\n" +
             "task processTask {\n" +
                 "inputs.files files(downloadTask)\n" +
@@ -285,13 +298,19 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         final boolean compress;
         final boolean quiet;
         final boolean offline;
+        final boolean useETag;
 
         Parameters(String src, String dest, boolean overwrite, boolean onlyIfModified) {
             this(src, dest, overwrite, onlyIfModified, true, false, false);
         }
-
+        
         Parameters(String src, String dest, boolean overwrite, boolean onlyIfModified,
                 boolean compress, boolean offline, boolean quiet) {
+            this(src, dest, overwrite, onlyIfModified, compress, offline, quiet, false);
+        }
+
+        Parameters(String src, String dest, boolean overwrite, boolean onlyIfModified,
+                boolean compress, boolean offline, boolean quiet, boolean useETag) {
             this.src = src;
             this.dest = dest;
             this.overwrite = overwrite;
@@ -299,6 +318,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
             this.compress = compress;
             this.offline = offline;
             this.quiet = quiet;
+            this.useETag = useETag;
         }
     }
 }
