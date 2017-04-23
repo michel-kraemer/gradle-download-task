@@ -56,6 +56,7 @@ import org.apache.http.impl.auth.DigestScheme;
 import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.util.GradleVersion;
 
@@ -119,6 +120,11 @@ public class DownloadAction implements DownloadSpec {
         if (GradleVersion.current().compareTo(MIN_GRADLE_VERSION) < 0 && !quiet) {
             project.getLogger().warn("Support for running gradle-download-task "
                     + "with Gradle 1.x has been deprecated and will be removed in "
+                    + "gradle-download-task 4.0.0");
+        }
+        if (JavaVersion.current().compareTo(JavaVersion.VERSION_1_7) < 0 && !quiet) {
+            project.getLogger().warn("Support for running gradle-download-task "
+                    + "using Java 6 has been deprecated and will be removed in "
                     + "gradle-download-task 4.0.0");
         }
 
