@@ -6,14 +6,6 @@ plugins {
 }
 
 /**
- * Import the Download and Verify tasks. These two lines are optional.
- * You can of course also always use the full qualified name
- * when you specify a task of type 'Download' or 'Verify'.
- */
-import de.undercouch.gradle.tasks.download.Download
-import de.undercouch.gradle.tasks.download.Verify
-
-/**
  * Download a single file to a directory
  */
 task downloadFile(type: Download) {

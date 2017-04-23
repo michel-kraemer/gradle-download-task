@@ -273,7 +273,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     protected GradleRunner createRunner(Parameters parameters) throws IOException {
         return createRunnerWithBuildFile(
             "plugins { id 'de.undercouch.download' }\n" +
-            "task downloadTask(type: de.undercouch.gradle.tasks.download.Download) {\n" +
+            "task downloadTask(type: Download) {\n" +
                 "src(" + parameters.src + ")\n" +
                 "dest " + parameters.dest + "\n" +
                 "overwrite " + Boolean.toString(parameters.overwrite) + "\n" +
