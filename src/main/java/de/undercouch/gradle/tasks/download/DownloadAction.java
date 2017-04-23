@@ -57,6 +57,7 @@ import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.gradle.api.Project;
+import org.gradle.util.GradleVersion;
 
 import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
@@ -70,6 +71,9 @@ import groovy.lang.Closure;
  * @author Michel Kraemer
  */
 public class DownloadAction implements DownloadSpec {
+    private static final GradleVersion MIN_GRADLE_VERSION =
+            GradleVersion.version("2.0");
+
     private final Project project;
     private List<URL> sources = new ArrayList<URL>(1);
     private File dest;
@@ -112,6 +116,12 @@ public class DownloadAction implements DownloadSpec {
      * @throws IOException if the file could not downloaded
      */
     public void execute() throws IOException {
+        if (GradleVersion.current().compareTo(MIN_GRADLE_VERSION) < 0 && !quiet) {
+            project.getLogger().warn("Support for running gradle-download-task "
+                    + "with Gradle 1.x has been deprecated and will be removed in "
+                    + "gradle-download-task 4.0.0");
+        }
+
         if (sources.isEmpty()) {
             throw new IllegalArgumentException("Please provide a download source");
         }
