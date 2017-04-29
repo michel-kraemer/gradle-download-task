@@ -403,8 +403,10 @@ public class DownloadAction implements DownloadSpec {
         //get ETag header
         Header etagHdr = response.getFirstHeader("ETag");
         if (etagHdr == null) {
-            project.getLogger().warn("Server response does not include an "
-                    + "entity tag (ETag).");
+            if (!quiet) {
+                project.getLogger().warn("Server response does not include an "
+                        + "entity tag (ETag).");
+            }
             return;
         }
 
