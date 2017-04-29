@@ -90,7 +90,7 @@ public class DownloadAction implements DownloadSpec {
     private boolean acceptAnyCertificate = false;
     private int timeoutMs = -1;
     private File downloadTaskDir;
-    private boolean useETag = false;
+    private UseETag useETag = UseETag.FALSE;
     private File cachedETagsFile;
     private HttpRequestInterceptor requestInterceptor;
     private HttpResponseInterceptor responseInterceptor;
@@ -249,8 +249,11 @@ public class DownloadAction implements DownloadSpec {
         
         //open URL connection
         String etag = null;
-        if (onlyIfModified && useETag) {
+        if (onlyIfModified && useETag.enabled) {
             etag = getCachedETag(httpHost, src.getFile());
+            if (!useETag.useWeakETags && isWeakETag(etag)) {
+                etag = null;
+            }
         }
         CloseableHttpResponse response = openConnection(httpHost, src.getFile(),
                 timestamp, etag, client);
@@ -280,7 +283,7 @@ public class DownloadAction implements DownloadSpec {
         }
 
         //store ETag
-        if (onlyIfModified && useETag) {
+        if (onlyIfModified && useETag.enabled) {
             storeETag(httpHost, src.getFile(), response);
         }
     }
@@ -409,6 +412,21 @@ public class DownloadAction implements DownloadSpec {
             }
             return;
         }
+        String etag = etagHdr.getValue();
+
+        //handle weak ETags
+        if (isWeakETag(etag)) {
+            if (useETag.displayWarningForWeak && !quiet) {
+                project.getLogger().warn("Weak entity tag (ETag) encountered. "
+                        + "Please make sure you want to compare resources based on "
+                        + "weak ETags. If yes, set the 'useETag' flag to \"all\", "
+                        + "otherwise set it to \"strongOnly\".");
+            }
+            if (!useETag.useWeakETags) {
+                //do not save weak etags
+                return;
+            }
+        }
 
         //create directory for cached etags file
         File parent = getCachedETagsFile().getParentFile();
@@ -421,7 +439,7 @@ public class DownloadAction implements DownloadSpec {
 
         //create new entry in cached ETags file
         Map<String, String> etagMap = new LinkedHashMap<String, String>();
-        etagMap.put("ETag", etagHdr.getValue());
+        etagMap.put("ETag", etag);
 
         String uri = host.toURI();
         Map<String, Object> hostMap = (Map<String, Object>)cachedETags.get(uri);
@@ -440,6 +458,15 @@ public class DownloadAction implements DownloadSpec {
         } finally {
             writer.close();
         }
+    }
+
+    /**
+     * Checks if the given ETag is a weak one
+     * @param etag the ETag
+     * @return true if <code>etag</code> is weak
+     */
+    private boolean isWeakETag(String etag) {
+        return etag != null && etag.startsWith("W/");
     }
 
     /**
@@ -850,8 +877,8 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
-    public void useETag(boolean useETag) {
-        this.useETag = useETag;
+    public void useETag(Object useETag) {
+        this.useETag = UseETag.fromValue(useETag);
     }
 
     @Override
@@ -974,8 +1001,8 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
-    public boolean isUseETag() {
-        return useETag;
+    public Object getUseETag() {
+        return useETag.value;
     }
 
     @Override
@@ -994,5 +1021,63 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public HttpResponseInterceptor getResponseInterceptor() {
         return responseInterceptor;
+    }
+
+    /**
+     * Possible values for the "useETag" flag
+     */
+    private static enum UseETag {
+        /**
+         * Do not use ETags
+         */
+        FALSE(Boolean.FALSE, false, false, false),
+
+        /**
+         * Use all ETags but display a warning for weak ones
+         */
+        TRUE(Boolean.TRUE, true, true, true),
+
+        /**
+         * Use all ETags but do not display a warning for weak ones
+         */
+        ALL("all", true, true, false),
+
+        /**
+         * Use only strong ETags
+         */
+        STRONG_ONLY("strongOnly", true, false, false);
+
+        final Object value;
+        final boolean enabled;
+        final boolean useWeakETags;
+        final boolean displayWarningForWeak;
+
+        UseETag(Object value, boolean useAnyETag, boolean useWeakETags,
+                boolean displayWarningForWeak) {
+            this.value = value;
+            this.enabled = useAnyETag;
+            this.useWeakETags = useWeakETags;
+            this.displayWarningForWeak = displayWarningForWeak;
+        }
+
+        static UseETag fromValue(Object value) {
+            if (TRUE.value.equals(value)) {
+                return TRUE;
+            } else if (FALSE.value.equals(value)) {
+                return FALSE;
+            } else if (value instanceof String) {
+                String s = (String)value;
+                if (ALL.value.equals(s)) {
+                    return ALL;
+                } else if (STRONG_ONLY.value.equals(s)) {
+                    return STRONG_ONLY;
+                } else if ("true".equalsIgnoreCase(s)) {
+                    return TRUE;
+                } else if ("false".equalsIgnoreCase(s)) {
+                    return TRUE;
+                }
+            }
+            throw new IllegalArgumentException("Illegal value for 'useETag' flag");
+        }
     }
 }

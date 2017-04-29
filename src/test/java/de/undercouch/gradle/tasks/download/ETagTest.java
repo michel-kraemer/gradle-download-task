@@ -200,7 +200,7 @@ public class ETagTest extends TestBase {
         t.dest(dst);
         t.onlyIfModified(true);
         t.useETag(true);
-        assertTrue(t.isUseETag());
+        assertTrue((Boolean)t.getUseETag());
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
@@ -349,5 +349,152 @@ public class ETagTest extends TestBase {
 
         String dstContents = FileUtils.readFileToString(dst);
         assertEquals("etag: " + etag, dstContents);
+    }
+
+    /**
+     * Tests if the plugin supports weak etags
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void storeWeakETagIssueWarning() throws Exception {
+        etag = "W/\"foobar1\"";
+
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(ETAG));
+        File dst = folder.newFile();
+        dst.delete();
+        assertFalse(dst.exists());
+        t.dest(dst);
+        t.onlyIfModified(true);
+        t.useETag(true);
+        assertEquals(Boolean.TRUE, t.getUseETag());
+        t.execute();
+
+        //check server response
+        String dstContents = FileUtils.readFileToString(dst);
+        assertEquals("etag: " + etag, dstContents);
+
+        //read cached etags file
+        JsonSlurper slurper = new JsonSlurper();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> cachedETags = (Map<String, Object>)slurper.parse(
+                t.getCachedETagsFile(), "UTF-8");
+
+        //check cached etags
+        Map<String, Object> expectedETag = new LinkedHashMap<String, Object>();
+        expectedETag.put("ETag", etag);
+        Map<String, Object> expectedHost = new LinkedHashMap<String, Object>();
+        expectedHost.put("/" + ETAG, expectedETag);
+        Map<String, Object> expectedCachedETags = new LinkedHashMap<String, Object>();
+        expectedCachedETags.put(this.makeHost(), expectedHost);
+        assertEquals(expectedCachedETags, cachedETags);
+    }
+
+    /**
+     * Tests if the plugin supports weak etags
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void storeAllETags() throws Exception {
+        etag = "W/\"foobar1\"";
+
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(ETAG));
+        File dst = folder.newFile();
+        dst.delete();
+        assertFalse(dst.exists());
+        t.dest(dst);
+        t.onlyIfModified(true);
+        t.useETag("all");
+        assertEquals("all", t.getUseETag());
+        t.execute();
+
+        //check server response
+        String dstContents = FileUtils.readFileToString(dst);
+        assertEquals("etag: " + etag, dstContents);
+
+        //read cached etags file
+        JsonSlurper slurper = new JsonSlurper();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> cachedETags = (Map<String, Object>)slurper.parse(
+                t.getCachedETagsFile(), "UTF-8");
+
+        //check cached etags
+        Map<String, Object> expectedETag = new LinkedHashMap<String, Object>();
+        expectedETag.put("ETag", etag);
+        Map<String, Object> expectedHost = new LinkedHashMap<String, Object>();
+        expectedHost.put("/" + ETAG, expectedETag);
+        Map<String, Object> expectedCachedETags = new LinkedHashMap<String, Object>();
+        expectedCachedETags.put(this.makeHost(), expectedHost);
+        assertEquals(expectedCachedETags, cachedETags);
+    }
+
+    /**
+     * Tests if the plugin can ignore weak ETags
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void storeStrongOnly() throws Exception {
+        String etag1 = "W/\"foobar1\"";
+        String etag2 = "\"foobar2\"";
+
+        //download first file
+        etag = etag1;
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(ETAG + "/file1"));
+        File dst1 = folder.newFile();
+        dst1.delete();
+        assertFalse(dst1.exists());
+        t.dest(dst1);
+        t.onlyIfModified(true);
+        t.useETag("strongOnly");
+        assertEquals("strongOnly", t.getUseETag());
+        t.execute();
+
+        //download second file
+        etag = etag2;
+        t = makeProjectAndTask();
+        t.src(makeSrc(ETAG + "/file2"));
+        File dst2 = folder.newFile();
+        dst2.delete();
+        assertFalse(dst2.exists());
+        t.dest(dst2);
+        t.onlyIfModified(true);
+        t.useETag("strongOnly");
+        assertEquals("strongOnly", t.getUseETag());
+        t.execute();
+
+        //check server responses
+        String dst1Contents = FileUtils.readFileToString(dst1);
+        assertEquals("etag: " + etag1, dst1Contents);
+        String dst2Contents = FileUtils.readFileToString(dst2);
+        assertEquals("etag: " + etag2, dst2Contents);
+
+        //read cached etags file
+        JsonSlurper slurper = new JsonSlurper();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> cachedETags = (Map<String, Object>)slurper.parse(
+                t.getCachedETagsFile(), "UTF-8");
+
+        //check cached etags (there should be no entry for etag1)
+        Map<String, Object> expectedETag2 = new LinkedHashMap<String, Object>();
+        expectedETag2.put("ETag", etag2);
+
+        Map<String, Object> expectedHost = new LinkedHashMap<String, Object>();
+        expectedHost.put("/" + ETAG + "/file2", expectedETag2);
+
+        Map<String, Object> expectedCachedETags = new LinkedHashMap<String, Object>();
+        expectedCachedETags.put(this.makeHost(), expectedHost);
+
+        assertEquals(expectedCachedETags, cachedETags);
+    }
+
+    /**
+     * Make sure we cannot assign an invalid value to the "useETag" flag
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void invalidUseETagFlag() {
+        Download t = makeProjectAndTask();
+        t.useETag("foobar");
     }
 }

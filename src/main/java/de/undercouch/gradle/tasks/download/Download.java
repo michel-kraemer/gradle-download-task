@@ -225,7 +225,7 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
 
     @Override
-    public void useETag(boolean useETag) {
+    public void useETag(Object useETag) {
         action.useETag(useETag);
     }
 
@@ -335,8 +335,8 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
 
     @Override
-    public boolean isUseETag() {
-        return action.isUseETag();
+    public Object getUseETag() {
+        return action.getUseETag();
     }
 
     @Override

@@ -147,12 +147,19 @@ public interface DownloadSpec {
     void downloadTaskDir(Object dir);
 
     /**
-     * Sets the <code>useETag</code> flag
-     * @param useETag true if the plugin should check if the entity tag (ETag)
-     * of a downloaded file has changed (only effective if <code>onlyIfModified</code>
-     * is also true, default: false)
+     * <p>Sets the <code>useETag</code> flag. Possible values are:</p>
+     * <ul>
+     * <li><code>true</code>: check if the entity tag (ETag) of a downloaded
+     * file has changed and issue a warning if a weak ETag was encountered</li>
+     * <li><code>false</code>: Do not use entity tags (ETags) at all</li>
+     * <li><code>"all"</code>: Use all ETags but do not issue a warning for weak ones</li>
+     * <li><code>"strongOnly"</code>: Use only strong ETags</li>
+     * </ul>
+     * <p>Note that this flag is only effective if <code>onlyIfModified</code> is
+     * <code>true</code>.</p>
+     * @param useETag the flag's new value
      */
-    void useETag(boolean useETag);
+    void useETag(Object useETag);
 
     /**
      * Sets the location of the file that keeps entity tags (ETags) received
@@ -268,11 +275,10 @@ public interface DownloadSpec {
     File getDownloadTaskDir();
 
     /**
-     * @return true if the plugin will check if the entity tag (ETag) of a
-     * downloaded file has changed (only effective if <code>onlyIfModified</code>
-     * is also true)
+     * @return the value of the <code>useETag</code> flag
+     * @see #useETag(Object)
      */
-    boolean isUseETag();
+    Object getUseETag();
 
     /**
      * @return the location of the file that keeps entity tags (ETags) received

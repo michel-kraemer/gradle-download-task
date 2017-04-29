@@ -193,8 +193,17 @@ value. <em>(optional)</em></dd>
 <dt>downloadTaskDir</dt>
 <dd>The directory where the plugin stores information that should persist between builds. It will only be created if necessary. <em>(default: <code>${buildDir}/download-task</code>)</em></dd>
 <dt>useETag</dt>
-<dd>Use this flag in combination with <code>onlyIfModified</code>. If both flags are <code>true</code> the plugin will check a file's timestamp as well as its entity tag (ETag) and only download it if it has been modified on the server since the last download. <em>(default:
-<code>false</code>)</em></dd>
+<dd>Use this flag in combination with <code>onlyIfModified</code>. If both flags are <code>true</code> the plugin will check a file's timestamp as well as its entity tag (ETag) and only download it if it has been modified on the server since the last download. The plugin can differentiate between <a href="https://tools.ietf.org/html/rfc7232#section-2.1">strong and weak ETags</a>. Possible values are:
+<dl>
+<dt><code>false</code> <em>(default)</em></dt>
+<dd>Do not use the ETag</dd>
+<dt><code>true</code></dt>
+<dd>Use the ETag but display a warning if it is weak</dd>
+<dt><code>"all"</code></dt>
+<dd>Use the ETag and do not display a warning if it is weak</dd>
+<dt><code>"strongOnly"</code></dt>
+<dd>Only use the ETag if it is strong</dd>
+</dl></dd>
 <dt>cachedETagsFile</dt>
 <dd>The location of the file that keeps entity tags (ETags) received
 from the server. <em>(default: <code>${downloadTaskDir}/etags.json</code>)</em></dd>
