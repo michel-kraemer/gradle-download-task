@@ -127,7 +127,7 @@ public class ETagTest extends TestBase {
      * @throws Exception if anything goes wrong
      */
     @Test
-    public void storeETag() throws Exception {
+    public void storeMultipleETags() throws Exception {
         String etag1 = "\"foobar1\"";
         String etag2 = "\"foobar2\"";
 
@@ -189,7 +189,7 @@ public class ETagTest extends TestBase {
      * @throws Exception if anything goes wrong
      */
     @Test
-    public void storeMultipleETags() throws Exception {
+    public void storeETag() throws Exception {
         etag = "\"foobar\"";
         
         Download t = makeProjectAndTask();
