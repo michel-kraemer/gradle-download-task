@@ -101,7 +101,6 @@ public class DownloadAction implements DownloadSpec {
     private long loggedKb = 0;
 
     private int upToDate = 0;
-    private int skipped = 0;
 
     /**
      * Creates a new download action
@@ -179,7 +178,6 @@ public class DownloadAction implements DownloadSpec {
                     project.getLogger().info("Skipping existing file '" +
                             destFile.getName() + "' in offline mode.");
                 }
-                ++skipped;
                 return;
             }
             throw new IllegalStateException("Unable to download file '" + src +
@@ -700,13 +698,6 @@ public class DownloadAction implements DownloadSpec {
      */
     public boolean isUpToDate() {
         return upToDate == sources.size();
-    }
-    
-    /**
-     * @return true if execution of this task has been skipped
-     */
-    public boolean isSkipped() {
-        return skipped == sources.size();
     }
 
     /**
