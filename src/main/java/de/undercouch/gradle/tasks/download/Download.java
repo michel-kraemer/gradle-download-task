@@ -230,6 +230,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
 
     @Override
+    public void dateFormats(String[] dateFormats) {
+        action.dateFormats(dateFormats);
+    }
+
+    @Override
     public Object getSrc() {
         return action.getSrc();
     }
@@ -312,5 +317,10 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public HttpResponseInterceptor getResponseInterceptor() {
         return action.getResponseInterceptor();
+    }
+
+    @Override
+    public String[] getDateFormats() {
+        return action.getDateFormats();
     }
 }

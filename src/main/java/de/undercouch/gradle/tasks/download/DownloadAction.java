@@ -91,6 +91,7 @@ public class DownloadAction implements DownloadSpec {
 
     private int upToDate = 0;
     private int skipped = 0;
+    private String[] dateFormats;
 
     /**
      * Creates a new download action
@@ -499,7 +500,7 @@ public class DownloadAction implements DownloadSpec {
         if (value == null || value.isEmpty()) {
             return 0;
         }
-        Date date = DateUtils.parseDate(value);
+        Date date = DateUtils.parseDate(value, dateFormats);
         if (date == null) {
             return 0;
         }
@@ -709,6 +710,11 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
+    public void dateFormats(String[] dateFormats) {
+        this.dateFormats = dateFormats;
+    }
+
+    @Override
     public Object getSrc() {
         if (sources.size() == 1) {
             return sources.get(0);
@@ -802,5 +808,10 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public HttpResponseInterceptor getResponseInterceptor() {
         return responseInterceptor;
+    }
+
+    @Override
+    public String[] getDateFormats() {
+        return dateFormats;
     }
 }
