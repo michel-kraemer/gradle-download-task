@@ -239,10 +239,12 @@ public class DownloadAction implements DownloadSpec {
             ++upToDate;
             return;
         }
-        
+
         //perform the download
         try {
-            performDownload(response, destFile);
+            File tmpFile = new File(destFile.getParentFile(), destFile.getName() + ".part");
+            performDownload(response, tmpFile);
+            tmpFile.renameTo(destFile);
         } finally {
             response.close();
         }
