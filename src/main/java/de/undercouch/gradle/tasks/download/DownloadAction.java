@@ -14,30 +14,11 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.reflect.Array;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpResponseInterceptor;
-import org.apache.http.HttpStatus;
+import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
+import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
+import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
+import groovy.lang.Closure;
+import org.apache.http.*;
 import org.apache.http.auth.AuthScheme;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
@@ -57,10 +38,13 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.gradle.api.Project;
 
-import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
-import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
-import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
-import groovy.lang.Closure;
+import java.io.*;
+import java.lang.reflect.Array;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
 
 /**
  * Downloads a file and displays progress
@@ -91,6 +75,8 @@ public class DownloadAction implements DownloadSpec {
 
     private int upToDate = 0;
     private int skipped = 0;
+    private String checksum;
+    private String algorithm = "MD5";
 
     /**
      * Creates a new download action
@@ -104,7 +90,7 @@ public class DownloadAction implements DownloadSpec {
      * Starts downloading
      * @throws IOException if the file could not downloaded
      */
-    public void execute() throws IOException {
+    public void execute() throws IOException, NoSuchAlgorithmException {
         if (sources.isEmpty()) {
             throw new IllegalArgumentException("Please provide a download source");
         }
@@ -116,7 +102,7 @@ public class DownloadAction implements DownloadSpec {
             //make sure build dir exists
             dest.mkdirs();
         }
-        
+
         if (sources.size() > 1 && !dest.isDirectory()) {
             if (!dest.exists()) {
                 // create directory automatically
@@ -126,7 +112,11 @@ public class DownloadAction implements DownloadSpec {
                         + "the destination has to be a directory.");
             }
         }
-        
+
+        if (checksum != null && dest.exists() && VerifyAction.calculateChecksum(algorithm, dest).equalsIgnoreCase(checksum)) {
+            return; // there is nothing to download
+        }
+
         CachingHttpClientFactory clientFactory = new CachingHttpClientFactory();
         try {
             for (URL src : sources) {
@@ -134,6 +124,14 @@ public class DownloadAction implements DownloadSpec {
             }
         } finally {
             clientFactory.close();
+        }
+
+        if (checksum != null) {
+            VerifyAction verifyAction = new VerifyAction(project);
+            verifyAction.src(dest);
+            verifyAction.algorithm(algorithm);
+            verifyAction.checksum(checksum);
+            verifyAction.execute();
         }
     }
 
@@ -147,7 +145,7 @@ public class DownloadAction implements DownloadSpec {
             ++upToDate;
             return;
         }
-        
+
         // in case offline mode is enabled don't try to download if
         // destination already exists
         if (project.getGradle().getStartParameter().isOffline()) {
@@ -164,7 +162,7 @@ public class DownloadAction implements DownloadSpec {
         }
 
         final long timestamp = onlyIfModified && destFile.exists() ? destFile.lastModified() : 0;
-        
+
         //create progress logger
         if (!quiet) {
             try {
@@ -192,7 +190,7 @@ public class DownloadAction implements DownloadSpec {
         } catch (URISyntaxException e) {
             project.getLogger().warn("Unable to determine file length.");
         }
-        
+
         //check if file was modified
         long lastModified = 0;
         if (srcFile != null) {
@@ -208,7 +206,7 @@ public class DownloadAction implements DownloadSpec {
 
         BufferedInputStream fileStream = new BufferedInputStream(src.openStream());
         stream(fileStream, destFile);
-        
+
         //set last-modified time of destination file
         if (onlyIfModified && lastModified > 0) {
             destFile.setLastModified(lastModified);
@@ -219,11 +217,11 @@ public class DownloadAction implements DownloadSpec {
             long timestamp, File destFile) throws IOException {
         //create HTTP host from URL
         HttpHost httpHost = new HttpHost(src.getHost(), src.getPort(), src.getProtocol());
-        
+
         //create HTTP client
         CloseableHttpClient client = clientFactory.createHttpClient(
                 httpHost, acceptAnyCertificate, requestInterceptor, responseInterceptor);
-        
+
         //open URL connection
         CloseableHttpResponse response = openConnection(httpHost, src.getFile(),
                 timestamp, client);
@@ -238,14 +236,14 @@ public class DownloadAction implements DownloadSpec {
             ++upToDate;
             return;
         }
-        
+
         //perform the download
         try {
             performDownload(response, destFile);
         } finally {
             response.close();
         }
-        
+
         //set last-modified time of destination file
         long newTimestamp = parseLastModified(response);
         if (onlyIfModified && newTimestamp > 0) {
@@ -265,16 +263,16 @@ public class DownloadAction implements DownloadSpec {
         if (entity == null) {
             return;
         }
-        
+
         //get content length
         long contentLength = entity.getContentLength();
         if (contentLength >= 0) {
             size = toLengthText(contentLength);
         }
-        
+
         processedBytes = 0;
         loggedKb = 0;
-        
+
         //open stream and start downloading
         InputStream is = entity.getContent();
         stream(is, destFile);
@@ -290,7 +288,7 @@ public class DownloadAction implements DownloadSpec {
         try {
             startProgress();
             OutputStream os = new FileOutputStream(destFile);
-            
+
             boolean finished = false;
             try {
                 byte[] buf = new byte[1024 * 10];
@@ -300,7 +298,7 @@ public class DownloadAction implements DownloadSpec {
                     processedBytes += read;
                     logProgress();
                 }
-                
+
                 os.flush();
                 finished = true;
             } finally {
@@ -344,7 +342,7 @@ public class DownloadAction implements DownloadSpec {
         }
         return destFile;
     }
-    
+
     /**
      * Opens a connection to the given HTTP host and requests a file. Checks
      * the last-modified header on the server if the given timestamp is
@@ -379,7 +377,7 @@ public class DownloadAction implements DownloadSpec {
             }
             addAuthentication(httpHost, c, as, context);
         }
-        
+
         //create request
         HttpGet get = new HttpGet(file);
 
@@ -408,36 +406,36 @@ public class DownloadAction implements DownloadSpec {
                     proxyUser, proxyPassword);
             addAuthentication(proxy, credentials, null, context);
         }
-        
+
         //set If-Modified-Since header
         if (timestamp > 0) {
             get.setHeader("If-Modified-Since", DateUtils.formatDate(new Date(timestamp)));
         }
-        
+
         //set headers
         if (headers != null) {
             for (Map.Entry<String, String> headerEntry : headers.entrySet()) {
                 get.addHeader(headerEntry.getKey(), headerEntry.getValue());
             }
         }
-        
+
         //enable compression
         if (compress) {
             get.setHeader("Accept-Encoding", "gzip");
         }
-        
+
         //execute request
         CloseableHttpResponse response = client.execute(httpHost, get, context);
-        
+
         //handle response
         int code = response.getStatusLine().getStatusCode();
         if ((code < 200 || code > 299) && code != HttpStatus.SC_NOT_MODIFIED) {
             throw new ClientProtocolException(response.getStatusLine().getReasonPhrase());
         }
-        
+
         return response;
     }
-    
+
     /**
      * Add authentication information for the given host
      * @param host the host
@@ -454,20 +452,20 @@ public class DownloadAction implements DownloadSpec {
             authCache = new BasicAuthCache();
             context.setAuthCache(authCache);
         }
-        
+
         CredentialsProvider credsProvider = context.getCredentialsProvider();
         if (credsProvider == null) {
             credsProvider = new BasicCredentialsProvider();
             context.setCredentialsProvider(credsProvider);
         }
-        
+
         credsProvider.setCredentials(new AuthScope(host), credentials);
-        
+
         if (authScheme != null) {
             authCache.put(host, authScheme);
         }
     }
-    
+
     /**
      * Converts a number of bytes to a human-readable string
      * @param bytes the bytes
@@ -484,7 +482,7 @@ public class DownloadAction implements DownloadSpec {
             return String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0));
         }
     }
-    
+
     /**
      * Parse the Last-Modified header of a {@link HttpResponse}
      * @param response the {@link HttpResponse}
@@ -505,24 +503,24 @@ public class DownloadAction implements DownloadSpec {
         }
         return date.getTime();
     }
-    
+
     private void startProgress() {
         if (progressLogger != null) {
             progressLogger.started();
         }
     }
-    
+
     private void completeProgress() {
         if (progressLogger != null) {
             progressLogger.completed();
         }
     }
-    
+
     private void logProgress() {
         if (progressLogger == null) {
             return;
         }
-        
+
         long processedKb = processedBytes / 1024;
         if (processedKb > loggedKb) {
             String msg = toLengthText(processedBytes);
@@ -534,14 +532,14 @@ public class DownloadAction implements DownloadSpec {
             loggedKb = processedKb;
         }
     }
-    
+
     /**
      * @return true if the download destination is up to date
      */
     public boolean isUpToDate() {
         return upToDate == sources.size();
     }
-    
+
     /**
      * @return true if execution of this task has been skipped
      */
@@ -559,7 +557,7 @@ public class DownloadAction implements DownloadSpec {
         }
         return files;
     }
-    
+
     @Override
     public void src(Object src) throws MalformedURLException {
         if (src instanceof Closure) {
@@ -567,7 +565,7 @@ public class DownloadAction implements DownloadSpec {
             Closure<?> closure = (Closure<?>)src;
             src = closure.call();
         }
-        
+
         if (src instanceof CharSequence) {
             sources.add(new URL(src.toString()));
         } else if (src instanceof URL) {
@@ -588,7 +586,7 @@ public class DownloadAction implements DownloadSpec {
                 "either be a URL, a CharSequence, a Collection or an array.");
         }
     }
-    
+
     @Override
     public void dest(Object dest) {
         if (dest instanceof Closure) {
@@ -596,7 +594,7 @@ public class DownloadAction implements DownloadSpec {
             Closure<?> closure = (Closure<?>)dest;
             dest = closure.call();
         }
-        
+
         if (dest instanceof CharSequence) {
             this.dest = project.file(dest.toString());
         } else if (dest instanceof File) {
@@ -606,37 +604,37 @@ public class DownloadAction implements DownloadSpec {
                 "either be a File or a CharSequence");
         }
     }
-    
+
     @Override
     public void quiet(boolean quiet) {
         this.quiet = quiet;
     }
-    
+
     @Override
     public void overwrite(boolean overwrite) {
         this.overwrite = overwrite;
     }
-    
+
     @Override
     public void onlyIfModified(boolean onlyIfModified) {
         this.onlyIfModified = onlyIfModified;
     }
-    
+
     @Override
     public void onlyIfNewer(boolean onlyIfNewer) {
         onlyIfModified(onlyIfNewer);
     }
-    
+
     @Override
     public void compress(boolean compress) {
         this.compress = compress;
     }
-    
+
     @Override
     public void username(String username) {
         this.username = username;
     }
-    
+
     @Override
     public void password(String password) {
         this.password = password;
@@ -715,42 +713,42 @@ public class DownloadAction implements DownloadSpec {
         }
         return sources;
     }
-    
+
     @Override
     public File getDest() {
         return dest;
     }
-    
+
     @Override
     public boolean isQuiet() {
         return quiet;
     }
-    
+
     @Override
     public boolean isOverwrite() {
         return overwrite;
     }
-    
+
     @Override
     public boolean isOnlyIfModified() {
         return onlyIfModified;
     }
-    
+
     @Override
     public boolean isOnlyIfNewer() {
         return isOnlyIfModified();
     }
-    
+
     @Override
     public boolean isCompress() {
         return compress;
     }
-    
+
     @Override
     public String getUsername() {
         return username;
     }
-    
+
     @Override
     public String getPassword() {
         return password;
@@ -760,7 +758,7 @@ public class DownloadAction implements DownloadSpec {
     public AuthScheme getAuthScheme() {
         return authScheme;
     }
-    
+
     @Override
     public Credentials getCredentials() {
         if (credentials != null) {
@@ -802,5 +800,25 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public HttpResponseInterceptor getResponseInterceptor() {
         return responseInterceptor;
+    }
+
+    @Override
+    public void algorithm(String algorithm) {
+        this.algorithm = algorithm;
+    }
+
+    @Override
+    public void checksum(String checksum) {
+        this.checksum = checksum;
+    }
+
+    @Override
+    public String getAlgorithm() {
+        return this.algorithm;
+    }
+
+    @Override
+    public String getChecksum() {
+        return this.checksum;
     }
 }

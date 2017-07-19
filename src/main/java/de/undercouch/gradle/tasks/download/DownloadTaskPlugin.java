@@ -25,5 +25,6 @@ public class DownloadTaskPlugin implements Plugin<Project> {
     @Override
     public void apply(Project project) {
         project.getExtensions().create("download", DownloadExtension.class, project);
+        project.getExtensions().create("verifyChecksum", VerifyChecksumExtension.class, project);
     }
 }
