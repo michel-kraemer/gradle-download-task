@@ -204,7 +204,8 @@ pluginBundle {
         greetingsPlugin {
             id = 'de.undercouch.download'
             displayName = 'gradle-download-task'
-            tags = ['download', 'task', 'progress', 'url', 'server', 'file']
+            description = 'Adds a download task to Gradle that displays progress information'
+            tags = ['download', 'task', 'progress', 'url', 'server', 'file', 'http']
         }
     }
 
