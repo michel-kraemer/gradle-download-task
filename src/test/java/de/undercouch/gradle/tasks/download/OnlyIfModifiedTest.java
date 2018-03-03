@@ -221,4 +221,20 @@ public class OnlyIfModifiedTest extends TestBase {
         String dstContents = FileUtils.readFileToString(dst);
         assertEquals("lm: " + lm, dstContents);
     }
+
+    /**
+     * Make sure 'onlyIfNewer' is a proper alias for 'onlyIfModified'
+     */
+    @Test
+    public void alias() {
+        Download t = makeProjectAndTask();
+        assertFalse(t.isOnlyIfModified());
+        assertFalse(t.isOnlyIfNewer());
+        t.onlyIfModified(true);
+        assertTrue(t.isOnlyIfModified());
+        assertTrue(t.isOnlyIfNewer());
+        t.onlyIfNewer(false);
+        assertFalse(t.isOnlyIfModified());
+        assertFalse(t.isOnlyIfNewer());
+    }
 }

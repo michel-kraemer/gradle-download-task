@@ -42,8 +42,6 @@ Usage
 After you applied the plugin configuration (see above) you can use the `Download` task as follows:
 
 ```groovy
-import de.undercouch.gradle.tasks.download.Download
-
 task downloadFile(type: Download) {
     src 'http://www.example.com/index.html'
     dest buildDir
@@ -192,6 +190,23 @@ value. <em>(optional)</em></dd>
 ### Advanced
 
 <dl>
+<dt>downloadTaskDir</dt>
+<dd>The directory where the plugin stores information that should persist between builds. It will only be created if necessary. <em>(default: <code>${buildDir}/download-task</code>)</em></dd>
+<dt>useETag</dt>
+<dd>Use this flag in combination with <code>onlyIfModified</code>. If both flags are <code>true</code> the plugin will check a file's timestamp as well as its entity tag (ETag) and only download it if it has been modified on the server since the last download. The plugin can differentiate between <a href="https://tools.ietf.org/html/rfc7232#section-2.1">strong and weak ETags</a>. Possible values are:
+<dl>
+<dt><code>false</code> <em>(default)</em></dt>
+<dd>Do not use the ETag</dd>
+<dt><code>true</code></dt>
+<dd>Use the ETag but display a warning if it is weak</dd>
+<dt><code>"all"</code></dt>
+<dd>Use the ETag and do not display a warning if it is weak</dd>
+<dt><code>"strongOnly"</code></dt>
+<dd>Only use the ETag if it is strong</dd>
+</dl></dd>
+<dt>cachedETagsFile</dt>
+<dd>The location of the file that keeps entity tags (ETags) received
+from the server. <em>(default: <code>${downloadTaskDir}/etags.json</code>)</em></dd>
 <dt>requestInterceptor</dt>
 <dd>An instance of
 <a href="https://hc.apache.org/httpcomponents-core-4.4.x/httpcore/apidocs/org/apache/http/HttpRequestInterceptor.html">HttpRequestInterceptor</a>. Can be used to intercept and modify outgoing HTTP requests before they are sent to the server. <em>(optional)</em></dd>
@@ -211,8 +226,6 @@ given value and fails if it doesn't.
 Use the task as follows:
 
 ```groovy
-import de.undercouch.gradle.tasks.download.Verify
-
 task verifyFile(type: Verify) {
     src new File(buildDir, 'file.ext')
     algorithm 'MD5'
@@ -223,9 +236,6 @@ task verifyFile(type: Verify) {
 You can combine the download task and the verify task as follows:
 
 ```groovy
-import de.undercouch.gradle.tasks.download.Download
-import de.undercouch.gradle.tasks.download.Verify
-
 task downloadFile(type: Download) {
     src 'http://www.example.com/index.html'
     dest buildDir

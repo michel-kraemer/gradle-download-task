@@ -6,13 +6,6 @@ plugins {
 }
 
 /**
- * Import the Download task. This line is optional.
- * You can of course also always use the full qualified name
- * when you specify a task of type 'Download'.
- */
-import de.undercouch.gradle.tasks.download.Download
-
-/**
  * Download a single file to a directory
  */
 task downloadFile(type: Download) {

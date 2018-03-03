@@ -48,13 +48,11 @@ public class ContentEncodingNoneInterceptor implements HttpResponseInterceptor {
             throws HttpException, IOException {
         //replace invalid 'Content-Encoding' header
         Header[] hs = response.getHeaders(HTTP.CONTENT_ENCODING);
-        if (hs != null) {
-            for (Header h : hs) {
-                if (isNone(h)) {
-                    response.removeHeaders(HTTP.CONTENT_ENCODING);
-                    response.addHeader(IDENTITY);
-                    break;
-                }
+        for (Header h : hs) {
+            if (isNone(h)) {
+                response.removeHeaders(HTTP.CONTENT_ENCODING);
+                response.addHeader(IDENTITY);
+                break;
             }
         }
 

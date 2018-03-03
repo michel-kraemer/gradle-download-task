@@ -93,9 +93,6 @@ task integrationTest << {
                     gradleVersion = '${version}'
                 }
                 
-                import de.undercouch.gradle.tasks.download.Download
-                import de.undercouch.gradle.tasks.download.Verify
-                
                 task downloadFile(type: Download) {
                     src '${testFileSrc}'
                     dest buildDir

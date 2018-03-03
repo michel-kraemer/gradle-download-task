@@ -220,6 +220,21 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
 
     @Override
+    public void downloadTaskDir(Object dir) {
+        action.downloadTaskDir(dir);
+    }
+
+    @Override
+    public void useETag(Object useETag) {
+        action.useETag(useETag);
+    }
+
+    @Override
+    public void cachedETagsFile(Object location) {
+        action.cachedETagsFile(location);
+    }
+
+    @Override
     public void requestInterceptor(HttpRequestInterceptor interceptor) {
         action.requestInterceptor(interceptor);
     }
@@ -312,5 +327,20 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public HttpResponseInterceptor getResponseInterceptor() {
         return action.getResponseInterceptor();
+    }
+
+    @Override
+    public File getDownloadTaskDir() {
+        return action.getDownloadTaskDir();
+    }
+
+    @Override
+    public Object getUseETag() {
+        return action.getUseETag();
+    }
+
+    @Override
+    public File getCachedETagsFile() {
+        return action.getCachedETagsFile();
     }
 }

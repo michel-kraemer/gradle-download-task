@@ -140,6 +140,35 @@ public interface DownloadSpec {
     void timeout(int milliseconds);
 
     /**
+     * Specifies the directory where gradle-download-task stores information
+     * that should persist between builds
+     * @param dir the directory (default: ${buildDir}/gradle-download-task)
+     */
+    void downloadTaskDir(Object dir);
+
+    /**
+     * <p>Sets the <code>useETag</code> flag. Possible values are:</p>
+     * <ul>
+     * <li><code>true</code>: check if the entity tag (ETag) of a downloaded
+     * file has changed and issue a warning if a weak ETag was encountered</li>
+     * <li><code>false</code>: Do not use entity tags (ETags) at all</li>
+     * <li><code>"all"</code>: Use all ETags but do not issue a warning for weak ones</li>
+     * <li><code>"strongOnly"</code>: Use only strong ETags</li>
+     * </ul>
+     * <p>Note that this flag is only effective if <code>onlyIfModified</code> is
+     * <code>true</code>.</p>
+     * @param useETag the flag's new value
+     */
+    void useETag(Object useETag);
+
+    /**
+     * Sets the location of the file that keeps entity tags (ETags) received
+     * from the server
+     * @param location the location (default: ${downloadTaskDir}/etags.json)
+     */
+    void cachedETagsFile(Object location);
+
+    /**
      * Specifies an interceptor that will be called when a request is about
      * to be sent to the server. This is useful if you want to manipulate
      * a request beyond the capabilities of the download task.
@@ -238,6 +267,24 @@ public interface DownloadSpec {
      * until a connection is established or until the server returns data.
      */
     int getTimeout();
+    
+    /**
+     * @return the directory where gradle-download-task stores information
+     * that should persist between builds
+     */
+    File getDownloadTaskDir();
+
+    /**
+     * @return the value of the <code>useETag</code> flag
+     * @see #useETag(Object)
+     */
+    Object getUseETag();
+
+    /**
+     * @return the location of the file that keeps entity tags (ETags) received
+     * from the server
+     */
+    File getCachedETagsFile();
 
     /**
      * @return an interceptor that will be called when a request is about to
