@@ -26,7 +26,10 @@ public class DownloadTaskPlugin implements Plugin<Project> {
     @Override
     public void apply(Project project) {
         project.getExtensions().create("download", DownloadExtension.class, project);
-        
+        if (project.getExtensions().findByName("verifyChecksum") == null) {
+            project.getExtensions().create("verifyChecksum", VerifyExtension.class, project);
+        }
+
         //register top-level properties 'Download' and 'Verify' for our tasks
         ExtraPropertiesExtension extraProperties =
                 project.getExtensions().getExtraProperties();
