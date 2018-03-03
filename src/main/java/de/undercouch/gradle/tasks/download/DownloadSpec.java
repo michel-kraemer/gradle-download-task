@@ -155,6 +155,8 @@ public interface DownloadSpec {
      */
     void responseInterceptor(HttpResponseInterceptor interceptor);
 
+    void dateFormats(String[] dateFormats);
+
     /**
      * @return the download source(s), either a URL or a list of URLs
      */
@@ -250,4 +252,6 @@ public interface DownloadSpec {
      * received from the server (or <code>null</code> if no interceptor is specified)
      */
     HttpResponseInterceptor getResponseInterceptor();
+
+    String[] getDateFormats();
 }
