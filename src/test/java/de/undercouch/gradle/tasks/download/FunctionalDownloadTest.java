@@ -1,4 +1,4 @@
-// Copyright 2013-2016 Michel Kraemer
+// Copyright 2013-2018 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.junit.runners.Parameterized;
 /**
  * Tests the plugin's functionality
  * @author Jan Berkel
+ * @author Michel Kraemer
  */
 @RunWith(value = Parameterized.class)
 public class FunctionalDownloadTest extends FunctionalTestBase {
@@ -58,7 +59,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         return Arrays.asList("2.14.1", "3.0", "3.1", "3.2", "3.2.1", "3.3",
                 "3.4", "3.4.1", "3.5", "3.5.1",
                 "4.0", "4.0.1", "4.0.2", "4.1", "4.2", "4.2.1", "4.3", "4.3.1",
-                "4.4", "4.4.1");
+                "4.4", "4.4.1", "4.5", "4.5.1", "4.6");
     }
 
     /**
