@@ -14,14 +14,6 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.auth.AuthScheme;
@@ -31,6 +23,15 @@ import org.gradle.api.Task;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.TaskAction;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.security.NoSuchAlgorithmException;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Downloads a file and displays progress. Example:
@@ -56,7 +57,7 @@ public class Download extends DefaultTask implements DownloadSpec {
                 return !(isOnlyIfModified() || isOverwrite());
             }
         });
-        
+
         onlyIf(new Spec<Task>() {
             @Override
             public boolean isSatisfiedBy(Task task) {
@@ -80,15 +81,15 @@ public class Download extends DefaultTask implements DownloadSpec {
             }
         });
     }
-    
+
     /**
      * Starts downloading
      * @throws IOException if the file could not downloaded
      */
     @TaskAction
-    public void download() throws IOException {
+    public void download() throws IOException, NoSuchAlgorithmException {
         action.execute();
-        
+
         // handle 'upToDate'
         try {
             if (action.isUpToDate()) {
@@ -107,7 +108,7 @@ public class Download extends DefaultTask implements DownloadSpec {
             //just ignore
         }
     }
-    
+
     /**
      * Set the task's outcome to UP_TO_DATE
      * @param state the task's state
@@ -143,52 +144,52 @@ public class Download extends DefaultTask implements DownloadSpec {
     public List<File> getOutputFiles() {
         return action.getOutputFiles();
     }
-    
+
     @Override
     public void src(Object src) throws MalformedURLException {
         action.src(src);
     }
-    
+
     @Override
     public void dest(Object dest) {
         action.dest(dest);
     }
-    
+
     @Override
     public void quiet(boolean quiet) {
         action.quiet(quiet);
     }
-    
+
     @Override
     public void overwrite(boolean overwrite) {
         action.overwrite(overwrite);
     }
-    
+
     @Override
     public void onlyIfModified(boolean onlyIfModified) {
         action.onlyIfModified(onlyIfModified);
     }
-    
+
     @Override
     public void onlyIfNewer(boolean onlyIfNewer) {
         action.onlyIfNewer(onlyIfNewer);
     }
-    
+
     @Override
     public void compress(boolean compress) {
         action.compress(compress);
     }
-    
+
     @Override
     public void username(String username) {
         action.username(username);
     }
-    
+
     @Override
     public void password(String password) {
         action.password(password);
     }
-    
+
     @Override
     public void authScheme(Object authScheme) {
         action.authScheme(authScheme);
@@ -233,47 +234,47 @@ public class Download extends DefaultTask implements DownloadSpec {
     public Object getSrc() {
         return action.getSrc();
     }
-    
+
     @Override
     public File getDest() {
         return action.getDest();
     }
-    
+
     @Override
     public boolean isQuiet() {
         return action.isQuiet();
     }
-    
+
     @Override
     public boolean isOverwrite() {
         return action.isOverwrite();
     }
-    
+
     @Override
     public boolean isOnlyIfModified() {
         return action.isOnlyIfModified();
     }
-    
+
     @Override
     public boolean isOnlyIfNewer() {
         return action.isOnlyIfNewer();
     }
-    
+
     @Override
     public boolean isCompress() {
         return action.isCompress();
     }
-    
+
     @Override
     public String getUsername() {
         return action.getUsername();
     }
-    
+
     @Override
     public String getPassword() {
         return action.getPassword();
     }
-    
+
     @Override
     public AuthScheme getAuthScheme() {
         return action.getAuthScheme();
@@ -312,5 +313,25 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public HttpResponseInterceptor getResponseInterceptor() {
         return action.getResponseInterceptor();
+    }
+
+    @Override
+    public void algorithm(String algorithm) {
+        action.algorithm(algorithm);
+    }
+
+    @Override
+    public void checksum(String checksum) {
+        action.checksum(checksum);
+    }
+
+    @Override
+    public String getAlgorithm() {
+        return action.getAlgorithm();
+    }
+
+    @Override
+    public String getChecksum() {
+        return action.getChecksum();
     }
 }

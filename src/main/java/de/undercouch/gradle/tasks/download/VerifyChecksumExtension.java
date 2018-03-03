@@ -1,4 +1,4 @@
-// Copyright 2013 Michel Kraemer
+// Copyright 2017 ThoughtWorks, Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,28 +24,28 @@ import java.security.NoSuchAlgorithmException;
 
 /**
  * An extension that configures and executes a {@link DownloadAction}
- * @author Michel Kraemer
+ * @author Ketan Padegaonkar
  */
-public class DownloadExtension implements Configurable<DownloadExtension> {
+public class VerifyChecksumExtension implements Configurable<VerifyChecksumExtension> {
     private Project project;
 
     /**
      * Creates a new extension
      * @param project the project to be built
      */
-    public DownloadExtension(Project project) {
+    public VerifyChecksumExtension(Project project) {
         this.project = project;
     }
 
     @Override
-    public DownloadExtension configure(@SuppressWarnings("rawtypes") Closure cl) {
-        DownloadAction da = ConfigureUtil.configure(cl, new DownloadAction(project));
+    public VerifyChecksumExtension configure(@SuppressWarnings("rawtypes") Closure cl) {
+        VerifyAction action = ConfigureUtil.configure(cl, new VerifyAction(project));
         try {
-            da.execute();
+            action.execute();
         } catch (IOException e) {
             throw new IllegalStateException("Could not download file", e);
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("Could not verify checksum", e);
+            throw new IllegalStateException("Invalid algorithm specified", e);
         }
         return this;
     }

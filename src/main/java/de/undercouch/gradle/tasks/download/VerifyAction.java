@@ -15,15 +15,14 @@
 package de.undercouch.gradle.tasks.download;
 
 import groovy.lang.Closure;
+import org.gradle.api.GradleException;
+import org.gradle.api.Project;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-
-import org.gradle.api.GradleException;
-import org.gradle.api.Project;
 
 /**
  * Verifies a file's integrity by calculating its checksum.
@@ -34,7 +33,7 @@ public class VerifyAction implements VerifySpec {
     private File src;
     private String algorithm = "MD5";
     private String checksum;
-    
+
     /**
      * Creates a new verify action
      * @param project the project to be built
@@ -43,14 +42,14 @@ public class VerifyAction implements VerifySpec {
         this.project = project;
     }
 
-    private String toHex(byte[] barr) {
+    private static String toHex(byte[] barr) {
         StringBuffer result = new StringBuffer();
         for (byte b : barr) {
             result.append(String.format("%02X", b));
         }
         return result.toString();
     }
-    
+
     /**
      * Starts verifying
      * @throws IOException if the file could not verified
@@ -67,7 +66,18 @@ public class VerifyAction implements VerifySpec {
         if (checksum == null) {
             throw new IllegalArgumentException("Please provide a checksum to verify against");
         }
-        
+
+        String calculatedChecksum = calculateChecksum(algorithm, src);
+
+        // verify checksum
+        if (!calculatedChecksum.equalsIgnoreCase(checksum)) {
+            throw new GradleException("Invalid checksum for file '" +
+                    src.getName() + "'. Expected " + checksum.toLowerCase() +
+                    " but got " + calculatedChecksum.toLowerCase() + ".");
+        }
+    }
+
+    static String calculateChecksum(String algorithm, File src) throws NoSuchAlgorithmException, IOException {
         // calculate file's checksum
         MessageDigest md = MessageDigest.getInstance(algorithm);
         FileInputStream fis = new FileInputStream(src);
@@ -82,15 +92,9 @@ public class VerifyAction implements VerifySpec {
         } finally {
             fis.close();
         }
-        
-        // verify checksum
-        if (!calculatedChecksum.equalsIgnoreCase(checksum)) {
-            throw new GradleException("Invalid checksum for file '" +
-                    src.getName() + "'. Expected " + checksum.toLowerCase() + 
-                    " but got " + calculatedChecksum.toLowerCase() + ".");
-        }
+        return calculatedChecksum;
     }
-    
+
     @Override
     public void src(Object src) {
         if (src instanceof Closure) {
@@ -98,7 +102,7 @@ public class VerifyAction implements VerifySpec {
             Closure<?> closure = (Closure<?>)src;
             src = closure.call();
         }
-        
+
         if (src instanceof CharSequence) {
             src = project.file(src.toString());
         }
@@ -109,7 +113,7 @@ public class VerifyAction implements VerifySpec {
                     + "either be a CharSequence or a File");
         }
     }
-    
+
     @Override
     public void algorithm(String algorithm) {
         this.algorithm = algorithm;
@@ -119,7 +123,7 @@ public class VerifyAction implements VerifySpec {
     public void checksum(String checksum) {
         this.checksum = checksum;
     }
-    
+
     public File getSrc() {
         return src;
     }
@@ -127,7 +131,7 @@ public class VerifyAction implements VerifySpec {
     public String getAlgorithm() {
         return algorithm;
     }
-    
+
     public String getChecksum() {
         return checksum;
     }

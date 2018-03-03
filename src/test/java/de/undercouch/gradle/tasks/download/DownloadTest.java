@@ -14,20 +14,17 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import groovy.lang.Closure;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
+import org.gradle.api.tasks.TaskExecutionException;
+import org.junit.Test;
 
 import java.io.File;
 import java.net.URL;
 import java.util.Arrays;
 
-import org.apache.commons.io.FileUtils;
-import org.gradle.api.tasks.TaskExecutionException;
-import org.junit.Test;
-
-import groovy.lang.Closure;
+import static org.junit.Assert.*;
 
 /**
  * Tests the gradle-download-task plugin
@@ -46,15 +43,15 @@ public class DownloadTest extends TestBase {
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();
-        
+
         assertTrue(t.getSrc() instanceof URL);
         assertEquals(src, t.getSrc().toString());
         assertSame(dst, t.getDest());
-        
+
         byte[] dstContents = FileUtils.readFileToByteArray(dst);
         assertArrayEquals(contents, dstContents);
     }
-    
+
     /**
      * Tests if a single file can be downloaded from a URL
      * @throws Exception if anything goes wrong
@@ -67,14 +64,14 @@ public class DownloadTest extends TestBase {
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();
-        
+
         assertSame(src, t.getSrc());
         assertSame(dst, t.getDest());
-        
+
         byte[] dstContents = FileUtils.readFileToByteArray(dst);
         assertArrayEquals(contents, dstContents);
     }
-    
+
     /**
      * Tests if a single file can be downloaded to a directory
      * @throws Exception if anything goes wrong
@@ -86,7 +83,7 @@ public class DownloadTest extends TestBase {
         File dst = folder.newFolder();
         t.dest(dst);
         t.execute();
-        
+
         byte[] dstContents = FileUtils.readFileToByteArray(
                 new File(dst, TEST_FILE_NAME));
         assertArrayEquals(contents, dstContents);
@@ -103,12 +100,12 @@ public class DownloadTest extends TestBase {
         t.src(makeSrc(TEST_FILE_NAME));
         t.dest(TEST_FILE_NAME);
         t.execute();
-        
+
         byte[] dstContents = FileUtils.readFileToByteArray(
                 new File(projectDir, TEST_FILE_NAME));
         assertArrayEquals(contents, dstContents);
     }
-    
+
     /**
      * Tests if multiple files can be downloaded to a directory
      * @throws Exception if anything goes wrong
@@ -117,11 +114,11 @@ public class DownloadTest extends TestBase {
     public void downloadMultipleFiles() throws Exception {
         Download t = makeProjectAndTask();
         t.src(Arrays.asList(makeSrc(TEST_FILE_NAME), makeSrc(TEST_FILE_NAME2)));
-        
+
         File dst = folder.newFolder();
         t.dest(dst);
         t.execute();
-        
+
         byte[] dstContents = FileUtils.readFileToByteArray(
                 new File(dst, TEST_FILE_NAME));
         assertArrayEquals(contents, dstContents);
@@ -146,7 +143,7 @@ public class DownloadTest extends TestBase {
         t.execute();
         assertTrue(dst.isDirectory());
     }
-    
+
     /**
      * Tests if the task throws an exception if you try to download
      * multiple files to a single destination file
@@ -169,20 +166,20 @@ public class DownloadTest extends TestBase {
     public void lazySrcAndDest() throws Exception {
         final boolean[] srcCalled = new boolean[] { false };
         final boolean[] dstCalled = new boolean[] { false };
-        
+
         final File dst = folder.newFile();
-        
+
         Download t = makeProjectAndTask();
         t.src(new Closure<Object>(this, this) {
             private static final long serialVersionUID = -4463658999363261400L;
-            
+
             @SuppressWarnings("unused")
             public Object doCall() {
                 srcCalled[0] = true;
                 return makeSrc(TEST_FILE_NAME);
             }
         });
-        
+
         t.dest(new Closure<Object>(this, this) {
             private static final long serialVersionUID = 932174549047352157L;
 
@@ -192,16 +189,16 @@ public class DownloadTest extends TestBase {
                 return dst;
             }
         });
-        
+
         t.execute();
-        
+
         assertTrue(srcCalled[0]);
         assertTrue(dstCalled[0]);
-        
+
         byte[] dstContents = FileUtils.readFileToByteArray(dst);
         assertArrayEquals(contents, dstContents);
     }
-    
+
     /**
      * Do not overwrite an existing file
      * @throws Exception if anything goes wrong
@@ -211,7 +208,7 @@ public class DownloadTest extends TestBase {
         // write contents to destination file
         File dst = folder.newFile();
         FileUtils.writeStringToFile(dst, "Hello");
-        
+
         Download t = makeProjectAndTask();
         String src = makeSrc(TEST_FILE_NAME);
         t.src(src);
@@ -321,6 +318,81 @@ public class DownloadTest extends TestBase {
 
         t.src(new Object[] { url.toExternalForm() });
         t.dest(dst);
+        t.overwrite(true);
+        t.execute();
+
+        String content = FileUtils.readFileToString(dst, "UTF-8");
+        assertEquals(testContent, content);
+    }
+
+    @Test
+    public void downloadFileVerifyingChecksum() throws Exception {
+        Download t = makeProjectAndTask();
+
+        String testContent = "file content";
+        File src = folder.newFile();
+        FileUtils.writeStringToFile(src, testContent, "UTF-8");
+
+        URL url = src.toURI().toURL();
+        String expectedChecksum = DigestUtils.md5Hex(testContent);
+
+        File dst = folder.newFile();
+        assertTrue(dst.exists());
+
+        t.src(new Object[] { url.toExternalForm() });
+        t.dest(dst);
+        t.checksum(expectedChecksum);
+        t.overwrite(true);
+        t.execute();
+
+        String content = FileUtils.readFileToString(dst, "UTF-8");
+        assertEquals(testContent, content);
+    }
+
+    @Test
+    public void shouldNotDownloadFileIfChecksumMatches() throws Exception {
+        Download t = makeProjectAndTask();
+
+        String testContent = "file content";
+        File src = folder.newFile();
+        // delete the file to make sure an attempt to download it blows up
+        assertTrue(src.delete());
+
+        URL url = src.toURI().toURL();
+        String expectedChecksum = DigestUtils.md5Hex(testContent);
+
+        File dst = folder.newFile();
+        FileUtils.writeStringToFile(src, testContent, "UTF-8");
+        assertTrue(dst.exists());
+
+        t.src(new Object[] { url.toExternalForm() });
+        t.dest(dst);
+        t.checksum(expectedChecksum);
+        t.overwrite(true);
+        t.execute();
+
+        String content = FileUtils.readFileToString(dst, "UTF-8");
+        assertEquals(testContent, content);
+    }
+
+    @Test(expected = TaskExecutionException.class)
+    public void shouldBlowUpIfChecksumDoesNotMatchAfterDownload() throws Exception {
+        Download t = makeProjectAndTask();
+
+        String testContent = "file content";
+        File src = folder.newFile();
+        // delete the file to make sure an attempt to download it blows up
+        assertTrue(src.delete());
+
+        URL url = src.toURI().toURL();
+
+        File dst = folder.newFile();
+        FileUtils.writeStringToFile(src, testContent, "UTF-8");
+        assertTrue(dst.exists());
+
+        t.src(new Object[] { url.toExternalForm() });
+        t.dest(dst);
+        t.checksum("bad-checksum");
         t.overwrite(true);
         t.execute();
 

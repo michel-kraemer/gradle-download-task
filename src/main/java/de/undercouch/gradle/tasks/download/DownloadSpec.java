@@ -14,14 +14,14 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import java.io.File;
-import java.net.MalformedURLException;
-import java.util.Map;
-
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.auth.AuthScheme;
 import org.apache.http.auth.Credentials;
+
+import java.io.File;
+import java.net.MalformedURLException;
+import java.util.Map;
 
 /**
  * An interface for classes that perform file downloads
@@ -34,32 +34,32 @@ public interface DownloadSpec {
      * @throws MalformedURLException if the download source is not a URL
      */
     void src(Object src) throws MalformedURLException;
-    
+
     /**
      * Sets the download destination
      * @param dest a file or directory where to store the retrieved file
      */
     void dest(Object dest);
-    
+
     /**
      * Sets the quiet flag
      * @param quiet true if download progress should not be logged
      */
     void quiet(boolean quiet);
-    
+
     /**
      * Sets the overwrite flag
      * @param overwrite true if existing files should be overwritten, false otherwise
      */
     void overwrite(boolean overwrite);
-    
+
     /**
      * Sets the onlyIfModified flag
      * @param onlyIfModified true if the file should only be downloaded if it
      * has been modified on the server since the last download
      */
     void onlyIfModified(boolean onlyIfModified);
-    
+
     /**
      * Sets the onlyIfNewer flag. This method is an alias for
      * {@link #onlyIfModified(boolean)}.
@@ -67,27 +67,27 @@ public interface DownloadSpec {
      * has been modified on the server since the last download
      */
     void onlyIfNewer(boolean onlyIfNewer);
-    
+
     /**
      * Specifies if compression should be used during download
      * @param compress true if compression should be enabled
      */
     void compress(boolean compress);
-    
+
     /**
      * Sets the username for <code>Basic</code> or <code>Digest</code>
      * authentication
      * @param username the username
      */
     void username(String username);
-    
+
     /**
      * Sets the password for <code>Basic</code> or <code>Digest</code>
      * authentication
      * @param password the password
      */
     void password(String password);
-    
+
     /**
      * <p>Sets the authentication scheme to use. This method accepts
      * either a <code>String</code> (valid values are <code>"Basic"</code>
@@ -159,57 +159,57 @@ public interface DownloadSpec {
      * @return the download source(s), either a URL or a list of URLs
      */
     Object getSrc();
-    
+
     /**
      * @return the download destination
      */
     File getDest();
-    
+
     /**
      * @return the quiet flag
      */
     boolean isQuiet();
-    
+
     /**
      * @return the overwrite flag
      */
     boolean isOverwrite();
-    
+
     /**
      * @return the onlyIfModified flag
      */
     boolean isOnlyIfModified();
-    
+
     /**
      * Get the <code>onlyIfNewer</code> flag. This method is an alias for
      * {@link #isOnlyIfModified()}.
      * @return the onlyIfNewer flag
      */
     boolean isOnlyIfNewer();
-    
+
     /**
      * @return true if compression is enabled
      */
     boolean isCompress();
-    
+
     /**
      * @return the username for <code>Basic</code> or <code>Digest</code>
      * authentication
      */
     String getUsername();
-    
+
     /**
      * @return the password for <code>Basic</code> or <code>Digest</code>
      * authentication
      */
     String getPassword();
-    
+
     /**
      * @return the authentication scheme used (or <code>null</code> if
      * no authentication is performed)
      */
     AuthScheme getAuthScheme();
-    
+
     /**
      * @return the credentials used for authentication (or <code>null</code> if
      * no authentication is performed)
@@ -250,4 +250,28 @@ public interface DownloadSpec {
      * received from the server (or <code>null</code> if no interceptor is specified)
      */
     HttpResponseInterceptor getResponseInterceptor();
+
+    /**
+     * Set the algorithm to use to compute the checksum. Defaults to "MD5" (see
+     * the <a href="http://docs.oracle.com/javase/7/docs/technotes/guides/security/StandardNames.html#MessageDigest">list
+     * of algorithm names</a> for more information).
+     * @param algorithm the name of the algorithm
+     */
+    void algorithm(String algorithm);
+
+    /**
+     * Set the actual checksum to verify against
+     * @param checksum the checksum (in hex)
+     */
+    void checksum(String checksum);
+
+    /**
+     * @return the algorithm to use to compute the checksum
+     */
+    String getAlgorithm();
+
+    /**
+     * @return the actual checksum to verify against (in hex)
+     */
+    String getChecksum();
 }
