@@ -90,6 +90,14 @@ comparing it to a given value.
 
     gradle -b verify.gradle
 
+[verifyExtension.gradle](verifyExtension.gradle)
+------------------------------------------------
+
+Same as [verify.gradle](verify.gradle) but uses the `verifyChecksum` extension
+instead of the `Verify` task.
+
+    gradle -b verifyExtension.gradle
+
 Run all examples
 ----------------
 
