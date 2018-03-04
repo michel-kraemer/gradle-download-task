@@ -158,7 +158,7 @@ request <em>(optional)</em></dd>
 <dd>A map of request headers to set when making the download
 request <em>(optional)</em></dd>
 <dt>timeout</dt>
-<dd>The maximum time to wait until a connection is established or until the
+<dd>The maximum number of milliseconds to wait until a connection is established or until the
 server returns data. A value of <code>0</code> (zero) means infinite timeout. A negative value
 is interpreted as undefined. <em>(default: <code>-1</code>)</em></dd>
 </dl>
