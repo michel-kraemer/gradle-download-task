@@ -147,6 +147,20 @@ public interface DownloadSpec {
     void downloadTaskDir(Object dir);
 
     /**
+     * Specifies whether the file should be downloaded to a temporary location
+     * and, upon successful execution, moved to the final location. If the
+     * overwrite flag is set to false, this flag is useful to avoid partially
+     * downloaded files if Gradle is forcefully closed or the system crashes.
+     * Note that the plugin always deletes partial downloads on connection
+     * errors, regardless of the value of this flag. The default temporary
+     * location can be configured with the {@link #downloadTaskDir(Object)};
+     * @param tempAndMove true if the file should be downloaded to a temporary
+     * location and, upon successful execution, moved to the final location
+     * (default: false)
+     */
+    void tempAndMove(boolean tempAndMove);
+
+    /**
      * <p>Sets the <code>useETag</code> flag. Possible values are:</p>
      * <ul>
      * <li><code>true</code>: check if the entity tag (ETag) of a downloaded
@@ -273,6 +287,13 @@ public interface DownloadSpec {
      * that should persist between builds
      */
     File getDownloadTaskDir();
+
+    /**
+     * @return true of if the file should be downloaded to a temporary
+     * location and, upon successful execution, moved to the final
+     * location.
+     */
+    boolean isTempAndMove();
 
     /**
      * @return the value of the <code>useETag</code> flag

@@ -8,16 +8,28 @@ plugins {
 /**
  * Download a single file using a temporary name. Rename it afterwards.
  */
-task downloadFile << {
-    def destFile = new File(buildDir, "styles-1.0.jar")
-    if (!destFile.exists()) {
-        def tempFile = new File(buildDir, "styles-1.0.jar.part")
-        download {
-            src 'http://central.maven.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar'
-            dest tempFile
-            overwrite true
+task downloadFile(type: Download) {
+    src 'http://central.maven.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar'
+    dest new File(buildDir, "styles-1.0.jar")
+    overwrite false
+    tempAndMove true
+}
+
+/**
+ * Alternative approach (necessary prior to gradle-download-task 3.4.0)
+ */
+task downloadFileAlternative {
+    doLast {
+        def destFile = new File(buildDir, "styles-1.0.jar")
+        if (!destFile.exists()) {
+            def tempFile = new File(buildDir, "styles-1.0.jar.part")
+            download {
+                src 'http://central.maven.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar'
+                dest tempFile
+                overwrite true
+            }
+            tempFile.renameTo(destFile)
         }
-        tempFile.renameTo(destFile)
     }
 }
 

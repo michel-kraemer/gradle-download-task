@@ -225,6 +225,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
 
     @Override
+    public void tempAndMove(boolean tempAndMove) {
+        action.tempAndMove(tempAndMove);
+    }
+
+    @Override
     public void useETag(Object useETag) {
         action.useETag(useETag);
     }
@@ -332,6 +337,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public File getDownloadTaskDir() {
         return action.getDownloadTaskDir();
+    }
+
+    @Override
+    public boolean isTempAndMove() {
+        return action.isTempAndMove();
     }
 
     @Override

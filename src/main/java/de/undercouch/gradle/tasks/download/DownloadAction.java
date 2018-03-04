@@ -90,6 +90,7 @@ public class DownloadAction implements DownloadSpec {
     private boolean acceptAnyCertificate = false;
     private int timeoutMs = -1;
     private File downloadTaskDir;
+    private boolean tempAndMove = false;
     private UseETag useETag = UseETag.FALSE;
     private File cachedETagsFile;
     private HttpRequestInterceptor requestInterceptor;
@@ -228,7 +229,7 @@ public class DownloadAction implements DownloadSpec {
         }
 
         BufferedInputStream fileStream = new BufferedInputStream(src.openStream());
-        stream(fileStream, destFile);
+        streamAndMove(fileStream, destFile);
         
         //set last-modified time of destination file
         if (onlyIfModified && lastModified > 0) {
@@ -310,7 +311,38 @@ public class DownloadAction implements DownloadSpec {
         
         //open stream and start downloading
         InputStream is = entity.getContent();
-        stream(is, destFile);
+        streamAndMove(is, destFile);
+    }
+
+    /**
+     * If {@link #tempAndMove} is <code>true</code>, copy bytes from an input
+     * stream to a temporary file and log progress. Upon successful
+     * completion, move the temporary file to the given destination. If
+     * {@link #tempAndMove} is <code>false</code>, just forward to
+     * {@link #stream(InputStream, File)}.
+     * @param is the input stream to read
+     * @param destFile the destination file
+     * @throws IOException if an I/O error occurs
+     */
+    private void streamAndMove(InputStream is, File destFile) throws IOException {
+        if (!tempAndMove) {
+            stream(is, destFile);
+        } else {
+            //create name of temporary file
+            File tempFile = new File(this.downloadTaskDir,
+                    destFile.getName() + ".part");
+
+            //create parent directory
+            downloadTaskDir.mkdirs();
+
+            //stream and move
+            stream(is, tempFile);
+            if (!tempFile.renameTo(destFile)) {
+                throw new IOException("Failed to move temporary file '" +
+                        tempFile.getAbsolutePath() + "' to destination file '" +
+                        destFile.getAbsolutePath() + "'.");
+            }
+        }
     }
 
     /**
@@ -868,6 +900,11 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
+    public void tempAndMove(boolean tempAndMove) {
+        this.tempAndMove = tempAndMove;
+    }
+
+    @Override
     public void useETag(Object useETag) {
         this.useETag = UseETag.fromValue(useETag);
     }
@@ -989,6 +1026,11 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public File getDownloadTaskDir() {
         return downloadTaskDir;
+    }
+
+    @Override
+    public boolean isTempAndMove() {
+        return tempAndMove;
     }
 
     @Override

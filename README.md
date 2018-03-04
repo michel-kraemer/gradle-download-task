@@ -192,6 +192,15 @@ value. <em>(optional)</em></dd>
 <dl>
 <dt>downloadTaskDir</dt>
 <dd>The directory where the plugin stores information that should persist between builds. It will only be created if necessary. <em>(default: <code>${buildDir}/download-task</code>)</em></dd>
+<dt>tempAndMove</dt>
+<dd><code>true</code> if the file should be downloaded to a temporary location
+and, upon successful execution, moved to the final location. If
+<code>overwrite</code> is set to <code>false</code>, this flag is useful to
+avoid partially downloaded files if Gradle is forcefully closed or the system
+crashes. Note that the plugin always deletes partial downloads on connection
+errors, regardless of the value of this flag. The default temporary location
+can be configured with the <code>downloadTaskDir</code> property. <em>(default:
+<code>false</code>)</em></dd>
 <dt>useETag</dt>
 <dd>Use this flag in combination with <code>onlyIfModified</code>. If both flags are <code>true</code> the plugin will check a file's timestamp as well as its entity tag (ETag) and only download it if it has been modified on the server since the last download. The plugin can differentiate between <a href="https://tools.ietf.org/html/rfc7232#section-2.1">strong and weak ETags</a>. Possible values are:
 <dl>
