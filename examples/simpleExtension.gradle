@@ -8,11 +8,13 @@ plugins {
 /**
  * Use the extension to download a single file
  */
-task downloadFile << {
-    download {
-        src 'http://central.maven.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar'
-        dest buildDir
-        overwrite true
+task downloadFile {
+    doLast {
+        download {
+            src 'http://central.maven.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar'
+            dest buildDir
+            overwrite true
+        }
     }
 }
 

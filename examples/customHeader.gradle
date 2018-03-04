@@ -9,7 +9,7 @@ plugins {
  * Download a file and send a custom header
  */
 task downloadFile(type: Download) {
-    src 'http://download.oracle.com/otn-pub/java/jdk/8-b132/jre-8-windows-x64.exe'
+    src 'http://download.oracle.com/otn-pub/java/jdk/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_windows-x64_bin.exe'
     dest buildDir
     header 'Cookie', 'oraclelicense=accept-securebackup-cookie'
 }

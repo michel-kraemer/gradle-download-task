@@ -25,13 +25,15 @@ plugins {
  * read the server's directory listing and then download all files
  * See 'buildscript' instruction above.
  */
-task downloadDirectory << {
-    def dir = 'http://central.maven.org/maven2/de/undercouch/gradle-download-task/1.0/'
-    def urlLister = new org.apache.ivy.util.url.ApacheURLLister()
-    def files = urlLister.listFiles(new URL(dir))
-    download {
-       src files
-       dest buildDir
+task downloadDirectory {
+    doLast {
+        def dir = 'http://central.maven.org/maven2/de/undercouch/gradle-download-task/1.0/'
+        def urlLister = new org.apache.ivy.util.url.ApacheURLLister()
+        def files = urlLister.listFiles(new URL(dir))
+        download {
+           src files
+           dest buildDir
+        }
     }
 }
 

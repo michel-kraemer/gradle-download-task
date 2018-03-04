@@ -8,16 +8,18 @@ plugins {
 /**
  * Use the extension to download and verify a single file
  */
-task downloadAndVerifyFile << {
-    download {
-        src 'http://www.example.com/index.html'
-        dest buildDir
-        overwrite true
-    }
-    verifyChecksum {
-        src new File(buildDir, "index.html")
-        algorithm 'MD5'
-        checksum '09b9c392dc1f6e914cea287cb6be34b0'
+task downloadAndVerifyFile {
+    doLast {
+        download {
+            src 'http://www.example.com/index.html'
+            dest buildDir
+            overwrite true
+        }
+        verifyChecksum {
+            src new File(buildDir, "index.html")
+            algorithm 'MD5'
+            checksum '09b9c392dc1f6e914cea287cb6be34b0'
+        }
     }
 }
 

@@ -16,11 +16,13 @@ ext.src = [
 /**
  * ALTERNATIVE 1: call the download extension in a for loop
  */
-task downloadMultipleFiles1 << {
-    for (s in src) {
-        download {
-            src s.key
-            dest new File(buildDir, s.value)
+task downloadMultipleFiles1 {
+    doLast {
+        for (s in src) {
+            download {
+                src s.key
+                dest new File(buildDir, s.value)
+            }
         }
     }
 }
