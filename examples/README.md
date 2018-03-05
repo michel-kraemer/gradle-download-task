@@ -82,6 +82,13 @@ Download a ZIP file and extract its contents.
 
     gradle -b unzip.gradle
 
+[useETag.gradle](useETag.gradle)
+--------------------------------
+
+Download a file conditionally using its entity tag (ETag).
+
+    gradle -b useETag.gradle
+
 [verify.gradle](verify.gradle)
 ------------------------------
 
