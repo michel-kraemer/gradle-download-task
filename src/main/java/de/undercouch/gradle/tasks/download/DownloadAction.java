@@ -248,7 +248,7 @@ public class DownloadAction implements DownloadSpec {
         
         //open URL connection
         String etag = null;
-        if (onlyIfModified && useETag.enabled) {
+        if (onlyIfModified && useETag.enabled && destFile.exists()) {
             etag = getCachedETag(httpHost, src.getFile());
             if (!useETag.useWeakETags && isWeakETag(etag)) {
                 etag = null;

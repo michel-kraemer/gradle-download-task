@@ -283,7 +283,23 @@ public class ETagTest extends TestBase {
         assertEquals(newCachedETagsFile, t.getCachedETagsFile());
         assertTrue(newCachedETagsFile.exists());
     }
-    
+
+    /**
+     * Create a cached ETags file for the current value of {@link #etag}
+     * @param cachedETagsFile the file to create
+     * @throws IOException if the file could not be created
+     */
+    private void prepareCachedETagsFile(File cachedETagsFile) throws IOException {
+        Map<String, Object> etagMap = new LinkedHashMap<String, Object>();
+        etagMap.put("ETag", etag);
+        Map<String, Object> hostMap = new LinkedHashMap<String, Object>();
+        hostMap.put("/" + ETAG, etagMap);
+        Map<String, Object> cachedETags = new LinkedHashMap<String, Object>();
+        cachedETags.put(makeHost(), hostMap);
+        String cachedETagsContents = JsonOutput.toJson(cachedETags);
+        FileUtils.writeStringToFile(cachedETagsFile, cachedETagsContents);
+    }
+
     /**
      * Tests if the plugin doesn't download a file if the etag equals
      * the cached one
@@ -292,7 +308,7 @@ public class ETagTest extends TestBase {
     @Test
     public void dontDownloadIfEqual() throws Exception {
         etag = "\"foobar\"";
-        
+
         Download t = makeProjectAndTask();
         t.src(makeSrc(ETAG));
         File dst = folder.newFile();
@@ -300,21 +316,38 @@ public class ETagTest extends TestBase {
         t.dest(dst);
         t.onlyIfModified(true);
         t.useETag(true);
-        
-        //prepare cached etags file
-        Map<String, Object> etagMap = new LinkedHashMap<String, Object>();
-        etagMap.put("ETag", etag);
-        Map<String, Object> hostMap = new LinkedHashMap<String, Object>();
-        hostMap.put("/" + ETAG, etagMap);
-        Map<String, Object> cachedETags = new LinkedHashMap<String, Object>();
-        cachedETags.put(makeHost(), hostMap);
-        String cachedETagsContents = JsonOutput.toJson(cachedETags);
-        FileUtils.writeStringToFile(t.getCachedETagsFile(), cachedETagsContents);
+
+        prepareCachedETagsFile(t.getCachedETagsFile());
 
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
         assertEquals("Hello", dstContents);
+    }
+
+    /**
+     * Tests if the plugin still downloads a file if the cached ETag is correct
+     * but the destination file does not exist.
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void forceDownloadIfDestNotExists() throws Exception {
+        etag = "\"foobar\"";
+
+        Download t = makeProjectAndTask();
+        t.src(makeSrc(ETAG));
+        File dst = folder.newFile();
+        dst.delete();
+        t.dest(dst);
+        t.onlyIfModified(true);
+        t.useETag(true);
+
+        prepareCachedETagsFile(t.getCachedETagsFile());
+
+        t.execute();
+
+        String dstContents = FileUtils.readFileToString(dst);
+        assertEquals("etag: " + etag, dstContents);
     }
 
     /**
