@@ -48,8 +48,20 @@ task downloadFile(type: Download) {
 }
 ```
 
-You can also use the download extension to retrieve a file anywhere
-in your build script:
+By default, the plugin always performs a download even if the destination file
+already exists. If you want to prevent files from being downloaded again, use
+the `overwrite` flag (see [description below](#download-task)).
+
+```groovy
+task downloadFile(type: Download) {
+    src 'http://www.example.com/index.html'
+    dest buildDir
+    overwrite false
+}
+```
+
+As an alternative to the `Download` task, you may also use the `download`
+extension to retrieve a file anywhere in your build script:
 
 ```groovy
 task myTask << {
@@ -58,6 +70,7 @@ task myTask << {
     download {
         src 'http://www.example.com/index.html'
         dest buildDir
+        overwrite false
     }
     //... do something else
 }
@@ -66,7 +79,21 @@ task myTask << {
 Examples
 --------
 
-Sequentially download a list of files to a directory:
+### Only download a file if it has been modified on the server
+
+```groovy
+task downloadFile(type: Download) {
+    src 'http://www.example.com/index.html'
+    dest buildDir
+    onlyIfModified true
+}
+```
+
+Note that this feature depends on the server and whether it supports the
+`If-Modified-Since` request header and if it provides a `Last-Modified`
+timestamp in its response.
+
+### Sequentially download a list of files to a directory
 
 ```groovy
 task downloadMultipleFiles(type: Download) {
@@ -80,6 +107,8 @@ task downloadMultipleFiles(type: Download) {
 
 Please note that you have to specify a directory as destination if you
 download multiple files. Otherwise the plugin will fail.
+
+### Download files from a directory
 
 If you want to download all files from a directory and the server
 provides a simple directory listing you can use the following code:
@@ -96,6 +125,8 @@ task downloadDirectory {
 }
 ```
 
+### Download and extract a ZIP file
+
 To download and unpack a ZIP file you can combine the download task
 plugin with Gradle's built-in support for ZIP files:
 
@@ -111,7 +142,11 @@ task downloadAndUnzipFile(dependsOn: downloadZipFile, type: Copy) {
 }
 ```
 
-Please have a look at the `examples` directory for more code samples.
+### More examples
+
+Please have a look at the `examples` directory for more code samples. You can
+also read my blog post about
+[common recipes for gradle-download-task](https://michelkraemer.com/recipes-for-gradle-download/).
 
 Download task
 -------------
