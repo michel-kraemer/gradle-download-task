@@ -185,7 +185,7 @@ bintray {
         issueTrackerUrl = "$githubUrl/issues"
         vcsUrl = "${githubUrl}.git"
         licenses = ['Apache-2.0']
-        labels = ['gradle', 'download', 'plugin', 'progress']
+        labels = ['gradle', 'download', 'task', 'plugin', 'progress', 'url', 'server', 'file', 'http']
         publicDownloadNumbers = true
         // version descriptor
         version {
