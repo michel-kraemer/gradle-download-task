@@ -337,6 +337,14 @@ public class DownloadAction implements DownloadSpec {
 
             //stream and move
             stream(is, tempFile);
+            if (destFile.exists()) {
+                //Delete destFile if it exists before renaming tempFile.
+                //Otherwise renaming might fail.
+                if (!destFile.delete()) {
+                    throw new IOException("Could not delete old destination file '" +
+                            destFile.getAbsolutePath() + "'.");
+                }
+            }
             if (!tempFile.renameTo(destFile)) {
                 throw new IOException("Failed to move temporary file '" +
                         tempFile.getAbsolutePath() + "' to destination file '" +
