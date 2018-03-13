@@ -16,6 +16,7 @@ package de.undercouch.gradle.tasks.download;
 
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -328,12 +329,12 @@ public class DownloadAction implements DownloadSpec {
         if (!tempAndMove) {
             stream(is, destFile);
         } else {
-            //create name of temporary file
-            File tempFile = new File(this.downloadTaskDir,
-                    destFile.getName() + ".part");
-
             //create parent directory
             downloadTaskDir.mkdirs();
+
+            //create name of temporary file
+            File tempFile = File.createTempFile(
+                    "." + destFile.getName(), ".part", this.downloadTaskDir);
 
             //stream and move
             stream(is, tempFile);
