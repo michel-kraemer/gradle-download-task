@@ -21,4 +21,6 @@ markComment: >
   occurs. Thank you for your contributions.
 
 # Comment to post when closing a stale issue. Set to `false` to disable
-closeComment: false
+closeComment: >
+  This issue has been automatically closed due to inactivity. Please feel free
+  to reopen it if necessary. We apologize for any inconvenience caused.
