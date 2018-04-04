@@ -16,9 +16,13 @@ package de.undercouch.gradle.tasks.download;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -40,6 +44,26 @@ public class TempAndMoveTest extends TestBase {
     private static final String TEMPANDMOVE = "tempandmove";
     private File dst;
     private File downloadTaskDir;
+    private boolean checkDstDoesNotExist;
+
+    private File getTempFile() throws IOException {
+        File[] files = downloadTaskDir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.startsWith(dst.getName()) && name.endsWith(".part");
+            }
+        });
+
+        if (files == null) {
+            // downloadTaskDir does not exist
+            return null;
+        }
+        if (files.length > 1) {
+            throw new IOException("Multiple temp files in " + downloadTaskDir);
+        }
+
+        return files.length == 1 ? files[0] : null;
+    }
 
     @Override
     protected Handler[] makeHandlers() throws IOException {
@@ -49,9 +73,10 @@ public class TempAndMoveTest extends TestBase {
                     HttpServletResponse response, int dispatch)
                             throws IOException, ServletException {
                 //at the beginning there should be no dest file and no temp file
-                File tempFile = new File(downloadTaskDir, dst.getName() + ".part");
-                assertFalse(dst.exists());
-                assertFalse(tempFile.exists());
+                if (checkDstDoesNotExist) {
+                    assertFalse(dst.exists());
+                }
+                assertNull(getTempFile());
 
                 response.setStatus(200);
                 OutputStream os = response.getOutputStream();
@@ -62,10 +87,10 @@ public class TempAndMoveTest extends TestBase {
                 os.flush();
 
                 //wait for temporary file (max. 10 seconds)
-                boolean exists = false;
+                File tempFile = null;
                 for (int i = 0; i < 100; ++i) {
-                    exists = tempFile.exists();
-                    if (exists) {
+                    tempFile = getTempFile();
+                    if (tempFile != null) {
                         break;
                     }
                     try {
@@ -76,13 +101,43 @@ public class TempAndMoveTest extends TestBase {
                 }
 
                 //temp file should now exist, but dest file not
-                assertFalse(dst.exists());
-                assertTrue(exists);
+                if (checkDstDoesNotExist) {
+                    assertFalse(dst.exists());
+                }
+                assertNotNull(tempFile);
 
                 os.close();
             }
         };
         return new Handler[] { tempAndMoveHandler };
+    }
+
+    private void testTempAndMove(boolean createDst) throws Exception {
+        Download t = makeProjectAndTask();
+        downloadTaskDir = t.getDownloadTaskDir();
+        String src = makeSrc(TEST_FILE_NAME);
+        t.src(src);
+        dst = folder.newFile();
+
+        checkDstDoesNotExist = !createDst;
+
+        if (createDst) {
+            dst = folder.newFile();
+            OutputStream os = new FileOutputStream(dst);
+            os.close();
+        } else {
+            dst.delete(); //make sure dest does not exist, so we can verify correctly
+        }
+
+        t.dest(dst);
+        t.tempAndMove(true);
+        t.execute();
+
+        assertTrue(dst.exists());
+        assertNull(getTempFile());
+
+        byte[] dstContents = FileUtils.readFileToByteArray(dst);
+        assertArrayEquals(contents, dstContents);
     }
 
     /**
@@ -92,20 +147,16 @@ public class TempAndMoveTest extends TestBase {
      */
     @Test
     public void tempAndMove() throws Exception {
-        Download t = makeProjectAndTask();
-        downloadTaskDir = t.getDownloadTaskDir();
-        String src = makeSrc(TEST_FILE_NAME);
-        t.src(src);
-        dst = folder.newFile();
-        dst.delete(); //make sure dest does not exist, so we can verify correctly
-        t.dest(dst);
-        t.tempAndMove(true);
-        t.execute();
+        testTempAndMove(false);
+    }
 
-        assertTrue(dst.exists());
-        assertFalse(new File(downloadTaskDir, dst.getName() + ".part").exists());
-
-        byte[] dstContents = FileUtils.readFileToByteArray(dst);
-        assertArrayEquals(contents, dstContents);
+    /**
+     * Tests if a file can be downloaded to a temporary location and then
+     * moved to the final location overwriting existing file
+     * @throws Exception if anything else goes wrong
+     */
+    @Test
+    public void tempAndMoveOverwrite() throws Exception {
+        testTempAndMove(true);
     }
 }
