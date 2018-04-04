@@ -50,7 +50,7 @@ public class TempAndMoveTest extends TestBase {
         File[] files = downloadTaskDir.listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
-                return name.startsWith("." + dst.getName()) && name.endsWith(".part");
+                return name.startsWith(dst.getName()) && name.endsWith(".part");
             }
         });
 
