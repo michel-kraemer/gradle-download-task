@@ -51,6 +51,14 @@ Download all files from a directory.
 
     gradle -b directory.gradle
 
+[directoryGitHub.gradle](directoryGitHub.gradle)
+------------------------------------
+
+Download all files from a directory in GitHub. Use the GitHub API to get the
+directory's contents. Parse the result and download the files.
+
+    gradle -b directoryGitHub.gradle
+
 [mirrors.gradle](mirrors.gradle)
 --------------------------------
 
