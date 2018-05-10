@@ -46,6 +46,7 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.AuthCache;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -580,6 +581,7 @@ public class DownloadAction implements DownloadSpec {
         RequestConfig config = RequestConfig.custom()
                 .setConnectTimeout(timeoutMs)
                 .setConnectionRequestTimeout(timeoutMs)
+                .setCookieSpec(CookieSpecs.STANDARD)
                 .setSocketTimeout(timeoutMs)
                 .build();
         get.setConfig(config);
