@@ -6,7 +6,7 @@ jobs:
     parallelism: 4
 
     docker:
-      - image: java:7-jdk
+      - image: openjdk:7-jdk
 
     environment:
       CIRCLE_TEST_REPORTS: /tmp/test-reports
