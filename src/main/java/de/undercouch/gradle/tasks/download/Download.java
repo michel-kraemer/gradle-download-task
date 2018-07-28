@@ -95,12 +95,14 @@ public class Download extends DefaultTask implements DownloadSpec {
                 Method getState = this.getClass().getMethod("getState");
                 Object state = getState.invoke(this);
                 try {
-                    // prior to Gradle 3.2 we could do this
+                    // prior to Gradle 3.2 we needed to do this
                     Method upToDate = state.getClass().getMethod("upToDate");
                     upToDate.invoke(state);
                 } catch (NoSuchMethodException e) {
                     // since Gradle 3.2 we need to do this
-                    setUpToDate(state);
+                    Method setDidWork = state.getClass().getMethod(
+                            "setDidWork", boolean.class);
+                    setDidWork.invoke(state, false);
                 }
             }
         } catch (Exception e) {
@@ -108,34 +110,6 @@ public class Download extends DefaultTask implements DownloadSpec {
         }
     }
     
-    /**
-     * Set the task's outcome to UP_TO_DATE
-     * @param state the task's state
-     * @throws ClassNotFoundException if the class 'TaskExecutionOutcome' was not found
-     * @throws NoSuchMethodException if one of the methods to set the outcome was not found
-     * @throws InvocationTargetException if the outcome could not be set
-     * @throws IllegalAccessException if the outcome could not be set
-     */
-    private void setUpToDate(Object state) throws ClassNotFoundException,
-            NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        // get TaskExecutionOutput.UP_TO_DATE
-        Class<?> TaskExecutionOutcome = Class.forName(
-                "org.gradle.api.internal.tasks.TaskExecutionOutcome");
-        Method valueOf = TaskExecutionOutcome.getMethod(
-                "valueOf", String.class);
-        Object UP_TO_DATE = valueOf.invoke(null, "UP_TO_DATE");
-
-        // set outcome
-        Method setOutcome = state.getClass().getMethod(
-                "setOutcome", TaskExecutionOutcome);
-        setOutcome.invoke(state, UP_TO_DATE);
-
-        // pretend we did not do anything
-        Method setDidWork = state.getClass().getMethod(
-                "setDidWork", boolean.class);
-        setDidWork.invoke(state, false);
-    }
-
     /**
      * @return a list of files created by this task (i.e. the destination files)
      */
