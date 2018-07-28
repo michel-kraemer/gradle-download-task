@@ -14,14 +14,6 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.auth.AuthScheme;
@@ -31,6 +23,13 @@ import org.gradle.api.Task;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.TaskAction;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Downloads a file and displays progress. Example:
