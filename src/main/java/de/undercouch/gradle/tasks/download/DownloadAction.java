@@ -632,7 +632,13 @@ public class DownloadAction implements DownloadSpec {
         //handle response
         int code = response.getStatusLine().getStatusCode();
         if ((code < 200 || code > 299) && code != HttpStatus.SC_NOT_MODIFIED) {
-            throw new ClientProtocolException(response.getStatusLine().getReasonPhrase());
+            String phrase = response.getStatusLine().getReasonPhrase();
+            if (phrase == null || phrase.isEmpty()) {
+                phrase = "HTTP status code " + code;
+            } else {
+                phrase += " (HTTP status code " + code + ")";
+            }
+            throw new ClientProtocolException(phrase);
         }
         
         return response;
