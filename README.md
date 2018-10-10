@@ -5,7 +5,7 @@ This is a simple download task for [Gradle](http://www.gradle.org/).
 It displays progress information just as Gradle does when it retrieves
 an artifact from a repository.
 
-The plugin has been sucessfully tested with Gradle 1.0 up to 4.8.
+The plugin has been sucessfully tested with Gradle 1.0 up to 4.10.
 It should work with newer versions as well.
 
 <img width="559" src="https://raw.githubusercontent.com/michel-kraemer/gradle-download-task/e6bbe00dedd5e0bdaab12f4b1980bd51d22d10d1/gradle-download-task.gif">
