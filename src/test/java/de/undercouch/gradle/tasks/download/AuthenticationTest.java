@@ -14,31 +14,30 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import de.undercouch.gradle.tasks.download.org.apache.http.auth.Credentials;
+import de.undercouch.gradle.tasks.download.org.apache.http.auth.UsernamePasswordCredentials;
+import de.undercouch.gradle.tasks.download.org.apache.http.impl.auth.BasicScheme;
+import de.undercouch.gradle.tasks.download.org.apache.http.impl.auth.DigestScheme;
+import de.undercouch.gradle.tasks.download.org.apache.http.impl.auth.NTLMScheme;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.http.auth.Credentials;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.auth.DigestScheme;
-import org.apache.http.impl.auth.NTLMScheme;
 import org.gradle.api.tasks.TaskExecutionException;
 import org.junit.Before;
 import org.junit.Test;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.handler.ContextHandler;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests if the plugin can access a resource that requires authentication

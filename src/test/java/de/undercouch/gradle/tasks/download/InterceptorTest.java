@@ -14,30 +14,29 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpException;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpRequest;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpRequestInterceptor;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpResponse;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpResponseInterceptor;
+import de.undercouch.gradle.tasks.download.org.apache.http.entity.StringEntity;
+import de.undercouch.gradle.tasks.download.org.apache.http.protocol.HttpContext;
+import org.apache.commons.io.FileUtils;
+import org.junit.Test;
+import org.mortbay.jetty.Handler;
+import org.mortbay.jetty.handler.ContextHandler;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.http.HttpException;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpResponseInterceptor;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.protocol.HttpContext;
-import org.junit.Test;
-import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.handler.ContextHandler;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test if interceptors are called correctly

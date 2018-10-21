@@ -1,0 +1,23 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.4'
+    }
+}
+
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'java'
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile 'org.apache.httpcomponents:httpclient:4.5.3'
+}
+
+shadowJar {
+    relocate 'org.apache', 'de.undercouch.gradle.tasks.download.org.apache'
+}

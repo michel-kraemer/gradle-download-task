@@ -14,13 +14,13 @@
 
 package de.undercouch.gradle.tasks.download.internal;
 
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.HttpResponseInterceptor;
-import org.apache.http.impl.client.CloseableHttpClient;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpHost;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpRequestInterceptor;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpResponseInterceptor;
+import de.undercouch.gradle.tasks.download.org.apache.http.impl.client.CloseableHttpClient;
 
 /**
- * Factory for Apache {@link org.apache.http.client.HttpClient} objects
+ * Factory for Apache {@link CloseableHttpClient} objects
  * @author Michel Kraemer
  */
 public interface HttpClientFactory {

@@ -14,14 +14,14 @@
 
 package de.undercouch.gradle.tasks.download;
 
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpRequestInterceptor;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpResponseInterceptor;
+import de.undercouch.gradle.tasks.download.org.apache.http.auth.AuthScheme;
+import de.undercouch.gradle.tasks.download.org.apache.http.auth.Credentials;
+
 import java.io.File;
 import java.net.MalformedURLException;
 import java.util.Map;
-
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.HttpResponseInterceptor;
-import org.apache.http.auth.AuthScheme;
-import org.apache.http.auth.Credentials;
 
 /**
  * An interface for classes that perform file downloads

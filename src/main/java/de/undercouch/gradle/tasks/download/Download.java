@@ -14,10 +14,10 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.HttpResponseInterceptor;
-import org.apache.http.auth.AuthScheme;
-import org.apache.http.auth.Credentials;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpRequestInterceptor;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpResponseInterceptor;
+import de.undercouch.gradle.tasks.download.org.apache.http.auth.AuthScheme;
+import de.undercouch.gradle.tasks.download.org.apache.http.auth.Credentials;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
 import org.gradle.api.specs.Spec;

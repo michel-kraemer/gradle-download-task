@@ -14,26 +14,25 @@
 
 package de.undercouch.gradle.tasks.download.internal;
 
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpHost;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpRequestInterceptor;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpResponseInterceptor;
+import de.undercouch.gradle.tasks.download.org.apache.http.config.Registry;
+import de.undercouch.gradle.tasks.download.org.apache.http.config.RegistryBuilder;
+import de.undercouch.gradle.tasks.download.org.apache.http.conn.HttpClientConnectionManager;
+import de.undercouch.gradle.tasks.download.org.apache.http.conn.socket.ConnectionSocketFactory;
+import de.undercouch.gradle.tasks.download.org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import de.undercouch.gradle.tasks.download.org.apache.http.impl.client.CloseableHttpClient;
+import de.undercouch.gradle.tasks.download.org.apache.http.impl.client.HttpClientBuilder;
+import de.undercouch.gradle.tasks.download.org.apache.http.impl.conn.BasicHttpClientConnectionManager;
+import de.undercouch.gradle.tasks.download.org.apache.http.impl.conn.SystemDefaultRoutePlanner;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
-
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.HttpResponseInterceptor;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.conn.HttpClientConnectionManager;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
-import org.apache.http.impl.conn.SystemDefaultRoutePlanner;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
 /**
  * Default implementation of {@link HttpClientFactory}. Creates a new client

@@ -47,7 +47,7 @@ repositories {
 
 dependencies {
     compile gradleApi()
-    compile 'org.apache.httpcomponents:httpclient:4.5.3'
+    compile project(path: "apache-httpclient-relocated", configuration: "shadow")
 
     testCompile 'junit:junit:4.12'
     testCompile 'org.littleshoot:littleproxy:1.1.0-beta2'
@@ -78,6 +78,14 @@ test {
 jar {
     // include license into jar
     from 'LICENSE.txt'
+
+    // include contents of "apache-httpclient-relocated" into jar
+    from configurations.compile.findAll { it =~ "apache-httpclient-relocated" }.collect {
+        zipTree(it).matching {
+            include "mozilla/**"
+            include "de/undercouch/**"
+        }
+    }
 }
 
 // package javadoc into a jar file
@@ -98,6 +106,11 @@ artifacts {
     archives packageJavadoc
     archives packageSources
 }
+
+// remove all dependencies from configuration-to-scope mapping
+// this also removes them from the maven pom file
+conf2ScopeMappings.mappings.remove(configurations.compile)
+conf2ScopeMappings.mappings.remove(configurations.testCompile)
 
 def configurePom(def pom) {
     // ensure correct artifact ID

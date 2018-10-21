@@ -14,16 +14,16 @@
 
 package de.undercouch.gradle.tasks.download.internal;
 
-import java.io.IOException;
+import de.undercouch.gradle.tasks.download.org.apache.http.Header;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpEntity;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpException;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpResponse;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpResponseInterceptor;
+import de.undercouch.gradle.tasks.download.org.apache.http.message.BasicHeader;
+import de.undercouch.gradle.tasks.download.org.apache.http.protocol.HTTP;
+import de.undercouch.gradle.tasks.download.org.apache.http.protocol.HttpContext;
 
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpException;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpResponseInterceptor;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.protocol.HTTP;
-import org.apache.http.protocol.HttpContext;
+import java.io.IOException;
 
 /**
  * Intercepts HTTP responses and replaces the invalid Content-Encoding

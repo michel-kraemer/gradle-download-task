@@ -14,9 +14,9 @@
 
 package de.undercouch.gradle.tasks.download.internal;
 
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.entity.HttpEntityWrapper;
+import de.undercouch.gradle.tasks.download.org.apache.http.Header;
+import de.undercouch.gradle.tasks.download.org.apache.http.HttpEntity;
+import de.undercouch.gradle.tasks.download.org.apache.http.entity.HttpEntityWrapper;
 
 /**
  * Wraps around {@link HttpEntity} and replaces its content type
