@@ -118,14 +118,18 @@ public class DownloadAction implements DownloadSpec {
      */
     public void execute() throws IOException {
         if (GradleVersion.current().compareTo(MIN_GRADLE_VERSION) < 0 && !quiet) {
-            project.getLogger().warn("Support for running gradle-download-task "
-                    + "with Gradle 1.x has been deprecated and will be removed in "
-                    + "gradle-download-task 4.0.0");
+            // project.getLogger().warn("Support for running gradle-download-task "
+            //         + "with Gradle 1.x has been deprecated and will be removed in "
+            //         + "gradle-download-task 4.0.0");
+            throw new IllegalStateException("gradle-download-task requires " +
+                    "Gradle 2.x or higher");
         }
         if (JavaVersion.current().compareTo(JavaVersion.VERSION_1_7) < 0 && !quiet) {
-            project.getLogger().warn("Support for running gradle-download-task "
-                    + "using Java 6 has been deprecated and will be removed in "
-                    + "gradle-download-task 4.0.0");
+            // project.getLogger().warn("Support for running gradle-download-task "
+            //         + "using Java 6 has been deprecated and will be removed in "
+            //         + "gradle-download-task 4.0.0");
+            throw new IllegalStateException("gradle-download-task requires " +
+                    "Java 7 or higher");
         }
 
         if (sources.isEmpty()) {

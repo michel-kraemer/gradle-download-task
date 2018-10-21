@@ -36,11 +36,11 @@ jobs:
             case $CIRCLE_NODE_INDEX in
               0) ./gradlew --console=plain test
               ;;
-              1) ./gradlew --console=plain integrationTest -PintegrationTestIncludes="^1\\."
+              1) ./gradlew --console=plain integrationTest -PintegrationTestIncludes="^2\\."
               ;;
-              2) ./gradlew --console=plain integrationTest -PintegrationTestIncludes="^2\\."
+              2) ./gradlew --console=plain integrationTest -PintegrationTestIncludes="^3\\."
               ;;
-              3) ./gradlew --console=plain integrationTest -PintegrationTestIncludes="^(3|4)\\."
+              3) ./gradlew --console=plain integrationTest -PintegrationTestIncludes="^4\\."
               ;;
             esac
             ./gradlew --console=plain jacocoTestReport
