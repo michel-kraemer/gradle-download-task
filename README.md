@@ -207,19 +207,11 @@ is interpreted as undefined. <em>(default: <code>-1</code>)</em></dd>
 <dt>password</dt>
 <dd>The password for <code>Basic</code> or <code>Digest</code> authentication
 <em>(optional)</em></dd>
-<dt>credentials</dt>
-<dd>The credentials to use for authentication. This property is an alternative to
-<code>username</code> and <code>password</code>. The value is expected to be an instance of
-<a href="https://hc.apache.org/httpcomponents-client-4.5.x/httpclient/apidocs/org/apache/http/auth/Credentials.html">Credentials</a>.
-<em>(optional)</em></dd>
 <dt>authScheme</dt>
-<dd>The authentication scheme to use. Either a string (valid values are
-<code>Basic</code> and <code>Digest</code>) or an instance of
-<a href="https://hc.apache.org/httpcomponents-client-4.5.x/httpclient/apidocs/org/apache/http/auth/AuthScheme.html">AuthScheme</a>.
-If credentials are configured (either through <code>username</code> and
-<code>password</code> or through <code>credentials</code>) the default value of
-this property will be <code>Basic</code>. Otherwise this property has no default
-value. <em>(optional)</em></dd>
+<dd>The authentication scheme to use (valid values are <code>Basic</code> and
+<code>Digest</code>). If <code>username</code> and <code>password</code> are
+set, the default value of this property will be <code>Basic</code>. Otherwise
+this property has no default value. <em>(optional)</em></dd>
 </dl>
 
 ### Advanced
@@ -251,12 +243,6 @@ can be configured with the <code>downloadTaskDir</code> property. <em>(default:
 <dt>cachedETagsFile</dt>
 <dd>The location of the file that keeps entity tags (ETags) received
 from the server. <em>(default: <code>${downloadTaskDir}/etags.json</code>)</em></dd>
-<dt>requestInterceptor</dt>
-<dd>An instance of
-<a href="https://hc.apache.org/httpcomponents-core-4.4.x/httpcore/apidocs/org/apache/http/HttpRequestInterceptor.html">HttpRequestInterceptor</a>. Can be used to intercept and modify outgoing HTTP requests before they are sent to the server. <em>(optional)</em></dd>
-<dt>responseInterceptor</dt>
-<dd>An instance of
-<a href="https://hc.apache.org/httpcomponents-core-4.4.x/httpcore/apidocs/org/apache/http/HttpResponseInterceptor.html">HttpResponseInterceptor</a>. Can be used to intercept and manipulate HTTP responses from the server before they are handled by the plugin. <em>(optional)</em></dd>
 </dl>
 
 Verify task
