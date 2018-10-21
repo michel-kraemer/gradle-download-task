@@ -1,4 +1,4 @@
-// Copyright 2013-2016 Michel Kraemer
+// Copyright 2013-2018 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,21 +21,47 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.testkit.runner.BuildTask;
 import org.gradle.testkit.runner.GradleRunner;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Tests the plugin's functionality
  * @author Jan Berkel
+ * @author Michel Kraemer
  */
+@RunWith(value = Parameterized.class)
 public class FunctionalDownloadTest extends FunctionalTestBase {
     private String singleSrc;
     private String multipleSrc;
     private String dest;
     private File destFile;
+
+    /**
+     * Constructs a new functional test
+     * @param gradleVersion the Gradle version to test against (null for default)
+     */
+    public FunctionalDownloadTest(String gradleVersion) {
+        this.gradleVersion = gradleVersion;
+    }
+
+    /**
+     * @return the Gradle versions to test against
+     */
+    @Parameterized.Parameters(name = "Gradle {0}")
+    public static List<String> versionsToTest() {
+        return Arrays.asList("2.14.1", "3.0", "3.1", "3.2", "3.2.1", "3.3",
+                "3.4", "3.4.1", "3.5", "3.5.1",
+                "4.0", "4.0.1", "4.0.2", "4.1", "4.2", "4.2.1", "4.3", "4.3.1",
+                "4.4", "4.4.1", "4.5", "4.5.1", "4.6", "4.7", "4.8", "4.8.1",
+                "4.9", "4.10", "4.10.1", "4.10.2");
+    }
 
     /**
      * Set up the functional tests
@@ -57,7 +83,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Test
     public void downloadSingleFile() throws Exception {
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
-        assertTrue(destFile.exists());
+        assertTrue(destFile.isFile());
         assertArrayEquals(contents, FileUtils.readFileToByteArray(destFile));
     }
 
@@ -68,7 +94,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Test
     public void downloadSingleFileWithQuietMode() throws Exception {
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false, true, false, true)));
-        assertTrue(destFile.exists());
+        assertTrue(destFile.isFile());
         assertArrayEquals(contents, FileUtils.readFileToByteArray(destFile));
     }
 
@@ -79,7 +105,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Test
     public void downloadSingleFileWithoutCompress() throws Exception {
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false, false, false, false)));
-        assertTrue(destFile.exists());
+        assertTrue(destFile.isFile());
         assertArrayEquals(contents, FileUtils.readFileToByteArray(destFile));
     }
 
@@ -130,7 +156,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     }
 
     /**
-     * Download a file once, then download again with 'onlyIfNewer'
+     * Download a file once, then download again with 'onlyIfModified'
      * @throws Exception if anything went wrong
      */
     @Test
@@ -140,7 +166,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     }
 
     /**
-     * Download a file once, then download again with 'onlyIfNewer'.
+     * Download a file once, then download again with 'onlyIfModified'.
      * File changed between downloads.
      * @throws Exception if anything went wrong
      */
@@ -150,6 +176,18 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         File src = new File(folder.getRoot(), TEST_FILE_NAME);
         assertTrue(src.setLastModified(src.lastModified() + 5000));
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, true)));
+    }
+    
+    /**
+     * Download a file once, then download again with 'useETag'
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void downloadUseETag() throws Exception {
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, true,
+                false, false, false, true)));
+        assertTaskUpToDate(download(new Parameters(singleSrc, dest, true, true,
+                false, false, false, true)));
     }
 
     /**
@@ -163,16 +201,46 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         assertTrue(destFile.setLastModified(testFile.lastModified()));
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
     }
+    
+    /**
+     * Copy a file from a file:// URL once, then download again with 'onlyIfModified'
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void downloadFileURLOnlyIfNewer() throws Exception {
+        File srcFile = folder.newFile();
+        FileUtils.writeByteArrayToFile(srcFile, contents);
+        String srcFileUri = "'" + srcFile.toURI().toString() + "'";
+        assertTaskSuccess(download(new Parameters(srcFileUri, dest, true, true)));
+        assertTrue(destFile.setLastModified(srcFile.lastModified()));
+        assertTaskUpToDate(download(new Parameters(srcFileUri, dest, true, true)));
+    }
 
     /**
      * Test if the download task is triggered if another task depends on its
-     * output files
+     * output file
      * @throws Exception if anything went wrong
      */
     @Test
     public void fileDependenciesTriggersDownloadTask() throws Exception {
         assertTaskSuccess(runTask(":processTask", new Parameters(singleSrc, dest, true, false)));
-        assertTrue(destFile.exists());
+        assertTrue(destFile.isFile());
+    }
+
+    /**
+     * Test if the download task is triggered if another tasks depends on its
+     * output files
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void fileDependenciesWithMultipleSourcesTriggersDownloadTask() throws Exception {
+        destFile.mkdirs();
+        assertTaskSuccess(runTask(":processTask", new Parameters(multipleSrc, dest, true, false)));
+        assertTrue(destFile.isDirectory());
+        assertArrayEquals(contents, FileUtils.readFileToByteArray(
+                new File(destFile, TEST_FILE_NAME)));
+        assertArrayEquals(contents2, FileUtils.readFileToByteArray(
+                new File(destFile, TEST_FILE_NAME2)));
     }
 
     /**
@@ -209,16 +277,20 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     protected GradleRunner createRunner(Parameters parameters) throws IOException {
         return createRunnerWithBuildFile(
             "plugins { id 'de.undercouch.download' }\n" +
-            "task downloadTask(type: de.undercouch.gradle.tasks.download.Download) { \n" +
+            "task downloadTask(type: Download) {\n" +
                 "src(" + parameters.src + ")\n" +
                 "dest " + parameters.dest + "\n" +
                 "overwrite " + Boolean.toString(parameters.overwrite) + "\n" +
-                "onlyIfNewer " + Boolean.toString(parameters.onlyIfNewer) + "\n" +
+                "onlyIfModified " + Boolean.toString(parameters.onlyIfModified) + "\n" +
                 "compress " + Boolean.toString(parameters.compress) + "\n" +
                 "quiet " + Boolean.toString(parameters.quiet) + "\n" +
+                "useETag " + Boolean.toString(parameters.useETag) + "\n" +
             "}\n" +
             "task processTask {\n" +
-                "inputs.files downloadTask\n" +
+                "inputs.files files(downloadTask)\n" +
+                "doLast {\n" +
+                    "inputs.files.each { f -> assert f.isFile() }\n" +
+                "}\n" +
             "}\n", false);
     }
 
@@ -226,24 +298,31 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         final String src;
         final String dest;
         final boolean overwrite;
-        final boolean onlyIfNewer;
+        final boolean onlyIfModified;
         final boolean compress;
         final boolean quiet;
         final boolean offline;
+        final boolean useETag;
 
-        Parameters(String src, String dest, boolean overwrite, boolean onlyIfNewer) {
-            this(src, dest, overwrite, onlyIfNewer, true, false, false);
+        Parameters(String src, String dest, boolean overwrite, boolean onlyIfModified) {
+            this(src, dest, overwrite, onlyIfModified, true, false, false);
+        }
+        
+        Parameters(String src, String dest, boolean overwrite, boolean onlyIfModified,
+                boolean compress, boolean offline, boolean quiet) {
+            this(src, dest, overwrite, onlyIfModified, compress, offline, quiet, false);
         }
 
-        Parameters(String src, String dest, boolean overwrite, boolean onlyIfNewer,
-                boolean compress, boolean offline, boolean quiet) {
+        Parameters(String src, String dest, boolean overwrite, boolean onlyIfModified,
+                boolean compress, boolean offline, boolean quiet, boolean useETag) {
             this.src = src;
             this.dest = dest;
             this.overwrite = overwrite;
-            this.onlyIfNewer = onlyIfNewer;
+            this.onlyIfModified = onlyIfModified;
             this.compress = compress;
             this.offline = offline;
             this.quiet = quiet;
+            this.useETag = useETag;
         }
     }
 }

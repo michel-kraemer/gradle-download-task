@@ -6,12 +6,13 @@ plugins {
 }
 
 /**
- * Download a single file to a directory
+ * Download a file conditionally using its ETag
  */
 task downloadFile(type: Download) {
     src 'http://central.maven.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar'
     dest buildDir
-    overwrite true
+    onlyIfModified true
+    useETag true
 }
 
 defaultTasks 'downloadFile'

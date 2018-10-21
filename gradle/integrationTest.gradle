@@ -25,9 +25,17 @@ task integrationTest << {
         '1.6', '1.7', '1.8', '1.9', '1.10', '1.11', '1.12',
         '2.0', '2.1', '2.2', '2.3', '2.4', '2.5', '2.6', '2.7', '2.8', '2.9',
         '2.10', '2.11', '2.12', '2.13', '2.14', '2.14.1',
-        '3.0'
+        '3.0', '3.1', '3.2', '3.2.1', '3.3', '3.4', '3.4.1', '3.5', '3.5.1',
+        '4.0', '4.0.1', '4.0.2', '4.1', '4.2', '4.2.1', '4.3', '4.3.1',
+        '4.4', '4.4.1', '4.5', '4.5.1', '4.6', '4.7', '4.8', '4.8.1', '4.9',
+        '4.10', '4.10.1', '4.10.2'
     ]
-    
+
+    //handle regex to only include certain gradle versions
+    if (project.hasProperty('integrationTestIncludes')) {
+        versionsToTest = versionsToTest.findAll { it =~ project.integrationTestIncludes }
+    }
+
     //run server on any free port
     def server = new Server(0)
     
@@ -86,9 +94,6 @@ task integrationTest << {
                     gradleVersion = '${version}'
                 }
                 
-                import de.undercouch.gradle.tasks.download.Download
-                import de.undercouch.gradle.tasks.download.Verify
-                
                 task downloadFile(type: Download) {
                     src '${testFileSrc}'
                     dest buildDir
@@ -98,7 +103,7 @@ task integrationTest << {
                     src '${testFile2Src}'
                     dest buildDir
                     overwrite false
-                    onlyIfNewer true
+                    onlyIfModified true
                 }
                 
                 task verifyFile(type: Verify, dependsOn: downloadFile) {
@@ -112,7 +117,7 @@ task integrationTest << {
             def downloadedTestFile = new File(testProjectDir, 'build/test.txt')
             def downloadedTestFile2 = new File(testProjectDir, 'build/test2.txt')
             
-            //create second destination test file to simulate onlyIfNewer = true and overwrite = false
+            //create second destination test file to simulate onlyIfModified = true and overwrite = false
             downloadedTestFile2.getParentFile().mkdirs()
             downloadedTestFile2.write(testStr2)
             

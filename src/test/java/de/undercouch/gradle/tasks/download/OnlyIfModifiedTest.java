@@ -38,7 +38,7 @@ import org.mortbay.jetty.handler.ContextHandler;
  * Tests if the plugin handles the last-modified header correctly
  * @author Michel Kraemer
  */
-public class OnlyIfNewerTest extends TestBase {
+public class OnlyIfModifiedTest extends TestBase {
     private static final String LAST_MODIFIED = "last-modified";
     private String lastModified;
     
@@ -81,7 +81,7 @@ public class OnlyIfNewerTest extends TestBase {
         dst.delete();
         assertFalse(dst.exists());
         t.dest(dst);
-        t.onlyIfNewer(true);
+        t.onlyIfModified(true);
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
@@ -103,7 +103,7 @@ public class OnlyIfNewerTest extends TestBase {
         dst.delete();
         assertFalse(dst.exists());
         t.dest(dst);
-        t.onlyIfNewer(true);
+        t.onlyIfModified(true);
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
@@ -128,7 +128,7 @@ public class OnlyIfNewerTest extends TestBase {
         dst.delete();
         assertFalse(dst.exists());
         t.dest(dst);
-        t.onlyIfNewer(true);
+        t.onlyIfModified(true);
         t.execute();
 
         assertTrue(dst.exists());
@@ -157,7 +157,7 @@ public class OnlyIfNewerTest extends TestBase {
         FileUtils.writeStringToFile(dst, "Hello");
         dst.setLastModified(expectedlmlong);
         t.dest(dst);
-        t.onlyIfNewer(true);
+        t.onlyIfModified(true);
         t.execute();
 
         long lmlong = dst.lastModified();
@@ -185,7 +185,7 @@ public class OnlyIfNewerTest extends TestBase {
         FileUtils.writeStringToFile(dst, "Hello");
         dst.setLastModified(expectedlmlong + 1000);
         t.dest(dst);
-        t.onlyIfNewer(true);
+        t.onlyIfModified(true);
         t.execute();
 
         long lmlong = dst.lastModified();
@@ -213,12 +213,28 @@ public class OnlyIfNewerTest extends TestBase {
         FileUtils.writeStringToFile(dst, "Hello");
         dst.setLastModified(expectedlmlong - 1000);
         t.dest(dst);
-        t.onlyIfNewer(true);
+        t.onlyIfModified(true);
         t.execute();
 
         long lmlong = dst.lastModified();
         assertEquals(expectedlmlong, lmlong);
         String dstContents = FileUtils.readFileToString(dst);
         assertEquals("lm: " + lm, dstContents);
+    }
+
+    /**
+     * Make sure 'onlyIfNewer' is a proper alias for 'onlyIfModified'
+     */
+    @Test
+    public void alias() {
+        Download t = makeProjectAndTask();
+        assertFalse(t.isOnlyIfModified());
+        assertFalse(t.isOnlyIfNewer());
+        t.onlyIfModified(true);
+        assertTrue(t.isOnlyIfModified());
+        assertTrue(t.isOnlyIfNewer());
+        t.onlyIfNewer(false);
+        assertFalse(t.isOnlyIfModified());
+        assertFalse(t.isOnlyIfNewer());
     }
 }

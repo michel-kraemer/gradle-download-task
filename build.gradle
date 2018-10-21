@@ -8,7 +8,7 @@ buildscript {
 }
 
 plugins {
-    id "com.gradle.plugin-publish" version "0.9.4"
+    id "com.gradle.plugin-publish" version "0.9.9"
 }
 
 apply plugin: 'java-gradle-plugin'
@@ -27,7 +27,7 @@ targetCompatibility = '1.7'
 
 idea {
   project {
-    languageLevel = '1.6'
+    languageLevel = '1.7'
     ipr {
       withXml { provider ->
         provider.node.component
@@ -38,6 +38,8 @@ idea {
   }
 }
 
+eclipseClasspath.dependsOn pluginUnderTestMetadata
+
 repositories {
     jcenter()
     mavenCentral()
@@ -45,7 +47,7 @@ repositories {
 
 dependencies {
     compile gradleApi()
-    compile 'org.apache.httpcomponents:httpclient:4.5.2'
+    compile 'org.apache.httpcomponents:httpclient:4.5.3'
 
     testCompile 'junit:junit:4.12'
     testCompile 'org.littleshoot:littleproxy:1.1.0-beta2'
@@ -60,6 +62,16 @@ jacocoTestReport {
     reports {
         xml.enabled = true
         html.enabled = true
+    }
+}
+
+// improve test output when we're using a plain console (e.g. on the CI server)
+test {
+    jvmArgs += ['-Xmx512M', '-XX:MaxPermSize=256M']
+    if (gradle.startParameter.consoleOutput == ConsoleOutput.Plain) {
+        testLogging {
+            events "passed", "skipped", "failed"
+        }
     }
 }
 
@@ -131,7 +143,7 @@ install {
 
 // sign all artifacts
 signing {
-    required { gradle.taskGraph.hasTask(uploadArchives) }
+    required { !version.endsWith('SNAPSHOT') && gradle.taskGraph.hasTask('uploadArchives') }
     sign configurations.archives
 }
 
@@ -173,7 +185,7 @@ bintray {
         issueTrackerUrl = "$githubUrl/issues"
         vcsUrl = "${githubUrl}.git"
         licenses = ['Apache-2.0']
-        labels = ['gradle', 'download', 'plugin', 'progress']
+        labels = ['gradle', 'download', 'task', 'plugin', 'progress', 'url', 'server', 'file', 'http']
         publicDownloadNumbers = true
         // version descriptor
         version {
@@ -192,7 +204,8 @@ pluginBundle {
         greetingsPlugin {
             id = 'de.undercouch.download'
             displayName = 'gradle-download-task'
-            tags = ['download', 'task', 'progress', 'url', 'server', 'file']
+            description = 'Adds a download task to Gradle that displays progress information'
+            tags = ['download', 'task', 'progress', 'url', 'server', 'file', 'http']
         }
     }
 

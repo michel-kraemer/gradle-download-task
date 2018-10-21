@@ -1,0 +1,72 @@
+version: 2
+jobs:
+  build:
+    working_directory: /gradle-download-task
+
+    parallelism: 4
+
+    docker:
+      - image: openjdk:7-jdk
+
+    environment:
+      CIRCLE_TEST_REPORTS: /tmp/test-reports
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - v2-gradle-download-task-{{ .Environment.CIRCLE_NODE_INDEX }}-{{ checksum "build.gradle" }}
+            - v2-gradle-download-task-{{ .Environment.CIRCLE_NODE_INDEX }}-
+            - v2-gradle-download-task-
+
+      - run:
+          name: Install BouncyCastle provider into JDK 7
+          command: |
+            wget "https://bouncycastle.org/download/bcprov-ext-jdk15on-158.jar" -O "${JAVA_HOME}"/jre/lib/ext/bcprov-ext-jdk15on-158.jar
+            perl -pi.bak -e 's/^(security\.provider\.)([0-9]+)/$1.($2+1)/ge' /etc/java-7-openjdk/security/java.security
+            echo "security.provider.1=org.bouncycastle.jce.provider.BouncyCastleProvider" | tee -a /etc/java-7-openjdk/security/java.security
+
+      - run:
+          name: Run tests
+          environment:
+            TERM: dump
+          command: |
+            ./gradlew --console=plain install
+            case $CIRCLE_NODE_INDEX in
+              0) ./gradlew --console=plain test
+              ;;
+              1) ./gradlew --console=plain integrationTest -PintegrationTestIncludes="^1\\."
+              ;;
+              2) ./gradlew --console=plain integrationTest -PintegrationTestIncludes="^2\\."
+              ;;
+              3) ./gradlew --console=plain integrationTest -PintegrationTestIncludes="^(3|4)\\."
+              ;;
+            esac
+            ./gradlew --console=plain jacocoTestReport
+
+      - run:
+          name: Copy test reports
+          command: |
+            mkdir -p $CIRCLE_TEST_REPORTS/junit/
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
+
+      - run:
+          name: Upload code coverage report
+          command: |
+            bash <(curl -s https://codecov.io/bash)
+
+      - run:
+          name: Prepare cache
+          command: |
+            rm -f  ~/.gradle/caches/modules-2/modules-2.lock
+            rm -rf ~/.gradle/caches/*/plugin-resolution/
+
+      - save_cache:
+          key: v2-gradle-download-task-{{ .Environment.CIRCLE_NODE_INDEX }}-{{ checksum "build.gradle" }}
+          paths:
+            - ~/.gradle/caches/
+            - ~/.gradle/wrapper/
+
+      - store_test_results:
+          path: /tmp/test-reports

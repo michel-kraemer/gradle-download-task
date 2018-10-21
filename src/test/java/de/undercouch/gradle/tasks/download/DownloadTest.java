@@ -275,4 +275,56 @@ public class DownloadTest extends TestBase {
         t.src(new Object[] { src });
         assertTrue(t.getSrc() instanceof URL);
     }
+
+    /**
+     * Test if a file can be "downloaded" from a file:// url
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void testFileDownloadURL() throws Exception {
+        Download t = makeProjectAndTask();
+
+        String testContent = "file content";
+        File src = folder.newFile();
+        FileUtils.writeStringToFile(src, testContent, "UTF-8");
+
+        URL url = src.toURI().toURL();
+
+        File dst = folder.newFile();
+        assertTrue(dst.delete());
+
+        t.src(new Object[] { url.toExternalForm() });
+        t.dest(dst);
+        t.execute();
+
+        String content = FileUtils.readFileToString(dst, "UTF-8");
+        assertEquals(testContent, content);
+    }
+
+    /**
+     * Test if a file can be "downloaded" from a file:// url with the
+     * overwrite flag set to true
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void testFileDownloadURLOverwriteTrue() throws Exception {
+        Download t = makeProjectAndTask();
+
+        String testContent = "file content";
+        File src = folder.newFile();
+        FileUtils.writeStringToFile(src, testContent, "UTF-8");
+
+        URL url = src.toURI().toURL();
+
+        File dst = folder.newFile();
+        assertTrue(dst.exists());
+
+        t.src(new Object[] { url.toExternalForm() });
+        t.dest(dst);
+        t.overwrite(true);
+        t.execute();
+
+        String content = FileUtils.readFileToString(dst, "UTF-8");
+        assertEquals(testContent, content);
+    }
 }

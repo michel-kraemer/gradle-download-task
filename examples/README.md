@@ -51,6 +51,14 @@ Download all files from a directory.
 
     gradle -b directory.gradle
 
+[directoryGitHub.gradle](directoryGitHub.gradle)
+------------------------------------
+
+Download all files from a directory in GitHub. Use the GitHub API to get the
+directory's contents. Parse the result and download the files.
+
+    gradle -b directoryGitHub.gradle
+
 [mirrors.gradle](mirrors.gradle)
 --------------------------------
 
@@ -82,6 +90,13 @@ Download a ZIP file and extract its contents.
 
     gradle -b unzip.gradle
 
+[useETag.gradle](useETag.gradle)
+--------------------------------
+
+Download a file conditionally using its entity tag (ETag).
+
+    gradle -b useETag.gradle
+
 [verify.gradle](verify.gradle)
 ------------------------------
 
@@ -89,6 +104,14 @@ Download a file and verify its contents by calculating its checksum and
 comparing it to a given value.
 
     gradle -b verify.gradle
+
+[verifyExtension.gradle](verifyExtension.gradle)
+------------------------------------------------
+
+Same as [verify.gradle](verify.gradle) but uses the `verifyChecksum` extension
+instead of the `Verify` task.
+
+    gradle -b verifyExtension.gradle
 
 Run all examples
 ----------------

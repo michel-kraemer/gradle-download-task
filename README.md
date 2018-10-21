@@ -1,14 +1,14 @@
-Gradle Download Task [![CircleCI](https://img.shields.io/circleci/project/michel-kraemer/gradle-download-task.svg?maxAge=2592000)](https://circleci.com/gh/michel-kraemer/gradle-download-task) [![codecov](https://codecov.io/gh/michel-kraemer/gradle-download-task/branch/master/graph/badge.svg)](https://codecov.io/gh/michel-kraemer/gradle-download-task) [![Apache License, Version 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
+Gradle Download Task [![CircleCI](https://circleci.com/gh/michel-kraemer/gradle-download-task.svg?style=shield)](https://circleci.com/gh/michel-kraemer/gradle-download-task) [![codecov](https://codecov.io/gh/michel-kraemer/gradle-download-task/branch/master/graph/badge.svg)](https://codecov.io/gh/michel-kraemer/gradle-download-task) [![Apache License, Version 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 ====================
 
 This is a simple download task for [Gradle](http://www.gradle.org/).
 It displays progress information just as Gradle does when it retrieves
 an artifact from a repository.
 
-The plugin has been sucessfully tested with Gradle 1.0 up to 2.14.
+The plugin has been sucessfully tested with Gradle 1.0 up to 4.10.2.
 It should work with newer versions as well.
 
-<img width="686" src="https://raw.githubusercontent.com/michel-kraemer/gradle-download-task/6714ce9acecf735404960317bec7ecc31a2bbafa/gradle-download-task.gif">
+<img width="559" src="https://raw.githubusercontent.com/michel-kraemer/gradle-download-task/e6bbe00dedd5e0bdaab12f4b1980bd51d22d10d1/gradle-download-task.gif">
 
 Apply plugin configuration
 --------------------------
@@ -17,7 +17,7 @@ Apply plugin configuration
 
 ```groovy
 plugins {
-    id "de.undercouch.download" version "3.1.1"
+    id "de.undercouch.download" version "3.4.3"
 }
 ```
 
@@ -29,7 +29,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'de.undercouch:gradle-download-task:3.1.1'
+        classpath 'de.undercouch:gradle-download-task:3.4.3'
     }
 }
 
@@ -42,16 +42,26 @@ Usage
 After you applied the plugin configuration (see above) you can use the `Download` task as follows:
 
 ```groovy
-import de.undercouch.gradle.tasks.download.Download
-
 task downloadFile(type: Download) {
     src 'http://www.example.com/index.html'
     dest buildDir
 }
 ```
 
-You can also use the download extension to retrieve a file anywhere
-in your build script:
+By default, the plugin always performs a download even if the destination file
+already exists. If you want to prevent files from being downloaded again, use
+the `overwrite` flag (see [description below](#download-task)).
+
+```groovy
+task downloadFile(type: Download) {
+    src 'http://www.example.com/index.html'
+    dest buildDir
+    overwrite false
+}
+```
+
+As an alternative to the `Download` task, you may also use the `download`
+extension to retrieve a file anywhere in your build script:
 
 ```groovy
 task myTask << {
@@ -60,6 +70,7 @@ task myTask << {
     download {
         src 'http://www.example.com/index.html'
         dest buildDir
+        overwrite false
     }
     //... do something else
 }
@@ -68,7 +79,21 @@ task myTask << {
 Examples
 --------
 
-Sequentially download a list of files to a directory:
+### Only download a file if it has been modified on the server
+
+```groovy
+task downloadFile(type: Download) {
+    src 'http://www.example.com/index.html'
+    dest buildDir
+    onlyIfModified true
+}
+```
+
+Note that this feature depends on the server and whether it supports the
+`If-Modified-Since` request header and if it provides a `Last-Modified`
+timestamp in its response.
+
+### Sequentially download a list of files to a directory
 
 ```groovy
 task downloadMultipleFiles(type: Download) {
@@ -82,6 +107,8 @@ task downloadMultipleFiles(type: Download) {
 
 Please note that you have to specify a directory as destination if you
 download multiple files. Otherwise the plugin will fail.
+
+### Download files from a directory
 
 If you want to download all files from a directory and the server
 provides a simple directory listing you can use the following code:
@@ -98,6 +125,8 @@ task downloadDirectory {
 }
 ```
 
+### Download and extract a ZIP file
+
 To download and unpack a ZIP file you can combine the download task
 plugin with Gradle's built-in support for ZIP files:
 
@@ -113,7 +142,11 @@ task downloadAndUnzipFile(dependsOn: downloadZipFile, type: Copy) {
 }
 ```
 
-Please have a look at the `examples` directory for more code samples.
+### More examples
+
+Please have a look at the `examples` directory for more code samples. You can
+also read my blog post about
+[common recipes for gradle-download-task](https://michelkraemer.com/recipes-for-gradle-download/).
 
 Download task
 -------------
@@ -134,10 +167,22 @@ multiple files shoud be downloaded. <em>(required)</em></dd>
 <dt>overwrite</dt>
 <dd><code>true</code> if existing files should be overwritten <em>(default:
 <code>true</code>)</em></dd>
-<dt>onlyIfNewer</dt>
+<dt>onlyIfModified (alias: onlyIfNewer)</dt>
 <dd><code>true</code> if the file should only be downloaded if it
 has been modified on the server since the last download <em>(default:
 <code>false</code>)</em></dd>
+</dl>
+
+<em>Tip!</em> You may provide Groovy Closures to the `src` and `dest`
+properties to calculate their value at runtime.
+
+### Connection
+
+<dl>
+<dt>acceptAnyCertificate</dt>
+<dd><code>true</code> if HTTPS certificate verification errors should be ignored
+and any certificate (even an invalid one) should be accepted.
+<em>(default: <code>false</code>)</em></dd>
 <dt>compress</dt>
 <dd><code>true</code> if compression should be used during download <em>(default:
 <code>true</code>)</em></dd>
@@ -147,14 +192,11 @@ request <em>(optional)</em></dd>
 <dt>headers</dt>
 <dd>A map of request headers to set when making the download
 request <em>(optional)</em></dd>
-<dt>acceptAnyCertificate</dt>
-<dd><code>true</code> if HTTPS certificate verification errors should be ignored
-and any certificate (even an invalid one) should be accepted.
-<em>(default: <code>false</code>)</em>
+<dt>timeout</dt>
+<dd>The maximum number of milliseconds to wait until a connection is established or until the
+server returns data. A value of <code>0</code> (zero) means infinite timeout. A negative value
+is interpreted as undefined. <em>(default: <code>-1</code>)</em></dd>
 </dl>
-
-<em>Tip!</em> You may provide Groovy Closures to the `src` and `dest`
-properties to calculate their value at runtime.
 
 ### Authentication
 
@@ -180,6 +222,43 @@ this property will be <code>Basic</code>. Otherwise this property has no default
 value. <em>(optional)</em></dd>
 </dl>
 
+### Advanced
+
+<dl>
+<dt>downloadTaskDir</dt>
+<dd>The directory where the plugin stores information that should persist between builds. It will only be created if necessary. <em>(default: <code>${buildDir}/download-task</code>)</em></dd>
+<dt>tempAndMove</dt>
+<dd><code>true</code> if the file should be downloaded to a temporary location
+and, upon successful execution, moved to the final location. If
+<code>overwrite</code> is set to <code>false</code>, this flag is useful to
+avoid partially downloaded files if Gradle is forcefully closed or the system
+crashes. Note that the plugin always deletes partial downloads on connection
+errors, regardless of the value of this flag. The default temporary location
+can be configured with the <code>downloadTaskDir</code> property. <em>(default:
+<code>false</code>)</em></dd>
+<dt>useETag</dt>
+<dd>Use this flag in combination with <code>onlyIfModified</code>. If both flags are <code>true</code> the plugin will check a file's timestamp as well as its entity tag (ETag) and only download it if it has been modified on the server since the last download. The plugin can differentiate between <a href="https://tools.ietf.org/html/rfc7232#section-2.1">strong and weak ETags</a>. Possible values are:
+<dl>
+<dt><code>false</code> <em>(default)</em></dt>
+<dd>Do not use the ETag</dd>
+<dt><code>true</code></dt>
+<dd>Use the ETag but display a warning if it is weak</dd>
+<dt><code>"all"</code></dt>
+<dd>Use the ETag and do not display a warning if it is weak</dd>
+<dt><code>"strongOnly"</code></dt>
+<dd>Only use the ETag if it is strong</dd>
+</dl></dd>
+<dt>cachedETagsFile</dt>
+<dd>The location of the file that keeps entity tags (ETags) received
+from the server. <em>(default: <code>${downloadTaskDir}/etags.json</code>)</em></dd>
+<dt>requestInterceptor</dt>
+<dd>An instance of
+<a href="https://hc.apache.org/httpcomponents-core-4.4.x/httpcore/apidocs/org/apache/http/HttpRequestInterceptor.html">HttpRequestInterceptor</a>. Can be used to intercept and modify outgoing HTTP requests before they are sent to the server. <em>(optional)</em></dd>
+<dt>responseInterceptor</dt>
+<dd>An instance of
+<a href="https://hc.apache.org/httpcomponents-core-4.4.x/httpcore/apidocs/org/apache/http/HttpResponseInterceptor.html">HttpResponseInterceptor</a>. Can be used to intercept and manipulate HTTP responses from the server before they are handled by the plugin. <em>(optional)</em></dd>
+</dl>
+
 Verify task
 -----------
 
@@ -191,8 +270,6 @@ given value and fails if it doesn't.
 Use the task as follows:
 
 ```groovy
-import de.undercouch.gradle.tasks.download.Verify
-
 task verifyFile(type: Verify) {
     src new File(buildDir, 'file.ext')
     algorithm 'MD5'
@@ -203,9 +280,6 @@ task verifyFile(type: Verify) {
 You can combine the download task and the verify task as follows:
 
 ```groovy
-import de.undercouch.gradle.tasks.download.Download
-import de.undercouch.gradle.tasks.download.Verify
-
 task downloadFile(type: Download) {
     src 'http://www.example.com/index.html'
     dest buildDir

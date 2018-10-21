@@ -2,15 +2,8 @@
  * Include the gradle-download-task plugin
  */
 plugins {
-    id 'de.undercouch.download' version '3.1.1'
+    id 'de.undercouch.download' version '3.4.3'
 }
-
-/**
- * Import the Download task. This line is optional.
- * You can of course also always use the full qualified name
- * when you specify a task of type 'Download'.
- */
-import de.undercouch.gradle.tasks.download.Download
 
 ext {
     downloadToBuildDir = true

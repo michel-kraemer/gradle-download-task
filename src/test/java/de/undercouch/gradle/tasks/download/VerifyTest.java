@@ -14,8 +14,12 @@
 
 package de.undercouch.gradle.tasks.download;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,11 +27,29 @@ import org.apache.commons.codec.binary.Hex;
 import org.gradle.api.tasks.TaskExecutionException;
 import org.junit.Test;
 
+import groovy.lang.Closure;
+
 /**
  * Test the {@link VerifyAction}
  * @author Michel Kraemer
  */
 public class VerifyTest extends TestBase {
+    /**
+     * Calculates the MD5 checksum for {@link #contents}
+     * @return the checksum
+     */
+    private String calculateChecksum() {
+        MessageDigest md5;
+        try {
+            md5 = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+        md5.update(contents);
+        String calculatedChecksum = Hex.encodeHexString(md5.digest());
+        return calculatedChecksum;
+    }
+
     /**
      * Makes a verify task
      * @param downloadTask a configured download task to depend on
@@ -54,16 +76,17 @@ public class VerifyTest extends TestBase {
         
         Verify v = makeVerifyTask(t);
         v.algorithm("MD5");
-        MessageDigest md5 = MessageDigest.getInstance("MD5");
-        md5.update(contents);
-        String calculatedChecksum = Hex.encodeHexString(md5.digest());
+        assertEquals("MD5", v.getAlgorithm());
+        String calculatedChecksum = calculateChecksum();
         v.checksum(calculatedChecksum);
+        assertEquals(calculatedChecksum, v.getChecksum());
         v.src(t.getDest());
+        assertEquals(t.getDest(), v.getSrc());
         
         t.execute();
         v.execute(); // will throw if the checksum is not OK
     }
-    
+
     /**
      * Tests if the Verify task fails if the checksum is wrong
      * @throws Exception if anything goes wrong
@@ -82,5 +105,109 @@ public class VerifyTest extends TestBase {
         
         t.execute();
         v.execute(); // should throw
+    }
+
+    /**
+     * Test if the plugin throws an exception if the 'src' property is empty
+     * @throws Exception if the test succeeds
+     */
+    @Test(expected = TaskExecutionException.class)
+    public void testExecuteEmptySrc() throws Exception {
+        Download t = makeProjectAndTask();
+
+        Verify v = makeVerifyTask(t);
+        v.algorithm("MD5");
+        String calculatedChecksum = calculateChecksum();
+        v.checksum(calculatedChecksum);
+
+        v.execute(); // should throw
+    }
+
+    /**
+     * Test if the plugin throws an exception if the 'algorithm' property is empty
+     * @throws Exception if the test succeeds
+     */
+    @Test(expected = TaskExecutionException.class)
+    public void testExecuteEmptyAlgorithm() throws Exception {
+        Download t = makeProjectAndTask();
+        File dst = folder.newFile();
+        t.dest(dst);
+
+        Verify v = makeVerifyTask(t);
+        String calculatedChecksum = calculateChecksum();
+        v.checksum(calculatedChecksum);
+        v.algorithm(null);
+        v.src(t.getDest());
+
+        v.execute(); // should throw
+    }
+
+    /**
+     * Test if the plugin throws an exception if the 'checksum' property is empty
+     * @throws Exception if the test succeeds
+     */
+    @Test(expected = TaskExecutionException.class)
+    public void testExecuteEmptyChecksum() throws Exception {
+        Download t = makeProjectAndTask();
+        File dst = folder.newFile();
+        t.dest(dst);
+
+        Verify v = makeVerifyTask(t);
+        v.algorithm("MD5");
+        v.src(t.getDest());
+
+        v.execute(); // should throw
+    }
+
+    /**
+     * Test if the plugin throws an exception if the 'src' property is invalid
+     * @throws Exception if the test succeeds
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvalidSrc() throws Exception {
+        Download t = makeProjectAndTask();
+        File dst = folder.newFile();
+        t.dest(dst);
+
+        Verify v = makeVerifyTask(t);
+        String calculatedChecksum = calculateChecksum();
+        v.checksum(calculatedChecksum);
+        v.algorithm("MD5");
+        v.src(new Object());
+
+        v.execute(); // should throw
+    }
+
+    /**
+     * Tests lazy evaluation of the 'src' property
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void lazySrc() throws Exception {
+        final boolean[] srcCalled = new boolean[] { false };
+
+        final Download t = makeProjectAndTask();
+        t.src(makeSrc(TEST_FILE_NAME));
+        File dst = folder.newFile();
+        t.dest(dst);
+
+        Verify v = makeVerifyTask(t);
+        v.algorithm("MD5");
+        String calculatedChecksum = calculateChecksum();
+        v.checksum(calculatedChecksum);
+        v.src(new Closure<Object>(this, this) {
+            private static final long serialVersionUID = -53893707548824180L;
+
+            @SuppressWarnings("unused")
+            public Object doCall() {
+                srcCalled[0] = true;
+                return t.getDest().getAbsolutePath();
+            }
+        });
+
+        t.execute();
+        v.execute(); // will throw if the checksum is not OK
+
+        assertTrue(srcCalled[0]);
     }
 }

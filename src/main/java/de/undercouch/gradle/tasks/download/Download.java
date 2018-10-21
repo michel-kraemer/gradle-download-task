@@ -14,13 +14,8 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.util.List;
-import java.util.Map;
-
+import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.auth.AuthScheme;
 import org.apache.http.auth.Credentials;
 import org.gradle.api.DefaultTask;
@@ -28,6 +23,13 @@ import org.gradle.api.Task;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.TaskAction;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Downloads a file and displays progress. Example:
@@ -50,7 +52,30 @@ public class Download extends DefaultTask implements DownloadSpec {
         getOutputs().upToDateWhen(new Spec<Task>() {
             @Override
             public boolean isSatisfiedBy(Task task) {
-                return !(isOnlyIfNewer() || isOverwrite());
+                return !(isOnlyIfModified() || isOverwrite());
+            }
+        });
+        
+        onlyIf(new Spec<Task>() {
+            @Override
+            public boolean isSatisfiedBy(Task task) {
+                // in case offline mode is enabled don't try to download if
+                // destination already exists
+                if (getProject().getGradle().getStartParameter().isOffline()) {
+                    for (File f : getOutputFiles()) {
+                        if (f.exists()) {
+                            if (!isQuiet()) {
+                                getProject().getLogger().info("Skipping existing file '" +
+                                        f.getName() + "' in offline mode.");
+                            }
+                        } else {
+                            throw new IllegalStateException("Unable to download file '" +
+                                    f.getName() + "' in offline mode.");
+                        }
+                    }
+                    return false;
+                }
+                return true;
             }
         });
     }
@@ -63,30 +88,27 @@ public class Download extends DefaultTask implements DownloadSpec {
     public void download() throws IOException {
         action.execute();
         
-        // handle 'skipped' and 'upToDate'
+        // handle 'upToDate'
         try {
-            if (action.isSkipped()) {
-                //we are about to access an internal class. Use reflection here to provide
-                //as much compatibility to previous Gradle versions as possible (see issue #16)
+            if (action.isUpToDate()) {
                 Method getState = this.getClass().getMethod("getState");
                 Object state = getState.invoke(this);
-                Method skipped = state.getClass().getMethod("skipped", String.class);
-                if (skipped != null) {
-                    skipped.invoke(state, "Download skipped");
-                }
-            } else if (action.isUpToDate()) {
-                Method getState = this.getClass().getMethod("getState");
-                Object state = getState.invoke(this);
-                Method upToDate = state.getClass().getMethod("upToDate");
-                if (upToDate != null) {
+                try {
+                    // prior to Gradle 3.2 we needed to do this
+                    Method upToDate = state.getClass().getMethod("upToDate");
                     upToDate.invoke(state);
+                } catch (NoSuchMethodException e) {
+                    // since Gradle 3.2 we need to do this
+                    Method setDidWork = state.getClass().getMethod(
+                            "setDidWork", boolean.class);
+                    setDidWork.invoke(state, false);
                 }
             }
         } catch (Exception e) {
             //just ignore
         }
     }
-
+    
     /**
      * @return a list of files created by this task (i.e. the destination files)
      */
@@ -113,6 +135,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public void overwrite(boolean overwrite) {
         action.overwrite(overwrite);
+    }
+    
+    @Override
+    public void onlyIfModified(boolean onlyIfModified) {
+        action.onlyIfModified(onlyIfModified);
     }
     
     @Override
@@ -161,6 +188,41 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
 
     @Override
+    public void timeout(int milliseconds) {
+        action.timeout(milliseconds);
+    }
+
+    @Override
+    public void downloadTaskDir(Object dir) {
+        action.downloadTaskDir(dir);
+    }
+
+    @Override
+    public void tempAndMove(boolean tempAndMove) {
+        action.tempAndMove(tempAndMove);
+    }
+
+    @Override
+    public void useETag(Object useETag) {
+        action.useETag(useETag);
+    }
+
+    @Override
+    public void cachedETagsFile(Object location) {
+        action.cachedETagsFile(location);
+    }
+
+    @Override
+    public void requestInterceptor(HttpRequestInterceptor interceptor) {
+        action.requestInterceptor(interceptor);
+    }
+
+    @Override
+    public void responseInterceptor(HttpResponseInterceptor interceptor) {
+        action.responseInterceptor(interceptor);
+    }
+
+    @Override
     public Object getSrc() {
         return action.getSrc();
     }
@@ -178,6 +240,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public boolean isOverwrite() {
         return action.isOverwrite();
+    }
+    
+    @Override
+    public boolean isOnlyIfModified() {
+        return action.isOnlyIfModified();
     }
     
     @Override
@@ -223,5 +290,40 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public boolean isAcceptAnyCertificate() {
         return action.isAcceptAnyCertificate();
+    }
+
+    @Override
+    public int getTimeout() {
+        return action.getTimeout();
+    }
+
+    @Override
+    public HttpRequestInterceptor getRequestInterceptor() {
+        return action.getRequestInterceptor();
+    }
+
+    @Override
+    public HttpResponseInterceptor getResponseInterceptor() {
+        return action.getResponseInterceptor();
+    }
+
+    @Override
+    public File getDownloadTaskDir() {
+        return action.getDownloadTaskDir();
+    }
+
+    @Override
+    public boolean isTempAndMove() {
+        return action.isTempAndMove();
+    }
+
+    @Override
+    public Object getUseETag() {
+        return action.getUseETag();
+    }
+
+    @Override
+    public File getCachedETagsFile() {
+        return action.getCachedETagsFile();
     }
 }

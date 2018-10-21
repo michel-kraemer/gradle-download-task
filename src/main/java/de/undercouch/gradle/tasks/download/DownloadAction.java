@@ -14,17 +14,17 @@
 
 package de.undercouch.gradle.tasks.download;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.lang.reflect.Array;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -32,14 +32,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
+import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthScheme;
 import org.apache.http.auth.AuthScope;
@@ -48,29 +46,26 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.AuthCache;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.DateUtils;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.conn.HttpClientConnectionManager;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.auth.DigestScheme;
 import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
+import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
+import org.gradle.util.GradleVersion;
 
-import de.undercouch.gradle.tasks.download.internal.ContentEncodingNoneInterceptor;
-import de.undercouch.gradle.tasks.download.internal.InsecureHostnameVerifier;
-import de.undercouch.gradle.tasks.download.internal.InsecureTrustManager;
+import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
+import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
+import groovy.json.JsonOutput;
+import groovy.json.JsonSlurper;
 import groovy.lang.Closure;
 
 /**
@@ -78,15 +73,15 @@ import groovy.lang.Closure;
  * @author Michel Kraemer
  */
 public class DownloadAction implements DownloadSpec {
-    private static final HostnameVerifier INSECURE_HOSTNAME_VERIFIER = new InsecureHostnameVerifier();
-    private static final TrustManager[] INSECURE_TRUST_MANAGERS = { new InsecureTrustManager() };
-    
+    private static final GradleVersion MIN_GRADLE_VERSION =
+            GradleVersion.version("2.0");
+
     private final Project project;
     private List<URL> sources = new ArrayList<URL>(1);
     private File dest;
     private boolean quiet = false;
     private boolean overwrite = true;
-    private boolean onlyIfNewer = false;
+    private boolean onlyIfModified = false;
     private boolean compress = true;
     private String username;
     private String password;
@@ -94,6 +89,13 @@ public class DownloadAction implements DownloadSpec {
     private Credentials credentials;
     private Map<String, String> headers;
     private boolean acceptAnyCertificate = false;
+    private int timeoutMs = -1;
+    private File downloadTaskDir;
+    private boolean tempAndMove = false;
+    private UseETag useETag = UseETag.FALSE;
+    private File cachedETagsFile;
+    private HttpRequestInterceptor requestInterceptor;
+    private HttpResponseInterceptor responseInterceptor;
 
     private ProgressLoggerWrapper progressLogger;
     private String size;
@@ -101,16 +103,14 @@ public class DownloadAction implements DownloadSpec {
     private long loggedKb = 0;
 
     private int upToDate = 0;
-    private int skipped = 0;
 
-    private SSLConnectionSocketFactory insecureSSLSocketFactory = null;
-    
     /**
      * Creates a new download action
      * @param project the project to be built
      */
     public DownloadAction(Project project) {
         this.project = project;
+        this.downloadTaskDir = new File(project.getBuildDir(), "download-task");
     }
 
     /**
@@ -118,6 +118,17 @@ public class DownloadAction implements DownloadSpec {
      * @throws IOException if the file could not downloaded
      */
     public void execute() throws IOException {
+        if (GradleVersion.current().compareTo(MIN_GRADLE_VERSION) < 0 && !quiet) {
+            project.getLogger().warn("Support for running gradle-download-task "
+                    + "with Gradle 1.x has been deprecated and will be removed in "
+                    + "gradle-download-task 4.0.0");
+        }
+        if (JavaVersion.current().compareTo(JavaVersion.VERSION_1_7) < 0 && !quiet) {
+            project.getLogger().warn("Support for running gradle-download-task "
+                    + "using Java 6 has been deprecated and will be removed in "
+                    + "gradle-download-task 4.0.0");
+        }
+
         if (sources.isEmpty()) {
             throw new IllegalArgumentException("Please provide a download source");
         }
@@ -140,12 +151,17 @@ public class DownloadAction implements DownloadSpec {
             }
         }
         
-        for (URL src : sources) {
-            execute(src);
+        CachingHttpClientFactory clientFactory = new CachingHttpClientFactory();
+        try {
+            for (URL src : sources) {
+                execute(src, clientFactory);
+            }
+        } finally {
+            clientFactory.close();
         }
     }
 
-    private void execute(URL src) throws IOException {
+    private void execute(URL src, HttpClientFactory clientFactory) throws IOException {
         final File destFile = makeDestFile(src);
         if (!overwrite && destFile.exists()) {
             if (!quiet) {
@@ -164,14 +180,13 @@ public class DownloadAction implements DownloadSpec {
                     project.getLogger().info("Skipping existing file '" +
                             destFile.getName() + "' in offline mode.");
                 }
-                ++skipped;
                 return;
             }
-            throw new IllegalStateException("Unable to download " + src +
-                    " in offline mode.");
+            throw new IllegalStateException("Unable to download file '" + src +
+                    "' in offline mode.");
         }
 
-        final long timestamp = onlyIfNewer && destFile.exists() ? destFile.lastModified() : 0;
+        final long timestamp = onlyIfModified && destFile.exists() ? destFile.lastModified() : 0;
         
         //create progress logger
         if (!quiet) {
@@ -183,37 +198,93 @@ public class DownloadAction implements DownloadSpec {
                         + "progress will not be displayed.");
             }
         }
-        
-        //create HTTP host from URL
-        HttpHost httpHost = new HttpHost(src.getHost(), src.getPort(), src.getProtocol());
-        
-        //create HTTP client
-        CloseableHttpClient client = createHttpClient(httpHost);
-        
+
+        if ("file".equals(src.getProtocol())) {
+            executeFileProtocol(src, timestamp, destFile);
+        } else {
+            executeHttpProtocol(src, clientFactory, timestamp, destFile);
+        }
+    }
+
+    private void executeFileProtocol(URL src, long timestamp, File destFile)
+            throws IOException {
+        File srcFile = null;
         try {
-            //open URL connection
-            CloseableHttpResponse response = openConnection(httpHost, src.getFile(),
-                    timestamp, client);
-            //check if file on server was modified
-            long lastModified = parseLastModified(response);
-            int code = response.getStatusLine().getStatusCode();
-            if (code == HttpStatus.SC_NOT_MODIFIED ||
-                    (lastModified != 0 && timestamp >= lastModified)) {
+            srcFile = new File(src.toURI());
+            size = toLengthText(srcFile.length());
+        } catch (URISyntaxException e) {
+            project.getLogger().warn("Unable to determine file length.");
+        }
+        
+        //check if file was modified
+        long lastModified = 0;
+        if (srcFile != null) {
+            lastModified = srcFile.lastModified();
+            if (lastModified != 0 && timestamp >= lastModified) {
                 if (!quiet) {
                     project.getLogger().info("Not modified. Skipping '" + src + "'");
                 }
                 ++upToDate;
                 return;
             }
-            
-            //perform the download
-            try {
-                performDownload(response, destFile);
-            } finally {
-                response.close();
+        }
+
+        BufferedInputStream fileStream = new BufferedInputStream(src.openStream());
+        streamAndMove(fileStream, destFile);
+        
+        //set last-modified time of destination file
+        if (onlyIfModified && lastModified > 0) {
+            destFile.setLastModified(lastModified);
+        }
+    }
+
+    private void executeHttpProtocol(URL src, HttpClientFactory clientFactory,
+            long timestamp, File destFile) throws IOException {
+        //create HTTP host from URL
+        HttpHost httpHost = new HttpHost(src.getHost(), src.getPort(), src.getProtocol());
+        
+        //create HTTP client
+        CloseableHttpClient client = clientFactory.createHttpClient(
+                httpHost, acceptAnyCertificate, requestInterceptor, responseInterceptor);
+        
+        //open URL connection
+        String etag = null;
+        if (onlyIfModified && useETag.enabled && destFile.exists()) {
+            etag = getCachedETag(httpHost, src.getFile());
+            if (!useETag.useWeakETags && isWeakETag(etag)) {
+                etag = null;
             }
+        }
+        CloseableHttpResponse response = openConnection(httpHost, src.getFile(),
+                timestamp, etag, client);
+        //check if file on server was modified
+        long lastModified = parseLastModified(response);
+        int code = response.getStatusLine().getStatusCode();
+        if (code == HttpStatus.SC_NOT_MODIFIED ||
+                (lastModified != 0 && timestamp >= lastModified)) {
+            if (!quiet) {
+                project.getLogger().info("Not modified. Skipping '" + src + "'");
+            }
+            ++upToDate;
+            return;
+        }
+        
+        //perform the download
+        try {
+            performDownload(response, destFile);
         } finally {
-            client.close();
+            response.close();
+        }
+        
+        //set last-modified time of destination file
+        long newTimestamp = parseLastModified(response);
+        if (onlyIfModified && newTimestamp > 0) {
+            destFile.setLastModified(newTimestamp);
+        }
+
+        //store ETag
+        if (onlyIfModified && useETag.enabled) {
+            storeETag(httpHost, src.getFile(), response);
         }
     }
 
@@ -241,6 +312,55 @@ public class DownloadAction implements DownloadSpec {
         
         //open stream and start downloading
         InputStream is = entity.getContent();
+        streamAndMove(is, destFile);
+    }
+
+    /**
+     * If {@link #tempAndMove} is <code>true</code>, copy bytes from an input
+     * stream to a temporary file and log progress. Upon successful
+     * completion, move the temporary file to the given destination. If
+     * {@link #tempAndMove} is <code>false</code>, just forward to
+     * {@link #stream(InputStream, File)}.
+     * @param is the input stream to read
+     * @param destFile the destination file
+     * @throws IOException if an I/O error occurs
+     */
+    private void streamAndMove(InputStream is, File destFile) throws IOException {
+        if (!tempAndMove) {
+            stream(is, destFile);
+        } else {
+            //create parent directory
+            downloadTaskDir.mkdirs();
+
+            //create name of temporary file
+            File tempFile = File.createTempFile(destFile.getName(), ".part",
+                    this.downloadTaskDir);
+
+            //stream and move
+            stream(is, tempFile);
+            if (destFile.exists()) {
+                //Delete destFile if it exists before renaming tempFile.
+                //Otherwise renaming might fail.
+                if (!destFile.delete()) {
+                    throw new IOException("Could not delete old destination file '" +
+                            destFile.getAbsolutePath() + "'.");
+                }
+            }
+            if (!tempFile.renameTo(destFile)) {
+                throw new IOException("Failed to move temporary file '" +
+                        tempFile.getAbsolutePath() + "' to destination file '" +
+                        destFile.getAbsolutePath() + "'.");
+            }
+        }
+    }
+
+    /**
+     * Copy bytes from an input stream to a file and log progress
+     * @param is the input stream to read
+     * @param destFile the file to write to
+     * @throws IOException if an I/O error occurs
+     */
+    private void stream(InputStream is, File destFile) throws IOException {
         try {
             startProgress();
             OutputStream os = new FileOutputStream(destFile);
@@ -267,11 +387,125 @@ public class DownloadAction implements DownloadSpec {
             is.close();
             completeProgress();
         }
-        
-        long newTimestamp = parseLastModified(response);
-        if (onlyIfNewer && newTimestamp > 0) {
-            destFile.setLastModified(newTimestamp);
+    }
+
+    /**
+     * Reads the {@link #cachedETagsFile}
+     * @return a map containing the parsed contents of the cached etags file
+     * or an empty map if the file does not exist yet
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> readCachedETags() {
+        File cachedETagsFile = getCachedETagsFile();
+        Map<String, Object> cachedETags;
+        if (cachedETagsFile.exists()) {
+            JsonSlurper slurper = new JsonSlurper();
+            cachedETags = (Map<String, Object>)slurper.parse(cachedETagsFile, "UTF-8");
+        } else {
+            cachedETags = new LinkedHashMap<String, Object>();
         }
+        return cachedETags;
+    }
+
+    /**
+     * Get the cached ETag for the given host and file
+     * @param host the host
+     * @param file the file
+     * @return the cached ETag or null if there is no ETag in the cache
+     */
+    private String getCachedETag(HttpHost host, String file) {
+        Map<String, Object> cachedETags = readCachedETags();
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> hostMap =
+                (Map<String, Object>)cachedETags.get(host.toURI());
+        if (hostMap == null) {
+            return null;
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, String> etagMap = (Map<String, String>)hostMap.get(file);
+        if (etagMap == null) {
+            return null;
+        }
+
+        return etagMap.get("ETag");
+    }
+
+    /**
+     * Store the ETag header from the given response in the {@link #cachedETagsFile}
+     * @param host the queried host
+     * @param file the queried file
+     * @param response the HTTP response
+     * @throws IOException if the tag could not be written
+     */
+    @SuppressWarnings("unchecked")
+    private void storeETag(HttpHost host, String file, HttpResponse response)
+            throws IOException {
+        //get ETag header
+        Header etagHdr = response.getFirstHeader("ETag");
+        if (etagHdr == null) {
+            if (!quiet) {
+                project.getLogger().warn("Server response does not include an "
+                        + "entity tag (ETag).");
+            }
+            return;
+        }
+        String etag = etagHdr.getValue();
+
+        //handle weak ETags
+        if (isWeakETag(etag)) {
+            if (useETag.displayWarningForWeak && !quiet) {
+                project.getLogger().warn("Weak entity tag (ETag) encountered. "
+                        + "Please make sure you want to compare resources based on "
+                        + "weak ETags. If yes, set the 'useETag' flag to \"all\", "
+                        + "otherwise set it to \"strongOnly\".");
+            }
+            if (!useETag.useWeakETags) {
+                //do not save weak etags
+                return;
+            }
+        }
+
+        //create directory for cached etags file
+        File parent = getCachedETagsFile().getParentFile();
+        if (parent != null) {
+            parent.mkdirs();
+        }
+
+        //read existing cached etags file
+        Map<String, Object> cachedETags = readCachedETags();
+
+        //create new entry in cached ETags file
+        Map<String, String> etagMap = new LinkedHashMap<String, String>();
+        etagMap.put("ETag", etag);
+
+        String uri = host.toURI();
+        Map<String, Object> hostMap = (Map<String, Object>)cachedETags.get(uri);
+        if (hostMap == null) {
+            hostMap = new LinkedHashMap<String, Object>();
+            cachedETags.put(uri, hostMap);
+        }
+        hostMap.put(file, etagMap);
+
+        //write cached ETags file
+        String cachedETagsContents = JsonOutput.toJson(cachedETags);
+        PrintWriter writer = new PrintWriter(getCachedETagsFile(), "UTF-8");
+        try {
+            writer.write(cachedETagsContents);
+            writer.flush();
+        } finally {
+            writer.close();
+        }
+    }
+
+    /**
+     * Checks if the given ETag is a weak one
+     * @param etag the ETag
+     * @return true if <code>etag</code> is weak
+     */
+    private boolean isWeakETag(String etag) {
+        return etag != null && etag.startsWith("W/");
     }
 
     /**
@@ -305,81 +539,19 @@ public class DownloadAction implements DownloadSpec {
     }
     
     /**
-     * Configure proxy for a given HTTP host
-     * @param httpHost the HTTP host
-     * @return the proxy or <code>null</code> if not proxy is necessary
-     * @throws IOException if the proxy could not be configured
-     */
-    private HttpHost configureProxy(HttpHost httpHost) throws IOException {
-        HttpHost proxy = null;
-        
-        String scheme = httpHost.getSchemeName();
-        if (!"http".equals(scheme) && !"https".equals(scheme) &&
-                !"ftp".equals(scheme)) {
-            return proxy;
-        }
-        
-        String host = System.getProperty(scheme + ".proxyHost");
-        if (host != null) {
-            String portStr = System.getProperty(scheme + ".proxyPort");
-            if (portStr != null) {
-                int port;
-                try {
-                    port = Integer.parseInt(portStr);
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Illegal proxy port: " + portStr);
-                }
-                proxy = new HttpHost(host, port);
-            } else {
-                proxy = new HttpHost(host);
-            }
-        }
-        
-        return proxy;
-    }
-    
-    /**
-     * Creates an HTTP client for the given host
-     * @param httpHost the host to connect to
-     * @return the HTTP client
-     */
-    private CloseableHttpClient createHttpClient(HttpHost httpHost) {
-        HttpClientBuilder builder = HttpClientBuilder.create();
-        
-        //accept any certificate if necessary
-        if ("https".equals(httpHost.getSchemeName()) && acceptAnyCertificate) {
-            SSLConnectionSocketFactory icsf = getInsecureSSLSocketFactory();
-            builder.setSSLSocketFactory(icsf);
-            Registry<ConnectionSocketFactory> registry =
-                    RegistryBuilder.<ConnectionSocketFactory>create()
-                        .register("https", icsf)
-                        .build();
-            HttpClientConnectionManager cm =
-                    new BasicHttpClientConnectionManager(registry);
-            builder.setConnectionManager(cm);
-        }
-        
-        //add an interceptor that replaces the invalid Content-Type
-        //'none' by 'identity'
-        builder.addInterceptorFirst(new ContentEncodingNoneInterceptor());
-
-        CloseableHttpClient client = builder.build();
-        return client;
-    }
-    
-    /**
      * Opens a connection to the given HTTP host and requests a file. Checks
      * the last-modified header on the server if the given timestamp is
      * greater than 0.
      * @param httpHost the HTTP host to connect to
      * @param file the file to request
      * @param timestamp the timestamp of the destination file, in milliseconds
+     * @param etag the cached ETag for the requested host and file
      * @param client the HTTP client to use to perform the request
      * @return the URLConnection
      * @throws IOException if the connection could not be opened
      */
     private CloseableHttpResponse openConnection(HttpHost httpHost, String file,
-            long timestamp, CloseableHttpClient client) throws IOException {
+            long timestamp, String etag, CloseableHttpClient client) throws IOException {
         //perform preemptive authentication
         HttpClientContext context = null;
         if ((username != null && password != null) || credentials != null) {
@@ -404,32 +576,42 @@ public class DownloadAction implements DownloadSpec {
         
         //create request
         HttpGet get = new HttpGet(file);
-        
-        //configure proxy
-        HttpHost proxy = configureProxy(httpHost);
-        if (proxy != null) {
-            RequestConfig config = RequestConfig.custom()
-                .setProxy(proxy)
+
+        //configure timeouts
+        RequestConfig config = RequestConfig.custom()
+                .setConnectTimeout(timeoutMs)
+                .setConnectionRequestTimeout(timeoutMs)
+                .setCookieSpec(CookieSpecs.STANDARD)
+                .setSocketTimeout(timeoutMs)
                 .build();
-            get.setConfig(config);
-            
-            //add authentication information for proxy
-            String scheme = httpHost.getSchemeName();
-            String proxyUser = System.getProperty(scheme + ".proxyUser");
-            String proxyPassword = System.getProperty(scheme + ".proxyPassword");
-            if (proxyUser != null && proxyPassword != null) {
-                if (context == null) {
-                    context = HttpClientContext.create();
-                }
-                Credentials credentials =
-                        new UsernamePasswordCredentials(proxyUser, proxyPassword);
-                addAuthentication(proxy, credentials, null, context);
+        get.setConfig(config);
+
+        //add authentication information for proxy
+        String scheme = httpHost.getSchemeName();
+        String proxyHost = System.getProperty(scheme + ".proxyHost");
+        String proxyPort = System.getProperty(scheme + ".proxyPort");
+        String proxyUser = System.getProperty(scheme + ".proxyUser");
+        String proxyPassword = System.getProperty(scheme + ".proxyPassword");
+        if (proxyHost != null && proxyPort != null &&
+                proxyUser != null && proxyPassword != null) {
+            if (context == null) {
+                context = HttpClientContext.create();
             }
+            int nProxyPort = Integer.parseInt(proxyPort);
+            HttpHost proxy = new HttpHost(proxyHost, nProxyPort, scheme);
+            Credentials credentials = new UsernamePasswordCredentials(
+                    proxyUser, proxyPassword);
+            addAuthentication(proxy, credentials, null, context);
         }
         
         //set If-Modified-Since header
         if (timestamp > 0) {
             get.setHeader("If-Modified-Since", DateUtils.formatDate(new Date(timestamp)));
+        }
+        
+        //set If-None-Match header
+        if (etag != null) {
+            get.setHeader("If-None-Match", etag);
         }
         
         //set headers
@@ -450,7 +632,13 @@ public class DownloadAction implements DownloadSpec {
         //handle response
         int code = response.getStatusLine().getStatusCode();
         if ((code < 200 || code > 299) && code != HttpStatus.SC_NOT_MODIFIED) {
-            throw new ClientProtocolException(response.getStatusLine().getReasonPhrase());
+            String phrase = response.getStatusLine().getReasonPhrase();
+            if (phrase == null || phrase.isEmpty()) {
+                phrase = "HTTP status code " + code;
+            } else {
+                phrase += " (HTTP status code " + code + ")";
+            }
+            throw new ClientProtocolException(phrase);
         }
         
         return response;
@@ -559,13 +747,6 @@ public class DownloadAction implements DownloadSpec {
     public boolean isUpToDate() {
         return upToDate == sources.size();
     }
-    
-    /**
-     * @return true if execution of this task has been skipped
-     */
-    public boolean isSkipped() {
-        return skipped == sources.size();
-    }
 
     /**
      * @return a list of files created by this action (i.e. the destination files)
@@ -636,8 +817,13 @@ public class DownloadAction implements DownloadSpec {
     }
     
     @Override
+    public void onlyIfModified(boolean onlyIfModified) {
+        this.onlyIfModified = onlyIfModified;
+    }
+    
+    @Override
     public void onlyIfNewer(boolean onlyIfNewer) {
-        this.onlyIfNewer = onlyIfNewer;
+        onlyIfModified(onlyIfNewer);
     }
     
     @Override
@@ -707,6 +893,67 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
+    public void timeout(int milliseconds) {
+        this.timeoutMs = milliseconds;
+    }
+
+    @Override
+    public void downloadTaskDir(Object dir) {
+        if (dir instanceof Closure) {
+            //lazily evaluate closure
+            Closure<?> closure = (Closure<?>)dir;
+            dir = closure.call();
+        }
+
+        if (dir instanceof CharSequence) {
+            this.downloadTaskDir = project.file(dir.toString());
+        } else if (dir instanceof File) {
+            this.downloadTaskDir = (File)dir;
+        } else {
+            throw new IllegalArgumentException("download-task directory must " +
+                "either be a File or a CharSequence");
+        }
+    }
+
+    @Override
+    public void tempAndMove(boolean tempAndMove) {
+        this.tempAndMove = tempAndMove;
+    }
+
+    @Override
+    public void useETag(Object useETag) {
+        this.useETag = UseETag.fromValue(useETag);
+    }
+
+    @Override
+    public void cachedETagsFile(Object location) {
+        if (location instanceof Closure) {
+            //lazily evaluate closure
+            Closure<?> closure = (Closure<?>)location;
+            location = closure.call();
+        }
+        
+        if (location instanceof CharSequence) {
+            this.cachedETagsFile = project.file(location.toString());
+        } else if (location instanceof File) {
+            this.cachedETagsFile = (File)location;
+        } else {
+            throw new IllegalArgumentException("Location for cached ETags must " +
+                "either be a File or a CharSequence");
+        }
+    }
+
+    @Override
+    public void requestInterceptor(HttpRequestInterceptor interceptor) {
+        this.requestInterceptor = interceptor;
+    }
+
+    @Override
+    public void responseInterceptor(HttpResponseInterceptor interceptor) {
+        this.responseInterceptor = interceptor;
+    }
+
+    @Override
     public Object getSrc() {
         if (sources.size() == 1) {
             return sources.get(0);
@@ -730,8 +977,13 @@ public class DownloadAction implements DownloadSpec {
     }
     
     @Override
+    public boolean isOnlyIfModified() {
+        return onlyIfModified;
+    }
+    
+    @Override
     public boolean isOnlyIfNewer() {
-        return onlyIfNewer;
+        return isOnlyIfModified();
     }
     
     @Override
@@ -782,20 +1034,99 @@ public class DownloadAction implements DownloadSpec {
         return acceptAnyCertificate;
     }
 
-    private SSLConnectionSocketFactory getInsecureSSLSocketFactory() {
-        if (insecureSSLSocketFactory == null) {
-            SSLContext sc;
-            try {
-                sc = SSLContext.getInstance("SSL");
-                sc.init(null, INSECURE_TRUST_MANAGERS, new SecureRandom());
-                insecureSSLSocketFactory = new SSLConnectionSocketFactory(
-                        sc, INSECURE_HOSTNAME_VERIFIER);
-            } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
-            } catch (KeyManagementException e) {
-                throw new RuntimeException(e);
-            }
+    @Override
+    public int getTimeout() {
+        return timeoutMs;
+    }
+
+    @Override
+    public File getDownloadTaskDir() {
+        return downloadTaskDir;
+    }
+
+    @Override
+    public boolean isTempAndMove() {
+        return tempAndMove;
+    }
+
+    @Override
+    public Object getUseETag() {
+        return useETag.value;
+    }
+
+    @Override
+    public File getCachedETagsFile() {
+        if (cachedETagsFile == null) {
+            return new File(this.downloadTaskDir, "etags.json");
         }
-        return insecureSSLSocketFactory;
+        return cachedETagsFile;
+    }
+
+    @Override
+    public HttpRequestInterceptor getRequestInterceptor() {
+        return requestInterceptor;
+    }
+
+    @Override
+    public HttpResponseInterceptor getResponseInterceptor() {
+        return responseInterceptor;
+    }
+
+    /**
+     * Possible values for the "useETag" flag
+     */
+    private static enum UseETag {
+        /**
+         * Do not use ETags
+         */
+        FALSE(Boolean.FALSE, false, false, false),
+
+        /**
+         * Use all ETags but display a warning for weak ones
+         */
+        TRUE(Boolean.TRUE, true, true, true),
+
+        /**
+         * Use all ETags but do not display a warning for weak ones
+         */
+        ALL("all", true, true, false),
+
+        /**
+         * Use only strong ETags
+         */
+        STRONG_ONLY("strongOnly", true, false, false);
+
+        final Object value;
+        final boolean enabled;
+        final boolean useWeakETags;
+        final boolean displayWarningForWeak;
+
+        UseETag(Object value, boolean useAnyETag, boolean useWeakETags,
+                boolean displayWarningForWeak) {
+            this.value = value;
+            this.enabled = useAnyETag;
+            this.useWeakETags = useWeakETags;
+            this.displayWarningForWeak = displayWarningForWeak;
+        }
+
+        static UseETag fromValue(Object value) {
+            if (TRUE.value.equals(value)) {
+                return TRUE;
+            } else if (FALSE.value.equals(value)) {
+                return FALSE;
+            } else if (value instanceof String) {
+                String s = (String)value;
+                if (ALL.value.equals(s)) {
+                    return ALL;
+                } else if (STRONG_ONLY.value.equals(s)) {
+                    return STRONG_ONLY;
+                } else if ("true".equalsIgnoreCase(s)) {
+                    return TRUE;
+                } else if ("false".equalsIgnoreCase(s)) {
+                    return TRUE;
+                }
+            }
+            throw new IllegalArgumentException("Illegal value for 'useETag' flag");
+        }
     }
 }

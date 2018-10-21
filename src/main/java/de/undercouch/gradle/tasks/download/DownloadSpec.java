@@ -18,6 +18,8 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.util.Map;
 
+import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.auth.AuthScheme;
 import org.apache.http.auth.Credentials;
 
@@ -52,7 +54,15 @@ public interface DownloadSpec {
     void overwrite(boolean overwrite);
     
     /**
-     * Sets the onlyIfNewer flag
+     * Sets the onlyIfModified flag
+     * @param onlyIfModified true if the file should only be downloaded if it
+     * has been modified on the server since the last download
+     */
+    void onlyIfModified(boolean onlyIfModified);
+    
+    /**
+     * Sets the onlyIfNewer flag. This method is an alias for
+     * {@link #onlyIfModified(boolean)}.
      * @param onlyIfNewer true if the file should only be downloaded if it
      * has been modified on the server since the last download
      */
@@ -100,7 +110,7 @@ public interface DownloadSpec {
     void credentials(Credentials credentials);
 
     /**
-     * Sets the HTTP request headers to us when downloading
+     * Sets the HTTP request headers to use when downloading
      * @param headers a Map of header names to values
      */
     void headers(Map<String, String> headers);
@@ -119,6 +129,74 @@ public interface DownloadSpec {
      * @param accept true if certificate errors should be ignored (default: false)
      */
     void acceptAnyCertificate(boolean accept);
+
+    /**
+     * Specifies a timeout in milliseconds which is the maximum time to wait
+     * until a connection is established or until the server returns data. A
+     * value of zero means infinite timeout. A negative value is interpreted
+     * as undefined.
+     * @param milliseconds the timeout in milliseconds (default: -1)
+     */
+    void timeout(int milliseconds);
+
+    /**
+     * Specifies the directory where gradle-download-task stores information
+     * that should persist between builds
+     * @param dir the directory (default: ${buildDir}/gradle-download-task)
+     */
+    void downloadTaskDir(Object dir);
+
+    /**
+     * Specifies whether the file should be downloaded to a temporary location
+     * and, upon successful execution, moved to the final location. If the
+     * overwrite flag is set to false, this flag is useful to avoid partially
+     * downloaded files if Gradle is forcefully closed or the system crashes.
+     * Note that the plugin always deletes partial downloads on connection
+     * errors, regardless of the value of this flag. The default temporary
+     * location can be configured with the {@link #downloadTaskDir(Object)};
+     * @param tempAndMove true if the file should be downloaded to a temporary
+     * location and, upon successful execution, moved to the final location
+     * (default: false)
+     */
+    void tempAndMove(boolean tempAndMove);
+
+    /**
+     * <p>Sets the <code>useETag</code> flag. Possible values are:</p>
+     * <ul>
+     * <li><code>true</code>: check if the entity tag (ETag) of a downloaded
+     * file has changed and issue a warning if a weak ETag was encountered</li>
+     * <li><code>false</code>: Do not use entity tags (ETags) at all</li>
+     * <li><code>"all"</code>: Use all ETags but do not issue a warning for weak ones</li>
+     * <li><code>"strongOnly"</code>: Use only strong ETags</li>
+     * </ul>
+     * <p>Note that this flag is only effective if <code>onlyIfModified</code> is
+     * <code>true</code>.</p>
+     * @param useETag the flag's new value
+     */
+    void useETag(Object useETag);
+
+    /**
+     * Sets the location of the file that keeps entity tags (ETags) received
+     * from the server
+     * @param location the location (default: ${downloadTaskDir}/etags.json)
+     */
+    void cachedETagsFile(Object location);
+
+    /**
+     * Specifies an interceptor that will be called when a request is about
+     * to be sent to the server. This is useful if you want to manipulate
+     * a request beyond the capabilities of the download task.
+     * @param interceptor the interceptor to set
+     */
+    void requestInterceptor(HttpRequestInterceptor interceptor);
+
+    /**
+     * Specifies an interceptor that will be called when a response has been
+     * received from the server. This is useful if you want to manipulate
+     * incoming data before it is handled by the download task.
+     * @param interceptor the interceptor to set
+     */
+    void responseInterceptor(HttpResponseInterceptor interceptor);
 
     /**
      * @return the download source(s), either a URL or a list of URLs
@@ -141,6 +219,13 @@ public interface DownloadSpec {
     boolean isOverwrite();
     
     /**
+     * @return the onlyIfModified flag
+     */
+    boolean isOnlyIfModified();
+    
+    /**
+     * Get the <code>onlyIfNewer</code> flag. This method is an alias for
+     * {@link #isOnlyIfModified()}.
      * @return the onlyIfNewer flag
      */
     boolean isOnlyIfNewer();
@@ -190,4 +275,47 @@ public interface DownloadSpec {
      * default value is false
      */
     boolean isAcceptAnyCertificate();
+
+    /**
+     * @return the timeout in milliseconds which is the maximum time to wait
+     * until a connection is established or until the server returns data.
+     */
+    int getTimeout();
+    
+    /**
+     * @return the directory where gradle-download-task stores information
+     * that should persist between builds
+     */
+    File getDownloadTaskDir();
+
+    /**
+     * @return true of if the file should be downloaded to a temporary
+     * location and, upon successful execution, moved to the final
+     * location.
+     */
+    boolean isTempAndMove();
+
+    /**
+     * @return the value of the <code>useETag</code> flag
+     * @see #useETag(Object)
+     */
+    Object getUseETag();
+
+    /**
+     * @return the location of the file that keeps entity tags (ETags) received
+     * from the server
+     */
+    File getCachedETagsFile();
+
+    /**
+     * @return an interceptor that will be called when a request is about to
+     * be sent to the server (or <code>null</code> if no interceptor is specified)
+     */
+    HttpRequestInterceptor getRequestInterceptor();
+
+    /**
+     * @return an interceptor that will be called when a response has been
+     * received from the server (or <code>null</code> if no interceptor is specified)
+     */
+    HttpResponseInterceptor getResponseInterceptor();
 }
