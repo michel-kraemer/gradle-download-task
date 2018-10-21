@@ -54,10 +54,6 @@ dependencies {
     testCompile 'org.mortbay.jetty:jetty:6.1.26'
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '3.0'
-}
-
 jacocoTestReport {
     reports {
         xml.enabled = true

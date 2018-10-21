@@ -256,7 +256,7 @@ public class DownloadTest extends TestBase {
      * Test if the plugin throws an exception if the 'dest' property is empty
      * @throws Exception if the test succeeds
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = TaskExecutionException.class)
     public void testExecuteEmptyDest() throws Exception {
         Download t = makeProjectAndTask();
         String src = makeSrc(TEST_FILE_NAME);
