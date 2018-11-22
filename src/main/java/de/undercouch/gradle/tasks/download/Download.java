@@ -55,29 +55,6 @@ public class Download extends DefaultTask implements DownloadSpec {
                 return !(isOnlyIfModified() || isOverwrite());
             }
         });
-        
-        onlyIf(new Spec<Task>() {
-            @Override
-            public boolean isSatisfiedBy(Task task) {
-                // in case offline mode is enabled don't try to download if
-                // destination already exists
-                if (getProject().getGradle().getStartParameter().isOffline()) {
-                    for (File f : getOutputFiles()) {
-                        if (f.exists()) {
-                            if (!isQuiet()) {
-                                getProject().getLogger().info("Skipping existing file '" +
-                                        f.getName() + "' in offline mode.");
-                            }
-                        } else {
-                            throw new IllegalStateException("Unable to download file '" +
-                                    f.getName() + "' in offline mode.");
-                        }
-                    }
-                    return false;
-                }
-                return true;
-            }
-        });
     }
     
     /**
@@ -87,7 +64,20 @@ public class Download extends DefaultTask implements DownloadSpec {
     @TaskAction
     public void download() throws IOException {
         action.execute();
-        
+    
+        if (getProject().getGradle().getStartParameter().isOffline()) {
+            for (File f : getOutputFiles()) {
+                if (f.exists()) {
+                    if (!isQuiet())
+                        getProject().getLogger().info("Skipping to download existing file '" +
+                                f.getName() + "' in offline mode.");
+                } else {
+                    throw new IllegalStateException("Unable to download file '" + f.getName() + "' in offline mode.");
+                }
+            }
+            return;
+        }
+    
         // handle 'upToDate'
         try {
             if (action.isUpToDate()) {
