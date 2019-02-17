@@ -30,7 +30,7 @@ jobs:
       - run:
           name: Run tests
           environment:
-            TERM: dump
+            TERM: dumb
           command: |
             ./gradlew install
             case $CIRCLE_NODE_INDEX in
