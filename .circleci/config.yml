@@ -6,7 +6,7 @@ jobs:
     parallelism: 4
 
     docker:
-      - image: openjdk:7-jdk
+      - image: openjdk:8-jdk
 
     environment:
       CIRCLE_TEST_REPORTS: /tmp/test-reports
@@ -21,26 +21,19 @@ jobs:
             - v2-gradle-download-task-
 
       - run:
-          name: Install BouncyCastle provider into JDK 7
-          command: |
-            wget "https://bouncycastle.org/download/bcprov-ext-jdk15on-158.jar" -O "${JAVA_HOME}"/jre/lib/ext/bcprov-ext-jdk15on-158.jar
-            perl -pi.bak -e 's/^(security\.provider\.)([0-9]+)/$1.($2+1)/ge' /etc/java-7-openjdk/security/java.security
-            echo "security.provider.1=org.bouncycastle.jce.provider.BouncyCastleProvider" | tee -a /etc/java-7-openjdk/security/java.security
-
-      - run:
           name: Run tests
           environment:
             TERM: dumb
           command: |
             ./gradlew install
             case $CIRCLE_NODE_INDEX in
-              0) ./gradlew test
+              0) ./gradlew test --console=plain
               ;;
-              1) ./gradlew integrationTest -PintegrationTestIncludes="^2\\."
+              1) ./gradlew integrationTest -PintegrationTestIncludes="^(2|3)\\."
               ;;
-              2) ./gradlew integrationTest -PintegrationTestIncludes="^3\\."
+              2) ./gradlew integrationTest -PintegrationTestIncludes="^4\\."
               ;;
-              3) ./gradlew integrationTest -PintegrationTestIncludes="^4\\."
+              3) ./gradlew integrationTest -PintegrationTestIncludes="^5\\."
               ;;
             esac
             ./gradlew jacocoTestReport

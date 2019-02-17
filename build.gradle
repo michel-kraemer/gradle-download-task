@@ -63,10 +63,14 @@ jacocoTestReport {
 
 // improve test output when we're using a plain console (e.g. on the CI server)
 test {
-    jvmArgs += ['-Xmx512M', '-XX:MaxPermSize=256M']
+    if (JavaVersion.current().isJava8Compatible()) {
+        jvmArgs += ['-Xmx512M']
+    } else {
+        jvmArgs += ['-Xmx512M', '-XX:MaxPermSize=256M']
+    }
     if (gradle.startParameter.consoleOutput == ConsoleOutput.Plain) {
         testLogging {
-            events "passed", "skipped", "failed"
+            events "standard_out", "passed", "skipped", "failed"
         }
     }
 }

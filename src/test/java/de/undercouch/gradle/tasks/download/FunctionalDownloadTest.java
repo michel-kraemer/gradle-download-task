@@ -14,22 +14,28 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.commons.io.FileUtils;
 import org.gradle.testkit.runner.BuildTask;
 import org.gradle.testkit.runner.GradleRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests the plugin's functionality
@@ -43,13 +49,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     private String dest;
     private File destFile;
 
-    /**
-     * Constructs a new functional test
-     * @param gradleVersion the Gradle version to test against (null for default)
-     */
-    public FunctionalDownloadTest(String gradleVersion) {
-        this.gradleVersion = gradleVersion;
-    }
+    private static String lastVersion;
+    private static Set<String> gradleProcesses;
 
     /**
      * @return the Gradle versions to test against
@@ -60,7 +61,77 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 "3.4", "3.4.1", "3.5", "3.5.1",
                 "4.0", "4.0.1", "4.0.2", "4.1", "4.2", "4.2.1", "4.3", "4.3.1",
                 "4.4", "4.4.1", "4.5", "4.5.1", "4.6", "4.7", "4.8", "4.8.1",
-                "4.9", "4.10", "4.10.1", "4.10.2");
+                "4.9", "4.10", "4.10.1", "4.10.2", "4.10.3",
+                "5.0", "5.1", "5.1.1", "5.2", "5.2.1");
+    }
+
+    /**
+     * Constructs a new functional test
+     * @param gradleVersion the Gradle version to test against (null for default)
+     */
+    public FunctionalDownloadTest(String gradleVersion) {
+        this.gradleVersion = gradleVersion;
+
+        // On CI server, kill all Gradle daemons that we started earlier.
+        // Otherwise, the daemon processes will pile up and use too much main
+        // memory, which will eventually cause the build to fail.
+        if ("true".equals(System.getenv("CI"))) {
+            if (!Objects.equals(gradleVersion, lastVersion)) {
+                try {
+                    if (gradleProcesses == null) {
+                        gradleProcesses = getGradleProcesses();
+                    }
+                    Set<String> currentGradleProcesses = getGradleProcesses();
+                    currentGradleProcesses.removeAll(gradleProcesses);
+                    for (String pid : currentGradleProcesses) {
+                        System.out.println("Killing Gradle process " + pid);
+                        killProcess(pid);
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            lastVersion = gradleVersion;
+        }
+    }
+
+    /**
+     * List all Gradle processes in the system
+     * @return the PIDs of the Gradle processes
+     * @throws IOException if the `ps` command could not be executed
+     */
+    private static Set<String> getGradleProcesses() throws IOException {
+        ProcessBuilder builder = new ProcessBuilder("ps", "x");
+        builder.redirectErrorStream(true);
+        Process process = builder.start();
+        InputStream is = process.getInputStream();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        Set<String> result = new HashSet<>();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (line.contains("gradle-launcher")) {
+                String[] t = line.trim().split("\\s+");
+                String pid = t[0];
+                result.add(pid);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Kill a process by its PID
+     * @param pid the PID
+     * @throws IOException if the `kill` command could not be executed
+     */
+    private static void killProcess(String pid) throws IOException {
+        ProcessBuilder builder = new ProcessBuilder("kill", pid);
+        builder.redirectErrorStream(true);
+        Process process = builder.start();
+        InputStream is = process.getInputStream();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        while (reader.readLine() != null) {
+            // empty
+        }
     }
 
     /**
@@ -291,7 +362,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 "doLast {\n" +
                     "inputs.files.each { f -> assert f.isFile() }\n" +
                 "}\n" +
-            "}\n", false);
+            "}\n");
     }
 
     private static class Parameters {

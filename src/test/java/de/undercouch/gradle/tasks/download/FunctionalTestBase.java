@@ -63,17 +63,14 @@ public abstract class FunctionalTestBase extends TestBase {
     /**
      * Create a gradle runner using the given build file
      * @param buildFile the build file
-     * @param debug run test in debugger
      * @return the gradle runner
      * @throws IOException if the build file could not written to disk
      */
-    protected GradleRunner createRunnerWithBuildFile(String buildFile,
-            boolean debug) throws IOException {
+    protected GradleRunner createRunnerWithBuildFile(String buildFile) throws IOException {
         writeBuildFile(buildFile);
         writePropertiesFile();
         GradleRunner runner = GradleRunner.create()
             .withPluginClasspath()
-            .withDebug(debug)
             .withProjectDir(testProjectDir.getRoot());
         if (gradleVersion != null) {
             runner = runner.withGradleVersion(gradleVersion);
