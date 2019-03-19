@@ -145,14 +145,31 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     }
 
     /**
-     * Download a file twice in offline mode and check if the second attempt is
-     * skipped even if the 'overwrite' flag is set
+     * Download a file twice in offline mode and check if the second attempt does not throw an Exception
      * @throws Exception if anything went wrong
      */
     @Test
     public void downloadSingleFileTwiceWithOfflineMode() throws Exception {
         assertTaskSuccess(download(new Parameters(singleSrc, dest, false, false)));
-        assertTaskSkipped(download(new Parameters(singleSrc, dest, true, false, true, true, false)));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false, true, true, false)));
+    }
+    
+    /**
+     * Skip the Task in via setting onlyIf to false
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void skipOnOnlyIfFalse() throws Exception {
+        assertTaskSkipped(download(new Parameters(singleSrc, dest, true, false, false, false, false, false, "false")));
+    }
+    
+    /**
+     * Skip the Task in via setting onlyIf to false in offline mode
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void skipOnOnlyIfFalseOffline() throws Exception {
+        assertTaskSkipped(download(new Parameters(singleSrc, dest, true, false, false, true, false, false, "false")));
     }
 
     /**
@@ -281,6 +298,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 "src(" + parameters.src + ")\n" +
                 "dest " + parameters.dest + "\n" +
                 "overwrite " + Boolean.toString(parameters.overwrite) + "\n" +
+                (parameters.onlyIf != null ? "onlyIf { " + parameters.onlyIf + " }\n" : "") +
                 "onlyIfModified " + Boolean.toString(parameters.onlyIfModified) + "\n" +
                 "compress " + Boolean.toString(parameters.compress) + "\n" +
                 "quiet " + Boolean.toString(parameters.quiet) + "\n" +
@@ -298,6 +316,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         final String src;
         final String dest;
         final boolean overwrite;
+        final String onlyIf;
         final boolean onlyIfModified;
         final boolean compress;
         final boolean quiet;
@@ -312,13 +331,19 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 boolean compress, boolean offline, boolean quiet) {
             this(src, dest, overwrite, onlyIfModified, compress, offline, quiet, false);
         }
-
+    
         Parameters(String src, String dest, boolean overwrite, boolean onlyIfModified,
-                boolean compress, boolean offline, boolean quiet, boolean useETag) {
+                   boolean compress, boolean offline, boolean quiet, boolean useETag) {
+            this(src, dest, overwrite, onlyIfModified, compress, offline, quiet, useETag, null);
+        }
+    
+        Parameters(String src, String dest, boolean overwrite, boolean onlyIfModified,
+                boolean compress, boolean offline, boolean quiet, boolean useETag, String onlyIf) {
             this.src = src;
             this.dest = dest;
             this.overwrite = overwrite;
             this.onlyIfModified = onlyIfModified;
+            this.onlyIf = onlyIf;
             this.compress = compress;
             this.offline = offline;
             this.quiet = quiet;
