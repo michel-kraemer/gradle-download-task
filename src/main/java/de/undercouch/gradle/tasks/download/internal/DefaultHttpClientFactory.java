@@ -21,6 +21,7 @@ import de.undercouch.gradle.tasks.download.org.apache.http.config.Registry;
 import de.undercouch.gradle.tasks.download.org.apache.http.config.RegistryBuilder;
 import de.undercouch.gradle.tasks.download.org.apache.http.conn.HttpClientConnectionManager;
 import de.undercouch.gradle.tasks.download.org.apache.http.conn.socket.ConnectionSocketFactory;
+import de.undercouch.gradle.tasks.download.org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import de.undercouch.gradle.tasks.download.org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import de.undercouch.gradle.tasks.download.org.apache.http.impl.client.CloseableHttpClient;
 import de.undercouch.gradle.tasks.download.org.apache.http.impl.client.HttpClientBuilder;
@@ -64,6 +65,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
             Registry<ConnectionSocketFactory> registry =
                     RegistryBuilder.<ConnectionSocketFactory>create()
                         .register("https", icsf)
+                        .register("http", PlainConnectionSocketFactory.INSTANCE)
                         .build();
             HttpClientConnectionManager cm =
                     new BasicHttpClientConnectionManager(registry);
