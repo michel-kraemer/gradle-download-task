@@ -29,6 +29,7 @@ import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -65,6 +66,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
             Registry<ConnectionSocketFactory> registry =
                     RegistryBuilder.<ConnectionSocketFactory>create()
                         .register("https", icsf)
+                        .register("http", PlainConnectionSocketFactory.INSTANCE)
                         .build();
             HttpClientConnectionManager cm =
                     new BasicHttpClientConnectionManager(registry);
