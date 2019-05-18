@@ -1,4 +1,4 @@
-// Copyright 2013 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -586,6 +586,7 @@ public class DownloadAction implements DownloadSpec {
                 .setConnectionRequestTimeout(timeoutMs)
                 .setCookieSpec(CookieSpecs.STANDARD)
                 .setSocketTimeout(timeoutMs)
+                .setContentCompressionEnabled(compress)
                 .build();
         get.setConfig(config);
 
@@ -622,11 +623,6 @@ public class DownloadAction implements DownloadSpec {
             for (Map.Entry<String, String> headerEntry : headers.entrySet()) {
                 get.addHeader(headerEntry.getKey(), headerEntry.getValue());
             }
-        }
-        
-        //enable compression
-        if (compress) {
-            get.setHeader("Accept-Encoding", "gzip");
         }
         
         //execute request

@@ -1,4 +1,4 @@
-// Copyright 2013-2016 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,8 +46,9 @@ public class CompressionTest extends TestBase {
                     HttpServletResponse response, int dispatch)
                             throws IOException, ServletException {
                 String acceptEncoding = request.getHeader("Accept-Encoding");
-                boolean acceptGzip = "gzip".equals(acceptEncoding);
-                
+                boolean acceptGzip = acceptEncoding != null &&
+                        acceptEncoding.contains("gzip");
+
                 response.setStatus(200);
                 OutputStream os = response.getOutputStream();
                 if (acceptGzip) {
