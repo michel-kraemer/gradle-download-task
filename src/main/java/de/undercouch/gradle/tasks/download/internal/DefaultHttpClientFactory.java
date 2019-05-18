@@ -69,10 +69,6 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
             builder.setConnectionManager(cm);
         }
         
-        //add an interceptor that replaces the invalid Content-Type
-        //'none' by 'identity'
-        builder.addInterceptorFirst(new ContentEncodingNoneInterceptor());
-        
         return builder.build();
     }
     

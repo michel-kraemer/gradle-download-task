@@ -1,4 +1,4 @@
-// Copyright 2013-2016 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,8 @@ import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.handler.ContextHandler;
 
 /**
- * Tests if the plugin can handle invalid or missing Content-Encoding header
+ * Tests if the plugin can handle invalid or missing Content-Encoding header.
+ * See https://github.com/michel-kraemer/gradle-download-task/issues/55
  * @author Michel Kraemer
  */
 public class ContentEncodingTest extends TestBase {
