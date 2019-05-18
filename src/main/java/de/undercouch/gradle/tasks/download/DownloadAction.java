@@ -20,9 +20,7 @@ import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
 import de.undercouch.gradle.tasks.download.org.apache.http.Header;
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpEntity;
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpHost;
-import de.undercouch.gradle.tasks.download.org.apache.http.HttpRequestInterceptor;
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpResponse;
-import de.undercouch.gradle.tasks.download.org.apache.http.HttpResponseInterceptor;
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpStatus;
 import de.undercouch.gradle.tasks.download.org.apache.http.auth.AuthScheme;
 import de.undercouch.gradle.tasks.download.org.apache.http.auth.AuthScope;
@@ -84,8 +82,7 @@ public class DownloadAction implements DownloadSpec {
     private boolean compress = true;
     private String username;
     private String password;
-    private AuthScheme authScheme;
-    private Credentials credentials;
+    private String authScheme;
     private Map<String, String> headers;
     private boolean acceptAnyCertificate = false;
     private int timeoutMs = -1;
@@ -93,8 +90,6 @@ public class DownloadAction implements DownloadSpec {
     private boolean tempAndMove = false;
     private UseETag useETag = UseETag.FALSE;
     private File cachedETagsFile;
-    private HttpRequestInterceptor requestInterceptor;
-    private HttpResponseInterceptor responseInterceptor;
 
     private ProgressLoggerWrapper progressLogger;
     private String size;
@@ -248,7 +243,7 @@ public class DownloadAction implements DownloadSpec {
         
         //create HTTP client
         CloseableHttpClient client = clientFactory.createHttpClient(
-                httpHost, acceptAnyCertificate, requestInterceptor, responseInterceptor);
+                httpHost, acceptAnyCertificate);
         
         //open URL connection
         String etag = null;
@@ -557,23 +552,15 @@ public class DownloadAction implements DownloadSpec {
             long timestamp, String etag, CloseableHttpClient client) throws IOException {
         //perform preemptive authentication
         HttpClientContext context = null;
-        if ((username != null && password != null) || credentials != null) {
+        if (username != null && password != null) {
             context = HttpClientContext.create();
-            AuthScheme as = authScheme;
-            if (as == null) {
+            AuthScheme as;
+            if ("Digest".equalsIgnoreCase(authScheme)) {
+                as = new DigestScheme();
+            } else {
                 as = new BasicScheme();
             }
-            Credentials c;
-            if (username != null && password != null) {
-                if (!(as instanceof BasicScheme) && !(as instanceof DigestScheme)) {
-                    throw new IllegalArgumentException("If 'username' and "
-                            + "'password' are set 'authScheme' must be either "
-                            + "'Basic' or 'Digest'.");
-                }
-                c = new UsernamePasswordCredentials(username, password);
-            } else {
-                c = credentials;
-            }
+            Credentials c = new UsernamePasswordCredentials(username, password);
             addAuthentication(httpHost, c, as, context);
         }
         
@@ -841,29 +828,14 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
-    public void authScheme(Object authScheme) {
-        if (authScheme instanceof AuthScheme) {
-            this.authScheme = (AuthScheme)authScheme;
-        } else if (authScheme instanceof String) {
-            String sa = (String)authScheme;
-            if (sa.equalsIgnoreCase("Basic")) {
-                this.authScheme = new BasicScheme();
-            } else if (sa.equalsIgnoreCase("Digest")) {
-                this.authScheme = new DigestScheme();
-            } else {
-                throw new IllegalArgumentException("Invalid authentication scheme: "
-                        + "'" + sa + "'. Valid values are 'Basic' and 'Digest'.");
-            }
+    public void authScheme(String authScheme) {
+        if (authScheme.equalsIgnoreCase("Basic") ||
+                authScheme.equalsIgnoreCase("Digest")) {
+            this.authScheme = authScheme;
         } else {
-            throw new IllegalArgumentException("Invalid authentication "
-                    + "scheme. Provide either a String or an instance of "
-                    + AuthScheme.class.getName() + ".");
+            throw new IllegalArgumentException("Invalid authentication scheme: "
+                    + "'" + authScheme + "'. Valid values are 'Basic' and 'Digest'.");
         }
-    }
-
-    @Override
-    public void credentials(Credentials credentials) {
-        this.credentials = credentials;
     }
 
     @Override
@@ -943,16 +915,6 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
-    public void requestInterceptor(HttpRequestInterceptor interceptor) {
-        this.requestInterceptor = interceptor;
-    }
-
-    @Override
-    public void responseInterceptor(HttpResponseInterceptor interceptor) {
-        this.responseInterceptor = interceptor;
-    }
-
-    @Override
     public Object getSrc() {
         if (sources.size() == 1) {
             return sources.get(0);
@@ -1001,20 +963,10 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
-    public AuthScheme getAuthScheme() {
+    public String getAuthScheme() {
         return authScheme;
     }
     
-    @Override
-    public Credentials getCredentials() {
-        if (credentials != null) {
-            return credentials;
-        } else if (username != null && password != null) {
-            return new UsernamePasswordCredentials(username, password);
-        }
-        return null;
-    }
-
     @Override
     public Map<String, String> getHeaders() {
         return headers;
@@ -1059,16 +1011,6 @@ public class DownloadAction implements DownloadSpec {
             return new File(this.downloadTaskDir, "etags.json");
         }
         return cachedETagsFile;
-    }
-
-    @Override
-    public HttpRequestInterceptor getRequestInterceptor() {
-        return requestInterceptor;
-    }
-
-    @Override
-    public HttpResponseInterceptor getResponseInterceptor() {
-        return responseInterceptor;
     }
 
     /**

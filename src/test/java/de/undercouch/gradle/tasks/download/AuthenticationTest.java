@@ -14,11 +14,6 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import de.undercouch.gradle.tasks.download.org.apache.http.auth.Credentials;
-import de.undercouch.gradle.tasks.download.org.apache.http.auth.UsernamePasswordCredentials;
-import de.undercouch.gradle.tasks.download.org.apache.http.impl.auth.BasicScheme;
-import de.undercouch.gradle.tasks.download.org.apache.http.impl.auth.DigestScheme;
-import de.undercouch.gradle.tasks.download.org.apache.http.impl.auth.NTLMScheme;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
@@ -28,7 +23,6 @@ import org.junit.Test;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.handler.ContextHandler;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
@@ -37,7 +31,6 @@ import java.io.PrintWriter;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Tests if the plugin can access a resource that requires authentication
@@ -63,12 +56,11 @@ public class AuthenticationTest extends TestBase {
     }
     
     @Override
-    protected Handler[] makeHandlers() throws IOException {
+    protected Handler[] makeHandlers() {
         ContextHandler authenticationHandler = new ContextHandler("/" + AUTHENTICATE) {
             @Override
             public void handle(String target, HttpServletRequest request,
-                    HttpServletResponse response, int dispatch)
-                            throws IOException, ServletException {
+                    HttpServletResponse response, int dispatch) throws IOException {
                 String ahdr = request.getHeader("Authorization");
                 if (ahdr == null) {
                     if (!basic) {
@@ -207,26 +199,6 @@ public class AuthenticationTest extends TestBase {
      * @throws Exception if anything goes wrong
      */
     @Test
-    public void validCredentials() throws Exception {
-        Credentials cred = new UsernamePasswordCredentials(USERNAME, PASSWORD);
-        Download t = makeProjectAndTask();
-        t.src(makeSrc(AUTHENTICATE));
-        File dst = folder.newFile();
-        t.dest(dst);
-        t.credentials(cred);
-        t.execute();
-        
-        assertEquals(cred, t.getCredentials());
-        
-        String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("auth: " + USERNAME + ":" + PASSWORD, dstContents);
-    }
-
-    /**
-     * Tests if the plugin can access a protected resource
-     * @throws Exception if anything goes wrong
-     */
-    @Test
     public void validDigest() throws Exception {
         basic = false;
         Download t = makeProjectAndTask();
@@ -254,87 +226,10 @@ public class AuthenticationTest extends TestBase {
     }
     
     /**
-     * Make sure the plugin rejects an invalid authentication scheme
-     * @throws Exception if anything goes wrong
-     */
-    @Test(expected = IllegalArgumentException.class)
-    public void invalidAuthSchemeType() throws Exception {
-        Download t = makeProjectAndTask();
-        t.src(makeSrc(AUTHENTICATE));
-        File dst = folder.newFile();
-        t.dest(dst);
-        t.authScheme(new File(""));
-        t.execute();
-    }
-    
-    /**
-     * Make sure the plugin rejects an invalid authentication scheme if
-     * username and password are set
-     * @throws Exception if anything goes wrong
-     */
-    @Test(expected = TaskExecutionException.class)
-    public void invalidAuthSchemeWithUserAndPass() throws Exception {
-        Download t = makeProjectAndTask();
-        t.src(makeSrc(AUTHENTICATE));
-        File dst = folder.newFile();
-        t.dest(dst);
-        t.username(USERNAME);
-        t.password(PASSWORD);
-        t.authScheme(new NTLMScheme());
-        t.execute();
-    }
-    
-    /**
-     * Tests if the plugin correctly converts the Basic authentication scheme
-     * @throws Exception if anything goes wrong
-     */
-    @Test
-    public void convertBasic() throws Exception {
-        Download t = makeProjectAndTask();
-        t.authScheme("Basic");
-        assertTrue(t.getAuthScheme() instanceof BasicScheme);
-    }
-    
-    /**
-     * Tests if the plugin correctly converts the Digest authentication scheme
-     * @throws Exception if anything goes wrong
-     */
-    @Test
-    public void convertDigest() throws Exception {
-        Download t = makeProjectAndTask();
-        t.authScheme("Digest");
-        assertTrue(t.getAuthScheme() instanceof DigestScheme);
-    }
-    
-    /**
-     * Tests if the plugin correctly converts the credentials
-     * @throws Exception if anything goes wrong
-     */
-    @Test
-    public void convertCredentials() throws Exception {
-        Download t = makeProjectAndTask();
-        t.username(USERNAME);
-        t.password(PASSWORD);
-        assertEquals(new UsernamePasswordCredentials(USERNAME, PASSWORD),
-                t.getCredentials());
-    }
-
-    /**
-     * Tests if the plugin has no credentials set by default
-     * @throws Exception if anything goes wrong
-     */
-    @Test
-    public void noDefaultCredentials() throws Exception {
-        Download t = makeProjectAndTask();
-        assertNull(t.getCredentials());
-    }
-    
-    /**
      * Tests if the plugin has no authentications scheme set by default
-     * @throws Exception if anything goes wrong
      */
     @Test
-    public void noDefaultAuthScheme() throws Exception {
+    public void noDefaultAuthScheme() {
         Download t = makeProjectAndTask();
         assertNull(t.getAuthScheme());
     }

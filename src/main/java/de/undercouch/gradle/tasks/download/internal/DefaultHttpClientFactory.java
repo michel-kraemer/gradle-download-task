@@ -1,4 +1,4 @@
-// Copyright 2016 Michel Kraemer
+// Copyright 2016-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
 package de.undercouch.gradle.tasks.download.internal;
 
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpHost;
-import de.undercouch.gradle.tasks.download.org.apache.http.HttpRequestInterceptor;
-import de.undercouch.gradle.tasks.download.org.apache.http.HttpResponseInterceptor;
 import de.undercouch.gradle.tasks.download.org.apache.http.config.Registry;
 import de.undercouch.gradle.tasks.download.org.apache.http.config.RegistryBuilder;
 import de.undercouch.gradle.tasks.download.org.apache.http.conn.HttpClientConnectionManager;
@@ -37,7 +35,7 @@ import java.security.SecureRandom;
 
 /**
  * Default implementation of {@link HttpClientFactory}. Creates a new client
- * every time {@link #createHttpClient(HttpHost, boolean, HttpRequestInterceptor, HttpResponseInterceptor)}
+ * every time {@link #createHttpClient(HttpHost, boolean)}
  * is called. The caller is responsible for closing this client.
  * @author Michel Kraemer
  */
@@ -51,8 +49,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
 
     @Override
     public CloseableHttpClient createHttpClient(HttpHost httpHost,
-            boolean acceptAnyCertificate, HttpRequestInterceptor requestInterceptor,
-            HttpResponseInterceptor responseInterceptor) {
+            boolean acceptAnyCertificate) {
         HttpClientBuilder builder = HttpClientBuilder.create();
         
         //configure proxy from system environment
@@ -76,16 +73,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         //'none' by 'identity'
         builder.addInterceptorFirst(new ContentEncodingNoneInterceptor());
         
-        //add interceptors
-        if (requestInterceptor != null) {
-            builder.addInterceptorLast(requestInterceptor);
-        }
-        if (responseInterceptor != null) {
-            builder.addInterceptorLast(responseInterceptor);
-        }
-
-        CloseableHttpClient client = builder.build();
-        return client;
+        return builder.build();
     }
     
     private SSLConnectionSocketFactory getInsecureSSLSocketFactory() {
@@ -96,9 +84,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
                 sc.init(null, INSECURE_TRUST_MANAGERS, new SecureRandom());
                 insecureSSLSocketFactory = new SSLConnectionSocketFactory(
                         sc, INSECURE_HOSTNAME_VERIFIER);
-            } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
-            } catch (KeyManagementException e) {
+            } catch (NoSuchAlgorithmException | KeyManagementException e) {
                 throw new RuntimeException(e);
             }
         }

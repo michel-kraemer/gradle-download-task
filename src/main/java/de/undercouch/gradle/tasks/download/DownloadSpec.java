@@ -14,11 +14,6 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import de.undercouch.gradle.tasks.download.org.apache.http.HttpRequestInterceptor;
-import de.undercouch.gradle.tasks.download.org.apache.http.HttpResponseInterceptor;
-import de.undercouch.gradle.tasks.download.org.apache.http.auth.AuthScheme;
-import de.undercouch.gradle.tasks.download.org.apache.http.auth.Credentials;
-
 import java.io.File;
 import java.net.MalformedURLException;
 import java.util.Map;
@@ -91,23 +86,14 @@ public interface DownloadSpec {
     /**
      * <p>Sets the authentication scheme to use. This method accepts
      * either a <code>String</code> (valid values are <code>"Basic"</code>
-     * and <code>"Digest"</code>) or an instance of {@link AuthScheme}.</p>
+     * and <code>"Digest"</code>).</p>
      * <p>If <code>username</code> and <code>password</code> are set this
      * method will only accept <code>"Basic"</code> or <code>"Digest"</code>
      * as valid values. The default value will be <code>"Basic"</code> in
      * this case.</p>
      * @param authScheme the authentication scheme
      */
-    void authScheme(Object authScheme);
-
-    /**
-     * Sets the credentials used for authentication. Can be called as an
-     * alternative to {@link #username(String)} and {@link #password(String)}.
-     * Allows for setting credentials for authentication schemes other than
-     * <code>Basic</code> or <code>Digest</code>.
-     * @param credentials the credentials
-     */
-    void credentials(Credentials credentials);
+    void authScheme(String authScheme);
 
     /**
      * Sets the HTTP request headers to use when downloading
@@ -183,22 +169,6 @@ public interface DownloadSpec {
     void cachedETagsFile(Object location);
 
     /**
-     * Specifies an interceptor that will be called when a request is about
-     * to be sent to the server. This is useful if you want to manipulate
-     * a request beyond the capabilities of the download task.
-     * @param interceptor the interceptor to set
-     */
-    void requestInterceptor(HttpRequestInterceptor interceptor);
-
-    /**
-     * Specifies an interceptor that will be called when a response has been
-     * received from the server. This is useful if you want to manipulate
-     * incoming data before it is handled by the download task.
-     * @param interceptor the interceptor to set
-     */
-    void responseInterceptor(HttpResponseInterceptor interceptor);
-
-    /**
      * @return the download source(s), either a URL or a list of URLs
      */
     Object getSrc();
@@ -251,14 +221,8 @@ public interface DownloadSpec {
      * @return the authentication scheme used (or <code>null</code> if
      * no authentication is performed)
      */
-    AuthScheme getAuthScheme();
+    String getAuthScheme();
     
-    /**
-     * @return the credentials used for authentication (or <code>null</code> if
-     * no authentication is performed)
-     */
-    Credentials getCredentials();
-
     /**
      * @return the HTTP request headers to use when downloading
      */
@@ -306,16 +270,4 @@ public interface DownloadSpec {
      * from the server
      */
     File getCachedETagsFile();
-
-    /**
-     * @return an interceptor that will be called when a request is about to
-     * be sent to the server (or <code>null</code> if no interceptor is specified)
-     */
-    HttpRequestInterceptor getRequestInterceptor();
-
-    /**
-     * @return an interceptor that will be called when a response has been
-     * received from the server (or <code>null</code> if no interceptor is specified)
-     */
-    HttpResponseInterceptor getResponseInterceptor();
 }

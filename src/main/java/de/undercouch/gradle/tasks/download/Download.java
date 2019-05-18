@@ -1,4 +1,4 @@
-// Copyright 2013 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,10 +14,6 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import de.undercouch.gradle.tasks.download.org.apache.http.HttpRequestInterceptor;
-import de.undercouch.gradle.tasks.download.org.apache.http.HttpResponseInterceptor;
-import de.undercouch.gradle.tasks.download.org.apache.http.auth.AuthScheme;
-import de.undercouch.gradle.tasks.download.org.apache.http.auth.Credentials;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
 import org.gradle.api.specs.Spec;
@@ -163,13 +159,8 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
     
     @Override
-    public void authScheme(Object authScheme) {
+    public void authScheme(String authScheme) {
         action.authScheme(authScheme);
-    }
-
-    @Override
-    public void credentials(Credentials credentials) {
-        action.credentials(credentials);
     }
 
     @Override
@@ -210,16 +201,6 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public void cachedETagsFile(Object location) {
         action.cachedETagsFile(location);
-    }
-
-    @Override
-    public void requestInterceptor(HttpRequestInterceptor interceptor) {
-        action.requestInterceptor(interceptor);
-    }
-
-    @Override
-    public void responseInterceptor(HttpResponseInterceptor interceptor) {
-        action.responseInterceptor(interceptor);
     }
 
     @Override
@@ -268,13 +249,8 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
     
     @Override
-    public AuthScheme getAuthScheme() {
+    public String getAuthScheme() {
         return action.getAuthScheme();
-    }
-
-    @Override
-    public Credentials getCredentials() {
-        return action.getCredentials();
     }
 
     @Override
@@ -295,16 +271,6 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public int getTimeout() {
         return action.getTimeout();
-    }
-
-    @Override
-    public HttpRequestInterceptor getRequestInterceptor() {
-        return action.getRequestInterceptor();
-    }
-
-    @Override
-    public HttpResponseInterceptor getResponseInterceptor() {
-        return action.getResponseInterceptor();
     }
 
     @Override

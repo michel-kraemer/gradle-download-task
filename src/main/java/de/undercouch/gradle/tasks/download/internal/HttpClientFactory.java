@@ -15,8 +15,6 @@
 package de.undercouch.gradle.tasks.download.internal;
 
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpHost;
-import de.undercouch.gradle.tasks.download.org.apache.http.HttpRequestInterceptor;
-import de.undercouch.gradle.tasks.download.org.apache.http.HttpResponseInterceptor;
 import de.undercouch.gradle.tasks.download.org.apache.http.impl.client.CloseableHttpClient;
 
 /**
@@ -30,13 +28,8 @@ public interface HttpClientFactory {
      * @param acceptAnyCertificate true if HTTPS certificate verification
      * errors should be ignored and any certificate (even an invalid one)
      * should be accepted
-     * @param requestInterceptor intercepts HTTP requests before they are
-     * sent (may be <code>null</code>)
-     * @param responseInterceptor intercepts HTTP responses before they are
-     * handled (may be <code>null</code>)
      * @return the HTTP client
      */
     CloseableHttpClient createHttpClient(HttpHost httpHost,
-            boolean acceptAnyCertificate, HttpRequestInterceptor requestInterceptor,
-            HttpResponseInterceptor responseInterceptor);
+            boolean acceptAnyCertificate);
 }

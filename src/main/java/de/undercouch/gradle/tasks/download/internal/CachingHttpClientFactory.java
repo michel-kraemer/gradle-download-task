@@ -15,8 +15,6 @@
 package de.undercouch.gradle.tasks.download.internal;
 
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpHost;
-import de.undercouch.gradle.tasks.download.org.apache.http.HttpRequestInterceptor;
-import de.undercouch.gradle.tasks.download.org.apache.http.HttpResponseInterceptor;
 import de.undercouch.gradle.tasks.download.org.apache.http.impl.client.CloseableHttpClient;
 
 import java.io.IOException;
@@ -29,19 +27,15 @@ import java.util.Map;
  * @author Michel Kraemer
  */
 public class CachingHttpClientFactory extends DefaultHttpClientFactory {
-    private Map<CacheKey, CloseableHttpClient> cachedClients =
-            new HashMap<CacheKey, CloseableHttpClient>();
+    private Map<CacheKey, CloseableHttpClient> cachedClients = new HashMap<>();
 
     @Override
     public CloseableHttpClient createHttpClient(HttpHost httpHost,
-            boolean acceptAnyCertificate, HttpRequestInterceptor requestInterceptor,
-            HttpResponseInterceptor responseInterceptor) {
-        CacheKey key = new CacheKey(httpHost, acceptAnyCertificate,
-                requestInterceptor, responseInterceptor);
+            boolean acceptAnyCertificate) {
+        CacheKey key = new CacheKey(httpHost, acceptAnyCertificate);
         CloseableHttpClient c = cachedClients.get(key);
         if (c == null) {
-            c = super.createHttpClient(httpHost, acceptAnyCertificate,
-                    requestInterceptor, responseInterceptor);
+            c = super.createHttpClient(httpHost, acceptAnyCertificate);
             cachedClients.put(key, c);
         }
         return c;
@@ -64,16 +58,10 @@ public class CachingHttpClientFactory extends DefaultHttpClientFactory {
     private static class CacheKey {
         private final HttpHost httpHost;
         private final boolean acceptAnyCertificate;
-        private final HttpRequestInterceptor requestInterceptor;
-        private final HttpResponseInterceptor responseInterceptor;
-        
-        CacheKey(HttpHost httpHost, boolean acceptAnyCertificate,
-                HttpRequestInterceptor requestInterceptor,
-                HttpResponseInterceptor responseInterceptor) {
+
+        CacheKey(HttpHost httpHost, boolean acceptAnyCertificate) {
             this.httpHost = httpHost;
             this.acceptAnyCertificate = acceptAnyCertificate;
-            this.requestInterceptor = requestInterceptor;
-            this.responseInterceptor = responseInterceptor;
         }
 
         @Override
@@ -82,10 +70,6 @@ public class CachingHttpClientFactory extends DefaultHttpClientFactory {
             int result = 1;
             result = prime * result + (acceptAnyCertificate ? 1231 : 1237);
             result = prime * result + ((httpHost == null) ? 0 : httpHost.hashCode());
-            result = prime * result + ((requestInterceptor == null) ? 0 :
-                System.identityHashCode(requestInterceptor));
-            result = prime * result + ((responseInterceptor == null) ? 0 :
-                System.identityHashCode(responseInterceptor));
             return result;
         }
 
@@ -105,19 +89,9 @@ public class CachingHttpClientFactory extends DefaultHttpClientFactory {
                 return false;
             }
             if (httpHost == null) {
-                if (other.httpHost != null) {
-                    return false;
-                }
-            } else if (!httpHost.equals(other.httpHost)) {
-                return false;
+                return other.httpHost == null;
             }
-            if (requestInterceptor != other.requestInterceptor) {
-                return false;
-            }
-            if (responseInterceptor != other.responseInterceptor) {
-                return false;
-            }
-            return true;
+            return httpHost.equals(other.httpHost);
         }
     }
 }
