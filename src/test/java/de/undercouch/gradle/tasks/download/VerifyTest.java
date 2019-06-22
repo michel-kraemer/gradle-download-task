@@ -1,4 +1,4 @@
-// Copyright 2013-2016 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,28 +14,28 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import groovy.lang.Closure;
+import org.apache.commons.codec.binary.Hex;
+import org.gradle.api.tasks.TaskExecutionException;
+import org.junit.Test;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.codec.binary.Hex;
-import org.gradle.api.tasks.TaskExecutionException;
-import org.junit.Test;
-
-import groovy.lang.Closure;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test the {@link VerifyAction}
  * @author Michel Kraemer
  */
-public class VerifyTest extends TestBase {
+public class VerifyTest extends TestBaseWithMockServer {
     /**
-     * Calculates the MD5 checksum for {@link #contents}
+     * Calculates the MD5 checksum for {@link #CONTENTS}
      * @return the checksum
      */
     private String calculateChecksum() {
@@ -45,9 +45,8 @@ public class VerifyTest extends TestBase {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
-        md5.update(contents);
-        String calculatedChecksum = Hex.encodeHexString(md5.digest());
-        return calculatedChecksum;
+        md5.update(CONTENTS.getBytes(StandardCharsets.UTF_8));
+        return Hex.encodeHexString(md5.digest());
     }
 
     /**
@@ -56,7 +55,7 @@ public class VerifyTest extends TestBase {
      * @return the unconfigured verify task
      */
     private Verify makeVerifyTask(Download downloadTask) {
-        Map<String, Object> taskParams = new HashMap<String, Object>();
+        Map<String, Object> taskParams = new HashMap<>();
         taskParams.put("type", Verify.class);
         Verify v = (Verify)downloadTask.getProject().task(taskParams, "verifyFile");
         v.dependsOn(downloadTask);
@@ -69,11 +68,13 @@ public class VerifyTest extends TestBase {
      */
     @Test
     public void verifyMD5() throws Exception {
+        configureDefaultStub();
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(TEST_FILE_NAME));
+        t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
         t.dest(dst);
-        
+
         Verify v = makeVerifyTask(t);
         v.algorithm("MD5");
         assertEquals("MD5", v.getAlgorithm());
@@ -82,7 +83,7 @@ public class VerifyTest extends TestBase {
         assertEquals(calculatedChecksum, v.getChecksum());
         v.src(t.getDest());
         assertEquals(t.getDest(), v.getSrc());
-        
+
         t.execute();
         v.execute(); // will throw if the checksum is not OK
     }
@@ -93,26 +94,27 @@ public class VerifyTest extends TestBase {
      */
     @Test(expected = TaskExecutionException.class)
     public void verifyWrongMD5() throws Exception {
+        configureDefaultStub();
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(TEST_FILE_NAME));
+        t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
         t.dest(dst);
-        
+
         Verify v = makeVerifyTask(t);
         v.algorithm("MD5");
         v.checksum("WRONG");
         v.src(t.getDest());
-        
+
         t.execute();
         v.execute(); // should throw
     }
 
     /**
      * Test if the plugin throws an exception if the 'src' property is empty
-     * @throws Exception if the test succeeds
      */
     @Test(expected = TaskExecutionException.class)
-    public void testExecuteEmptySrc() throws Exception {
+    public void testExecuteEmptySrc() {
         Download t = makeProjectAndTask();
 
         Verify v = makeVerifyTask(t);
@@ -184,10 +186,12 @@ public class VerifyTest extends TestBase {
      */
     @Test
     public void lazySrc() throws Exception {
+        configureDefaultStub();
+
         final boolean[] srcCalled = new boolean[] { false };
 
         final Download t = makeProjectAndTask();
-        t.src(makeSrc(TEST_FILE_NAME));
+        t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
         t.dest(dst);
 

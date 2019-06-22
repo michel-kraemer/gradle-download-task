@@ -1,4 +1,4 @@
-// Copyright 2013-2018 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 package de.undercouch.gradle.tasks.download;
 
 import org.apache.commons.io.FileUtils;
+import org.gradle.internal.impldep.org.apache.commons.io.IOUtils;
 import org.gradle.testkit.runner.BuildTask;
 import org.gradle.testkit.runner.GradleRunner;
 import org.junit.Test;
@@ -26,15 +27,23 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -129,9 +138,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         Process process = builder.start();
         InputStream is = process.getInputStream();
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-        while (reader.readLine() != null) {
-            // empty
-        }
+        IOUtils.skip(reader, Long.MAX_VALUE);
     }
 
     /**
@@ -141,8 +148,9 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        singleSrc = "'" + makeSrc(TEST_FILE_NAME) + "'";
-        multipleSrc = "['" +  makeSrc(TEST_FILE_NAME) + "', '" + makeSrc(TEST_FILE_NAME2) + "']";
+        singleSrc = "'" + wireMockRule.url(TEST_FILE_NAME) + "'";
+        multipleSrc = "['" +  wireMockRule.url(TEST_FILE_NAME) +
+                "', '" + wireMockRule.url(TEST_FILE_NAME2) + "']";
         destFile = new File(testProjectDir.getRoot(), "someFile");
         dest = "file('" + destFile.getName() + "')";
     }
@@ -153,9 +161,10 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFile() throws Exception {
+        configureDefaultStub();
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
         assertTrue(destFile.isFile());
-        assertArrayEquals(contents, FileUtils.readFileToByteArray(destFile));
+        assertEquals(CONTENTS, FileUtils.readFileToString(destFile));
     }
 
     /**
@@ -164,9 +173,10 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileWithQuietMode() throws Exception {
+        configureDefaultStub();
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false, true, false, true)));
         assertTrue(destFile.isFile());
-        assertArrayEquals(contents, FileUtils.readFileToByteArray(destFile));
+        assertEquals(CONTENTS, FileUtils.readFileToString(destFile));
     }
 
     /**
@@ -175,9 +185,11 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileWithoutCompress() throws Exception {
+        configureDefaultStub();
+        configureDefaultStub2();
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false, false, false, false)));
         assertTrue(destFile.isFile());
-        assertArrayEquals(contents, FileUtils.readFileToByteArray(destFile));
+        assertEquals(CONTENTS, FileUtils.readFileToString(destFile));
     }
 
     /**
@@ -186,11 +198,13 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadMultipleFiles() throws Exception {
+        configureDefaultStub();
+        configureDefaultStub2();
         assertTaskSuccess(download(new Parameters(multipleSrc, dest, true, false)));
         assertTrue(destFile.isDirectory());
-        assertArrayEquals(contents, FileUtils.readFileToByteArray(
+        assertEquals(CONTENTS, FileUtils.readFileToString(
                 new File(destFile, TEST_FILE_NAME)));
-        assertArrayEquals(contents2, FileUtils.readFileToByteArray(
+        assertEquals(CONTENTS2, FileUtils.readFileToString(
                 new File(destFile, TEST_FILE_NAME2)));
     }
 
@@ -200,6 +214,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileTwiceMarksTaskAsUpToDate() throws Exception {
+        configureDefaultStub();
         final Parameters parameters = new Parameters(singleSrc, dest, false, false);
         assertTaskSuccess(download(parameters));
         assertTaskUpToDate(download(parameters));
@@ -211,6 +226,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileTwiceWithOverwriteExecutesTwice() throws Exception {
+        configureDefaultStub();
         assertTaskSuccess(download(new Parameters(singleSrc, dest, false, false)));
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
     }
@@ -222,6 +238,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileTwiceWithOfflineMode() throws Exception {
+        configureDefaultStub();
         assertTaskSuccess(download(new Parameters(singleSrc, dest, false, false)));
         assertTaskSkipped(download(new Parameters(singleSrc, dest, true, false, true, true, false)));
     }
@@ -232,7 +249,12 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadOnlyIfNewer() throws Exception {
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, false)));
+        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+                .willReturn(aResponse()
+                        .withHeader("Last-Modified", "Sat, 21 Jun 2019 11:54:15 GMT")
+                        .withBody(CONTENTS)));
+
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, true)));
         assertTaskUpToDate(download(new Parameters(singleSrc, dest, true, true)));
     }
 
@@ -243,9 +265,18 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadOnlyIfNewerRedownloadsIfFileHasBeenUpdated() throws Exception {
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, false)));
-        File src = new File(folder.getRoot(), TEST_FILE_NAME);
-        assertTrue(src.setLastModified(src.lastModified() + 5000));
+        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+                .willReturn(aResponse()
+                        .withHeader("Last-Modified", "Sat, 21 Jun 2019 11:54:15 GMT")
+                        .withBody(CONTENTS)));
+
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, true)));
+
+        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+                .willReturn(aResponse()
+                        .withHeader("Last-Modified", "Sat, 21 Jun 2019 11:55:15 GMT")
+                        .withBody(CONTENTS)));
+
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, true)));
     }
     
@@ -255,6 +286,19 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadUseETag() throws Exception {
+        String etag = "\"foobar\"";
+
+        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+                .withHeader("If-None-Match", absent())
+                .willReturn(aResponse()
+                        .withHeader("ETag", etag)
+                        .withBody(CONTENTS)));
+
+        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+                .withHeader("If-None-Match", equalTo(etag))
+                .willReturn(aResponse()
+                        .withStatus(304)));
+
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, true,
                 false, false, false, true)));
         assertTaskUpToDate(download(new Parameters(singleSrc, dest, true, true,
@@ -267,9 +311,18 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadOnlyIfNewerReDownloadIfFileExists() throws Exception {
-        File testFile = new File(folder.getRoot(), TEST_FILE_NAME);
-        FileUtils.writeByteArrayToFile(destFile, contents);
-        assertTrue(destFile.setLastModified(testFile.lastModified()));
+        String lm = "Sat, 21 Jun 2019 11:54:15 GMT";
+        long expectedlmlong = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH)
+                .parse(lm)
+                .getTime();
+
+        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+                .willReturn(aResponse()
+                        .withHeader("Last-Modified", lm)
+                        .withBody(CONTENTS)));
+
+        FileUtils.writeStringToFile(destFile, CONTENTS, StandardCharsets.UTF_8);
+        assertTrue(destFile.setLastModified(expectedlmlong));
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
     }
     
@@ -280,7 +333,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Test
     public void downloadFileURLOnlyIfNewer() throws Exception {
         File srcFile = folder.newFile();
-        FileUtils.writeByteArrayToFile(srcFile, contents);
+        FileUtils.writeStringToFile(srcFile, CONTENTS, StandardCharsets.UTF_8);
         String srcFileUri = "'" + srcFile.toURI().toString() + "'";
         assertTaskSuccess(download(new Parameters(srcFileUri, dest, true, true)));
         assertTrue(destFile.setLastModified(srcFile.lastModified()));
@@ -294,6 +347,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void fileDependenciesTriggersDownloadTask() throws Exception {
+        configureDefaultStub();
         assertTaskSuccess(runTask(":processTask", new Parameters(singleSrc, dest, true, false)));
         assertTrue(destFile.isFile());
     }
@@ -305,12 +359,14 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void fileDependenciesWithMultipleSourcesTriggersDownloadTask() throws Exception {
-        destFile.mkdirs();
+        configureDefaultStub();
+        configureDefaultStub2();
+        assertTrue(destFile.mkdirs());
         assertTaskSuccess(runTask(":processTask", new Parameters(multipleSrc, dest, true, false)));
         assertTrue(destFile.isDirectory());
-        assertArrayEquals(contents, FileUtils.readFileToByteArray(
+        assertEquals(CONTENTS, FileUtils.readFileToString(
                 new File(destFile, TEST_FILE_NAME)));
-        assertArrayEquals(contents2, FileUtils.readFileToByteArray(
+        assertEquals(CONTENTS2, FileUtils.readFileToString(
                 new File(destFile, TEST_FILE_NAME2)));
     }
 
@@ -351,11 +407,11 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
             "task downloadTask(type: Download) {\n" +
                 "src(" + parameters.src + ")\n" +
                 "dest " + parameters.dest + "\n" +
-                "overwrite " + Boolean.toString(parameters.overwrite) + "\n" +
-                "onlyIfModified " + Boolean.toString(parameters.onlyIfModified) + "\n" +
-                "compress " + Boolean.toString(parameters.compress) + "\n" +
-                "quiet " + Boolean.toString(parameters.quiet) + "\n" +
-                "useETag " + Boolean.toString(parameters.useETag) + "\n" +
+                "overwrite " + parameters.overwrite + "\n" +
+                "onlyIfModified " + parameters.onlyIfModified + "\n" +
+                "compress " + parameters.compress + "\n" +
+                "quiet " + parameters.quiet + "\n" +
+                "useETag " + parameters.useETag + "\n" +
             "}\n" +
             "task processTask {\n" +
                 "inputs.files files(downloadTask)\n" +

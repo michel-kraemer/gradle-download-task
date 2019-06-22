@@ -1,4 +1,4 @@
-// Copyright 2013-2016 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,81 +14,104 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.github.tomakehurst.wiremock.common.FileSource;
+import com.github.tomakehurst.wiremock.extension.Parameters;
+import com.github.tomakehurst.wiremock.extension.ResponseTransformer;
+import com.github.tomakehurst.wiremock.http.HttpHeader;
+import com.github.tomakehurst.wiremock.http.Request;
+import com.github.tomakehurst.wiremock.http.Response;
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.matching.UrlPattern;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.tasks.TaskExecutionException;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.handler.ContextHandler;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests if the plugin can handle redirects
  * @author Michel Kraemer
  */
-public class RedirectTest extends TestBase {
+public class RedirectTest extends TestBaseWithMockServer {
     private static final String REDIRECT = "redirect";
-    private int redirects = 0;
-    private boolean circular = false;
-    
-    @Override
-    protected Handler[] makeHandlers() throws IOException {
-        ContextHandler redirectHandler = new ContextHandler("/" + REDIRECT) {
-            @Override
-            public void handle(String target, HttpServletRequest request,
-                    HttpServletResponse response, int dispatch)
-                            throws IOException, ServletException {
-                if (redirects > 0) {
-                    redirects--;
-                    if (circular) {
-                        response.sendRedirect("/" + REDIRECT);
-                    } else {
-                        response.sendRedirect("/" + REDIRECT + "?r=" + redirects);
-                    }
-                } else {
-                    response.setStatus(200);
-                    PrintWriter rw = response.getWriter();
-                    rw.write("r: " + redirects);
-                    rw.close();
-                }
+
+    /**
+     * Run a mock HTTP server with {@link RedirectTransformer}
+     */
+    @Rule
+    public WireMockRule redirectWireMockRule = new WireMockRule(options()
+            .dynamicPort()
+            .extensions(RedirectTransformer.class.getName())
+            .jettyStopTimeout(10000L));
+
+    public static class RedirectTransformer extends ResponseTransformer {
+        private Integer redirects = null;
+
+        @Override
+        public Response transform(Request request, Response response,
+                FileSource files, Parameters parameters) {
+            if (redirects == null) {
+                redirects = parameters.getInt("redirects");
             }
-        };
-        return new Handler[] { redirectHandler };
+            String nl;
+            if (redirects > 1) {
+                redirects--;
+                nl = "/" + REDIRECT + "?r=" + redirects;
+            } else {
+                nl = "/" + TEST_FILE_NAME;
+            }
+            return Response.Builder.like(response)
+                    .but().headers(response.getHeaders()
+                            .plus(new HttpHeader("Location", nl)))
+                    .build();
+        }
+
+        @Override
+        public String getName() {
+            return "redirect";
+        }
     }
-    
-    @Before
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        redirects = 0;
-        circular = false;
-    }
-    
+
     /**
      * Tests if the plugin can handle one redirect
      * @throws Exception if anything goes wrong
      */
     @Test
     public void oneRedirect() throws Exception {
-        redirects = 1;
-        
+        UrlPattern up1 = urlEqualTo("/" + REDIRECT);
+        wireMockRule.stubFor(get(up1)
+                .willReturn(aResponse()
+                        .withStatus(HttpServletResponse.SC_FOUND)
+                        .withHeader("Location", wireMockRule.url(TEST_FILE_NAME))));
+
+        UrlPattern up2 = urlEqualTo("/" + TEST_FILE_NAME);
+        wireMockRule.stubFor(get(up2)
+                .willReturn(aResponse()
+                        .withBody(CONTENTS)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(REDIRECT));
+        t.src(wireMockRule.url(REDIRECT));
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("r: 0", dstContents);
+        assertEquals(CONTENTS, dstContents);
+
+        wireMockRule.verify(1, getRequestedFor(up1));
+        wireMockRule.verify(1, getRequestedFor(up2));
     }
     
     /**
@@ -97,44 +120,65 @@ public class RedirectTest extends TestBase {
      */
     @Test
     public void tenRedirect() throws Exception {
-        redirects = 10;
-        
+        UrlPattern up1 = urlPathEqualTo("/" + REDIRECT);
+        redirectWireMockRule.stubFor(get(up1)
+                .withQueryParam("r", matching("[0-9]+"))
+                .willReturn(aResponse()
+                        .withStatus(HttpServletResponse.SC_FOUND)
+                        .withTransformer("redirect", "redirects", 10)));
+
+        UrlPattern up2 = urlEqualTo("/" + TEST_FILE_NAME);
+        redirectWireMockRule.stubFor(get(up2)
+                .willReturn(aResponse()
+                        .withBody(CONTENTS)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(REDIRECT));
+        t.src(redirectWireMockRule.url(REDIRECT) + "?r=10");
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("r: 0", dstContents);
+        assertEquals(CONTENTS, dstContents);
+
+        verify(10, getRequestedFor(up1));
+        verify(1, getRequestedFor(up2));
     }
-    
+
    /**
     * Tests if the plugin can handle circular redirects
     * @throws Exception if anything goes wrong
     */
    @Test(expected = TaskExecutionException.class)
    public void circularRedirect() throws Exception {
-       redirects = 10;
-       circular = true;
-       
+       UrlPattern up1 = urlPathEqualTo("/" + REDIRECT);
+       wireMockRule.stubFor(get(up1)
+               .willReturn(aResponse()
+                       .withStatus(HttpServletResponse.SC_FOUND)
+                       .withHeader("Location", "/" + REDIRECT)));
+
        Download t = makeProjectAndTask();
-       t.src(makeSrc(REDIRECT));
+       t.src(wireMockRule.url(REDIRECT));
        File dst = folder.newFile();
        t.dest(dst);
        t.execute();
    }
-    
+
     /**
      * Make sure the plugin fails with too many redirects
      * @throws Exception if anything goes wrong
      */
     @Test(expected = TaskExecutionException.class)
     public void tooManyRedirects() throws Exception {
-        redirects = 51;
-        
+        UrlPattern up1 = urlPathEqualTo("/" + REDIRECT);
+        redirectWireMockRule.stubFor(get(up1)
+                .withQueryParam("r", matching("[0-9]+"))
+                .willReturn(aResponse()
+                        .withStatus(HttpServletResponse.SC_FOUND)
+                        .withTransformer("redirect", "redirects", 51)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(REDIRECT));
+        t.src(redirectWireMockRule.url(REDIRECT) + "?r=52");
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();

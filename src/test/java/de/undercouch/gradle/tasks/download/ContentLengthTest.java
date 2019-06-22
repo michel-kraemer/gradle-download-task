@@ -1,4 +1,4 @@
-// Copyright 2013-2016 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,71 +14,43 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.tasks.TaskExecutionException;
-import org.junit.Before;
 import org.junit.Test;
-import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.handler.ContextHandler;
+
+import java.io.File;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests if the plugin can handle invalid or missing Content-Length header
  * @author Michel Kraemer
  */
-public class ContentLengthTest extends TestBase {
-    private static final String CONTENT_LENGTH = "content-length";
-    private String contentLength;
-    
-    @Override
-    protected Handler[] makeHandlers() throws IOException {
-        ContextHandler contentLengthHandler = new ContextHandler("/" + CONTENT_LENGTH) {
-            @Override
-            public void handle(String target, HttpServletRequest request,
-                    HttpServletResponse response, int dispatch)
-                            throws IOException, ServletException {
-                response.setStatus(200);
-                if (contentLength != null) {
-                    response.setHeader("Content-Length", contentLength);
-                }
-                PrintWriter rw = response.getWriter();
-                rw.write("cl: " + String.valueOf(contentLength));
-                rw.close();
-            }
-        };
-        return new Handler[] { contentLengthHandler };
-    }
-    
-    @Before
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        contentLength = null;
-    }
-    
+public class ContentLengthTest extends TestBaseWithMockServer {
     /**
      * Tests if the plugin can handle a missing Content-Length header
      * @throws Exception if anything goes wrong
      */
     @Test
     public void missingContentLength() throws Exception {
+        String testFileName = "/test.txt";
+        String contents = "Hello";
+
+        wireMockRule.stubFor(get(urlEqualTo(testFileName))
+                .willReturn(aResponse()
+                        .withBody(contents)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(CONTENT_LENGTH));
+        t.src(wireMockRule.url(testFileName));
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("cl: null", dstContents);
+        assertEquals(contents, dstContents);
     }
     
     /**
@@ -87,16 +59,22 @@ public class ContentLengthTest extends TestBase {
      */
     @Test
     public void correctContentLength() throws Exception {
-        contentLength = "5";
-        
+        String testFileName = "/test.txt";
+        String contents = "Hello";
+
+        wireMockRule.stubFor(get(urlEqualTo(testFileName))
+                .willReturn(aResponse()
+                        .withHeader("content-length", "5")
+                        .withBody(contents)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(CONTENT_LENGTH));
+        t.src(wireMockRule.url(testFileName));
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("cl: 5", dstContents);
+        assertEquals(contents, dstContents);
     }
     
     /**
@@ -105,10 +83,17 @@ public class ContentLengthTest extends TestBase {
      */
     @Test(expected = TaskExecutionException.class)
     public void tooLargeContentLength() throws Exception {
-        contentLength = "10000";
-        
+        String testFileName = "/test.txt";
+        String contents = "Hello";
+
+        wireMockRule.stubFor(get(urlEqualTo(testFileName))
+                .willReturn(aResponse()
+                        .withHeader("content-length", "10000")
+                        .withBody(contents)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(CONTENT_LENGTH));
+        t.compress(false); // do not use GZIP or the response will be chunked
+        t.src(wireMockRule.url(testFileName));
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();

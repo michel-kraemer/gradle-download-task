@@ -14,72 +14,43 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.junit.Assert.assertEquals;
+import org.apache.commons.io.FileUtils;
+import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.io.FileUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.handler.ContextHandler;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Tests if the plugin can handle invalid or missing Content-Encoding header.
  * See https://github.com/michel-kraemer/gradle-download-task/issues/55
  * @author Michel Kraemer
  */
-public class ContentEncodingTest extends TestBase {
-    private static final String CONTENT_ENCODING = "content-encoding";
-    private String contentEncoding;
-    
-    @Override
-    protected Handler[] makeHandlers() throws IOException {
-        ContextHandler contentEncodingHandler = new ContextHandler("/" + CONTENT_ENCODING) {
-            @Override
-            public void handle(String target, HttpServletRequest request,
-                    HttpServletResponse response, int dispatch)
-                            throws IOException, ServletException {
-                response.setStatus(200);
-                if (contentEncoding != null) {
-                    response.setHeader("Content-Encoding", contentEncoding);
-                }
-                PrintWriter rw = response.getWriter();
-                rw.write("ce: " + String.valueOf(contentEncoding));
-                rw.close();
-            }
-        };
-        return new Handler[] { contentEncodingHandler };
-    }
-    
-    @Before
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        contentEncoding = null;
-    }
-    
+public class ContentEncodingTest extends TestBaseWithMockServer {
+    private static final byte[] CONTENTS_BYTES = new byte[] { 0x00, 0x01 };
+
     /**
      * Tests if the plugin can handle the invalid value 'none'
      * @throws Exception if anything goes wrong
      */
     @Test
     public void contentEncodingNone() throws Exception {
-        contentEncoding = "None";
-        
+        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+                .willReturn(aResponse()
+                        .withHeader("Content-Encoding", "None")
+                        .withHeader("Content-Length", String.valueOf(CONTENTS_BYTES.length))
+                        .withBody(CONTENTS_BYTES)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(CONTENT_ENCODING));
+        t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("ce: None", dstContents);
+        byte[] dstContents = FileUtils.readFileToByteArray(dst);
+        assertArrayEquals(CONTENTS_BYTES, dstContents);
     }
 }

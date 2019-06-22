@@ -1,4 +1,4 @@
-// Copyright 2013-2016 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import org.junit.Test;
  * Tests related to plugin outputs
  * @author Jan Berkel
  */
-public class OutputsTest extends TestBase {
+public class OutputsTest extends TestBaseWithMockServer {
     /**
      * Test if the outputs are empty if no sources are set
      */
@@ -45,7 +45,7 @@ public class OutputsTest extends TestBase {
     @Test
     public void singleOutputFileWithDestinationFile() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(makeSrc(TEST_FILE_NAME));
+        t.src(wireMockRule.baseUrl());
         File dst = folder.newFile();
         t.dest(dst);
         assertEquals(dst, t.getOutputs().getFiles().getSingleFile());
@@ -59,9 +59,9 @@ public class OutputsTest extends TestBase {
     @Test
     public void singleOutputFileWithDestinationDirectory() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(makeSrc(TEST_FILE_NAME));
+        t.src(wireMockRule.url("test1.txt"));
         t.dest(folder.getRoot());
-        assertEquals(new File(folder.getRoot(), TEST_FILE_NAME),
+        assertEquals(new File(folder.getRoot(), "test1.txt"),
                 t.getOutputs().getFiles().getSingleFile());
     }
 
@@ -73,11 +73,11 @@ public class OutputsTest extends TestBase {
     @Test
     public void multipleOutputFiles() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(Arrays.asList(makeSrc(TEST_FILE_NAME), makeSrc(TEST_FILE_NAME2)));
+        t.src(Arrays.asList(wireMockRule.url("test1.txt"), wireMockRule.url("test2.txt")));
         t.dest(folder.getRoot());
         final FileCollection fileCollection = t.getOutputs().getFiles();
         assertEquals(2, fileCollection.getFiles().size());
-        assertTrue(fileCollection.contains(new File(folder.getRoot(), TEST_FILE_NAME)));
-        assertTrue(fileCollection.contains(new File(folder.getRoot(), TEST_FILE_NAME2)));
+        assertTrue(fileCollection.contains(new File(folder.getRoot(), "test1.txt")));
+        assertTrue(fileCollection.contains(new File(folder.getRoot(), "test2.txt")));
     }
 }

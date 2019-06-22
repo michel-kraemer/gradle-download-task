@@ -1,4 +1,4 @@
-// Copyright 2013-2017 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,25 +14,38 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import groovy.lang.Closure;
+import org.apache.commons.io.FileUtils;
+import org.gradle.api.Project;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.File;
 import java.net.URL;
 
-import org.apache.commons.io.FileUtils;
-import org.gradle.api.Project;
-import org.junit.Test;
-
-import groovy.lang.Closure;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests {@link DownloadExtension}
  * @author Michel Kraemer
  */
-public class DownloadExtensionTest extends TestBase {
+public class DownloadExtensionTest extends TestBaseWithMockServer {
+    /**
+     * Create a WireMock stub for {@link #TEST_FILE_NAME} with {@link #CONTENTS}
+     */
+    @Before
+    public void stubForTestFile() {
+        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+                .willReturn(aResponse()
+                        .withHeader("content-length", String.valueOf(CONTENTS.length()))
+                        .withBody(CONTENTS)));
+    }
+
     /**
      * Download a file using the {@link DownloadExtension}
      * @param project a Gradle project
@@ -64,13 +77,13 @@ public class DownloadExtensionTest extends TestBase {
     public void downloadSingleFile() throws Exception {
         Download t = makeProjectAndTask();
 
-        String src = makeSrc(TEST_FILE_NAME);
+        String src = wireMockRule.url(TEST_FILE_NAME);
         File dst = folder.newFile();
 
         doDownload(t.getProject(), src, dst);
 
-        byte[] dstContents = FileUtils.readFileToByteArray(dst);
-        assertArrayEquals(contents, dstContents);
+        String dstContents = FileUtils.readFileToString(dst);
+        assertEquals(CONTENTS, dstContents);
     }
 
     /**
@@ -79,8 +92,11 @@ public class DownloadExtensionTest extends TestBase {
      */
     @Test(expected = IllegalStateException.class)
     public void downloadSingleFileError() throws Exception {
+        wireMockRule.stubFor(get(urlEqualTo("/foobar.txt"))
+                .willReturn(aResponse().withStatus(404)));
+
         Download t = makeProjectAndTask();
-        String src = makeSrc("foobar.txt");
+        String src = wireMockRule.url("foobar.txt");
         File dst = folder.newFile();
         doDownload(t.getProject(), src, dst);
     }

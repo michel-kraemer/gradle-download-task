@@ -1,4 +1,4 @@
-// Copyright 2013-2016 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,72 +14,51 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import org.apache.commons.io.FileUtils;
+import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.io.FileUtils;
-import org.junit.Test;
-import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.handler.ContextHandler;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  * Tests if HTTP headers can be sent
  * @author Michel Kraemer
  */
-public class HeadersTest extends TestBase {
-    private static final String HEADERS = "headers:";
-    private static final String ECHO_HEADERS = "echo-headers";
-    
-    @Override
-    protected Handler[] makeHandlers() throws IOException {
-        //echo X-* headers back in response body
-        ContextHandler echoHeadersHandler = new ContextHandler("/" + ECHO_HEADERS) {
-            @Override
-            public void handle(String target, HttpServletRequest request,
-                    HttpServletResponse response, int dispatch)
-                            throws IOException, ServletException {
-                response.setStatus(200);
-                PrintWriter rw = response.getWriter();
-                rw.write(HEADERS + "\n");
-                @SuppressWarnings("unchecked")
-                Enumeration<String> headerNames = (Enumeration<String>)request.getHeaderNames();
-                while (headerNames.hasMoreElements()) {
-                    String name = headerNames.nextElement();
-                    if (name.startsWith("X-")) {
-                        rw.write(String.format("  %s: %s\n", name, request.getHeader(name)));
-                    }
-                }
-                rw.close();
-            }
-        };
-        return new Handler[] { echoHeadersHandler };
-    }
-    
+public class HeadersTest extends TestBaseWithMockServer {
+    private static final String X_HEADER_TEST_A = "X-Header-Test-A";
+    private static final String X_HEADER_TEST_B = "X-Header-Test-B";
+    private static final String VALUE_A = "value A";
+    private static final String VALUE_B = "value B";
+
     /**
      * Tests that no headers request headers are set when not specified
      * @throws Exception if anything goes wrong
      */
     @Test
     public void downloadWithNoHeaders() throws Exception {
+        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+                .withHeader(X_HEADER_TEST_A, absent())
+                .withHeader(X_HEADER_TEST_B, absent())
+                .willReturn(aResponse()
+                        .withBody(CONTENTS)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(ECHO_HEADERS));
+        t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals(HEADERS + "\n", dstContents);
+        assertEquals(CONTENTS, dstContents);
     }
 
     /**
@@ -88,42 +67,46 @@ public class HeadersTest extends TestBase {
      */
     @Test
     public void downloadWithHeaders() throws Exception {
+        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+                .withHeader(X_HEADER_TEST_A, equalTo(VALUE_A))
+                .withHeader(X_HEADER_TEST_B, equalTo(VALUE_B))
+                .willReturn(aResponse()
+                        .withBody(CONTENTS)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(ECHO_HEADERS));
+        t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
         t.dest(dst);
-        t.header("X-Header-Test-A", "value A");
-        t.header("X-Header-Test-B", "value B");
+        t.header(X_HEADER_TEST_A, VALUE_A);
+        t.header(X_HEADER_TEST_B, VALUE_B);
         t.execute();
-        
+
         assertEquals(2, t.getHeaders().size());
-        assertEquals("value A", t.getHeader("X-Header-Test-A"));
-        assertEquals("value B", t.getHeader("X-Header-Test-B"));
+        assertEquals(VALUE_A, t.getHeader(X_HEADER_TEST_A));
+        assertEquals(VALUE_B, t.getHeader(X_HEADER_TEST_B));
 
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals(HEADERS + "\n  X-Header-Test-A: value A\n  "
-                + "X-Header-Test-B: value B\n", dstContents);
+        assertEquals(CONTENTS, dstContents);
     }
     
     /**
      * Tests that request headers can be set
-     * @throws Exception if anything goes wrong
      */
     @Test
-    public void downloadWithHeadersMap() throws Exception {
+    public void downloadWithHeadersMap() {
         Download t = makeProjectAndTask();
-        
-        assertNull(t.getHeader("X-Header-Test-A"));
-        
-        Map<String, String> headers = new HashMap<String, String>();
-        headers.put("X-Header-Test-A", "value A");
-        headers.put("X-Header-Test-B", "value B");
+
+        assertNull(t.getHeader(X_HEADER_TEST_A));
+
+        Map<String, String> headers = new HashMap<>();
+        headers.put(X_HEADER_TEST_A, VALUE_A);
+        headers.put(X_HEADER_TEST_B, VALUE_B);
         t.headers(headers);
-        
+
         assertEquals(2, t.getHeaders().size());
-        assertEquals("value A", t.getHeader("X-Header-Test-A"));
-        assertEquals("value B", t.getHeader("X-Header-Test-B"));
-        
+        assertEquals(VALUE_A, t.getHeader(X_HEADER_TEST_A));
+        assertEquals(VALUE_B, t.getHeader(X_HEADER_TEST_B));
+
         t.headers(null);
         assertEquals(0, t.getHeaders().size());
     }

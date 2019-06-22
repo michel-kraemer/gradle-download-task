@@ -1,4 +1,4 @@
-// Copyright 2013-2017 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,49 +14,27 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.SocketTimeoutException;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.tasks.TaskExecutionException;
 import org.junit.Test;
-import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.handler.ContextHandler;
+
+import java.io.File;
+import java.net.SocketTimeoutException;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Tests if the task times out if the response takes too long
  * @author Michel Kraemer
  */
-public class TimeoutTest extends TestBase {
+public class TimeoutTest extends TestBaseWithMockServer {
     private static final int TIMEOUT_MS = 100;
     private static final String TIMEOUT = "timeout";
-
-    @Override
-    protected Handler[] makeHandlers() throws IOException {
-        ContextHandler echoHeadersHandler = new ContextHandler("/" + TIMEOUT) {
-            @Override
-            public void handle(String target, HttpServletRequest request,
-                    HttpServletResponse response, int dispatch)
-                            throws IOException, ServletException {
-                // wait longer than the configured timeout
-                try {
-                    Thread.sleep(TIMEOUT_MS * 10);
-                } catch (InterruptedException e) {
-                    // fall through
-                }
-            }
-        };
-        return new Handler[] { echoHeadersHandler };
-    }
 
     /**
      * Tests that the task times out if the response takes too long
@@ -64,10 +42,15 @@ public class TimeoutTest extends TestBase {
      */
     @Test
     public void timeout() throws Exception {
+        wireMockRule.stubFor(get(urlEqualTo("/" + TIMEOUT))
+                .willReturn(aResponse()
+                        .withFixedDelay(TIMEOUT_MS * 10)
+                        .withBody("Whatever")));
+
         Download t = makeProjectAndTask();
         t.timeout(TIMEOUT_MS);
         assertEquals(TIMEOUT_MS, t.getTimeout());
-        t.src(makeSrc(TIMEOUT));
+        t.src(wireMockRule.url(TIMEOUT));
         File dst = folder.newFile();
         t.dest(dst);
         try {

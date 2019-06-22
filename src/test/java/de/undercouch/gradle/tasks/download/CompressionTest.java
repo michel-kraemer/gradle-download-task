@@ -14,76 +14,42 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.util.zip.GZIPOutputStream;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
-import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.handler.ContextHandler;
+
+import java.io.File;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests if the plugin can handle compressed content
  * @author Michel Kraemer
  */
-public class CompressionTest extends TestBase {
-    private static final String COMPRESSED = "compressed";
-    
-    @Override
-    protected Handler[] makeHandlers() throws IOException {
-        ContextHandler compressionHandler = new ContextHandler("/" + COMPRESSED) {
-            @Override
-            public void handle(String target, HttpServletRequest request,
-                    HttpServletResponse response, int dispatch)
-                            throws IOException, ServletException {
-                String acceptEncoding = request.getHeader("Accept-Encoding");
-                boolean acceptGzip = acceptEncoding != null &&
-                        acceptEncoding.contains("gzip");
-
-                response.setStatus(200);
-                OutputStream os = response.getOutputStream();
-                if (acceptGzip) {
-                    response.setHeader("Content-Encoding", "gzip");
-                    GZIPOutputStream gos = new GZIPOutputStream(os);
-                    OutputStreamWriter osw = new OutputStreamWriter(gos);
-                    osw.write("Compressed");
-                    osw.close();
-                    gos.flush();
-                    gos.close();
-                } else {
-                    OutputStreamWriter osw = new OutputStreamWriter(os);
-                    osw.write("Uncompressed");
-                    osw.close();
-                }
-                os.close();
-            }
-        };
-        return new Handler[] { compressionHandler };
-    }
-    
+public class CompressionTest extends TestBaseWithMockServer {
     /**
      * Tests if the plugin can handle compressed content
      * @throws Exception if anything goes wrong
      */
     @Test
     public void compressed() throws Exception {
+        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+                .withHeader("accept-encoding", containing("gzip"))
+                .willReturn(aResponse()
+                        .withBody(CONTENTS)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(COMPRESSED));
+        t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("Compressed", dstContents);
+        assertEquals(CONTENTS, dstContents);
     }
     
     /**
@@ -92,14 +58,19 @@ public class CompressionTest extends TestBase {
      */
     @Test
     public void uncompressed() throws Exception {
+        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+                .withHeader("accept-encoding", absent())
+                .willReturn(aResponse()
+                        .withBody(CONTENTS)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(COMPRESSED));
+        t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
         t.dest(dst);
         t.compress(false);
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("Uncompressed", dstContents);
+        assertEquals(CONTENTS, dstContents);
     }
 }

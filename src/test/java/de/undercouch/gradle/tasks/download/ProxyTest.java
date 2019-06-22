@@ -1,4 +1,4 @@
-// Copyright 2013-2016 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,12 +14,10 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
-
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.HttpRequest;
 import org.apache.commons.io.FileUtils;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.littleshoot.proxy.HttpFilters;
 import org.littleshoot.proxy.HttpFiltersAdapter;
@@ -29,20 +27,90 @@ import org.littleshoot.proxy.HttpProxyServerBootstrap;
 import org.littleshoot.proxy.ProxyAuthenticator;
 import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.HttpRequest;
+import java.io.File;
+import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.ServerSocket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.Enumeration;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests if the download task plugin can download files through a proxy
  * @author Michel Kraemer
  */
-public class ProxyTest extends TestBase {
+public class ProxyTest extends TestBaseWithMockServer {
     private static String PROXY_USERNAME = "testuser123";
     private static String PROXY_PASSWORD = "testpass456";
     
     private HttpProxyServer proxy;
     private int proxyPort;
     private int proxyCounter = 0;
+
+    /**
+     * Host name of the local machine
+     */
+    private static String localHostName;
+
+    /**
+     * Find a free socket port
+     * @return the number of the free port
+     * @throws IOException if an IO error occurred
+     */
+    private static int findPort() throws IOException {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        }
+    }
+
+    /**
+     * Gets the local host name to use for the tests
+     * @throws UnknownHostException if the local host name could not be
+     * resolved into an address
+     * @throws SocketException if an I/O error occurs
+     */
+    @BeforeClass
+    public static void setUpClass() throws UnknownHostException, SocketException {
+        try {
+            // noinspection ResultOfMethodCallIgnored
+            InetAddress.getByName("localhost.localdomain");
+            localHostName = "localhost.localdomain";
+        } catch (UnknownHostException e) {
+            localHostName = findSiteLocal();
+            if (localHostName == null) {
+                localHostName = InetAddress.getLocalHost().getCanonicalHostName();
+            }
+        }
+    }
+
+    /**
+     * Get a site local IP4 address from the current node's interfaces
+     * @return the IP address or {@code null} if the address could not
+     * be determined
+     * @throws SocketException if an I/O error occurs
+     */
+    private static String findSiteLocal() throws SocketException {
+        Enumeration<NetworkInterface> interfaces =
+                NetworkInterface.getNetworkInterfaces();
+        while (interfaces.hasMoreElements()) {
+            NetworkInterface n = interfaces.nextElement();
+            Enumeration<InetAddress> addresses = n.getInetAddresses();
+            while (addresses.hasMoreElements()) {
+                InetAddress i = addresses.nextElement();
+                if (i.isSiteLocalAddress() && i instanceof Inet4Address) {
+                    return i.getHostAddress();
+                }
+            }
+        }
+        return null;
+    }
     
     /**
      * Runs a proxy server counting requests
@@ -109,6 +177,11 @@ public class ProxyTest extends TestBase {
      */
     private void testProxy(boolean authenticating, String newNonProxyHosts,
             int expectedProxyCounter) throws Exception {
+        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+                .willReturn(aResponse()
+                        .withHeader("content-length", String.valueOf(CONTENTS.length()))
+                        .withBody(CONTENTS)));
+
         String proxyHost = System.getProperty("http.proxyHost");
         String proxyPort = System.getProperty("http.proxyPort");
         String nonProxyHosts = System.getProperty("http.nonProxyHosts");
@@ -127,13 +200,13 @@ public class ProxyTest extends TestBase {
             }
             
             Download t = makeProjectAndTask();
-            t.src(makeSrc(TEST_FILE_NAME));
+            t.src("http://" + localHostName + ":" + wireMockRule.port() + "/" + TEST_FILE_NAME);
             File dst = folder.newFile();
             t.dest(dst);
             t.execute();
             
-            byte[] dstContents = FileUtils.readFileToByteArray(dst);
-            assertArrayEquals(contents, dstContents);
+            String dstContents = FileUtils.readFileToString(dst);
+            assertEquals(CONTENTS, dstContents);
             assertEquals(expectedProxyCounter, proxyCounter);
         } finally {
             stopProxy();

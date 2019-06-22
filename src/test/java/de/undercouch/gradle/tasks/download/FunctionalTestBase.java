@@ -1,4 +1,4 @@
-// Copyright 2013-2016 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ import static org.gradle.testkit.runner.TaskOutcome.UP_TO_DATE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
+import org.apache.commons.io.FileUtils;
 import org.gradle.testkit.runner.BuildTask;
 import org.gradle.testkit.runner.GradleRunner;
 import org.junit.Rule;
@@ -34,7 +34,7 @@ import org.junit.rules.TemporaryFolder;
  * Base class for functional tests
  * @author Jan Berkel
  */
-public abstract class FunctionalTestBase extends TestBase {
+public abstract class FunctionalTestBase extends TestBaseWithMockServer {
     /**
      * A temporary folder for test files
      */
@@ -67,7 +67,8 @@ public abstract class FunctionalTestBase extends TestBase {
      * @throws IOException if the build file could not written to disk
      */
     protected GradleRunner createRunnerWithBuildFile(String buildFile) throws IOException {
-        writeBuildFile(buildFile);
+        FileUtils.writeStringToFile(this.buildFile, buildFile, StandardCharsets.UTF_8);
+
         writePropertiesFile();
         GradleRunner runner = GradleRunner.create()
             .withPluginClasspath()
@@ -104,23 +105,6 @@ public abstract class FunctionalTestBase extends TestBase {
         assertNotNull("task is null", task);
         assertEquals("task " + task + " state should be skipped", SKIPPED, task.getOutcome());
     }
-
-    /**
-     * Write a gradle build file to disk
-     * @param content the build file's contents
-     * @throws IOException if the file could not be written
-     */
-    private void writeBuildFile(String content) throws IOException {
-        BufferedWriter output = null;
-        try {
-            output = new BufferedWriter(new FileWriter(buildFile));
-            output.write(content);
-        } finally {
-            if (output != null) {
-                output.close();
-            }
-        }
-    }
     
     /**
      * Write a default 'gradle.properties' file to disk
@@ -132,14 +116,6 @@ public abstract class FunctionalTestBase extends TestBase {
         String content = "org.gradle.daemon.idletimeout=0\n" +
                 "org.gradle.jvmargs=-Xmx128M\n";
 
-        BufferedWriter output = null;
-        try {
-            output = new BufferedWriter(new FileWriter(propertiesFile));
-            output.write(content);
-        } finally {
-            if (output != null) {
-                output.close();
-            }
-        }
+        FileUtils.writeStringToFile(propertiesFile, content, StandardCharsets.UTF_8);
     }
 }

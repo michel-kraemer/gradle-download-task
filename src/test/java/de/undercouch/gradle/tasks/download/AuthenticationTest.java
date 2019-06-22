@@ -1,4 +1,4 @@
-// Copyright 2013-2016 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,17 +18,17 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.tasks.TaskExecutionException;
-import org.junit.Before;
 import org.junit.Test;
-import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.handler.ContextHandler;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -36,126 +36,26 @@ import static org.junit.Assert.assertNull;
  * Tests if the plugin can access a resource that requires authentication
  * @author Michel Kraemer
  */
-public class AuthenticationTest extends TestBase {
+public class AuthenticationTest extends TestBaseWithMockServer {
     private static final String PASSWORD = "testpass456";
     private static final String USERNAME = "testuser123";
     private static final String AUTHENTICATE = "authenticate";
     private static final String REALM = "Gradle";
     private static final String NONCE = "ABCDEF0123456789";
-    
-    private boolean basic = true;
-    
-    /**
-     * Set up the test
-     * @throws Exception if anything goes wrong
-     */
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-        basic = true;
-    }
-    
-    @Override
-    protected Handler[] makeHandlers() {
-        ContextHandler authenticationHandler = new ContextHandler("/" + AUTHENTICATE) {
-            @Override
-            public void handle(String target, HttpServletRequest request,
-                    HttpServletResponse response, int dispatch) throws IOException {
-                String ahdr = request.getHeader("Authorization");
-                if (ahdr == null) {
-                    if (!basic) {
-                        response.setHeader("WWW-Authenticate",
-                                "Digest realm=\"" + REALM + "\"," +
-                                "nonce=\"" + NONCE + "\"");
-                    }
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                            "No authorization header given");
-                    return;
-                }
-                
-                if (basic) {
-                    checkBasic(ahdr, response);
-                } else {
-                    checkDigest(ahdr, response);
-                }
-            }
-            
-            private void checkBasic(String ahdr, HttpServletResponse response)
-                    throws IOException {
-                if (!ahdr.startsWith("Basic ")) {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                            "Authorization header does not start with 'Basic '");
-                    return;
-                }
-                
-                ahdr = ahdr.substring(6);
-                ahdr = new String(Base64.decodeBase64(ahdr));
-                String[] userAndPass = ahdr.split(":");
-                if (!USERNAME.equals(userAndPass[0]) || !PASSWORD.equals(userAndPass[1])) {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                            "Wrong credentials");
-                    return;
-                }
-                
-                response.setStatus(200);
-                PrintWriter rw = response.getWriter();
-                rw.write("auth: " + ahdr);
-                rw.close();
-            }
-            
-            private void checkDigest(String ahdr, HttpServletResponse response)
-                    throws IOException {
-                if (!ahdr.startsWith("Digest ")) {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                            "Authorization header does not start with 'Digest '");
-                    return;
-                }
-                
-                String expectedResponse = USERNAME + ":" + REALM + ":" + PASSWORD;
-                expectedResponse = DigestUtils.md5Hex(expectedResponse);
-                
-                ahdr = ahdr.substring(7);
-                String[] parts = ahdr.split(",");
-                for (String p : parts) {
-                    if (p.startsWith("username") &&
-                            !p.equals("username=\"" + USERNAME + "\"")) {
-                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                                "Wrong username");
-                        return;
-                    } else if (p.startsWith("nonce") &&
-                            !p.equals("nonce=\"" + NONCE + "\"")) {
-                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                                "Wrong nonce");
-                        return;
-                    } else if (p.startsWith("realm") &&
-                            !p.equals("realm=\"" + REALM + "\"")) {
-                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                                "Wrong realm");
-                        return;
-                    } else if (p.startsWith("response") &&
-                            !p.equals("response=\"" + expectedResponse + "\"")) {
-                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                                "Wrong response");
-                        return;
-                    }
-                }
-                
-                response.setStatus(200);
-                PrintWriter rw = response.getWriter();
-                rw.close();
-            }
-        };
-        return new Handler[] { authenticationHandler };
-    }
-    
+
     /**
      * Tests if the plugin can handle failed authentication
      * @throws Exception if anything goes wrong
      */
     @Test(expected = TaskExecutionException.class)
     public void noAuthorization() throws Exception {
+        wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
+                .withHeader("Authorization", absent())
+                .willReturn(aResponse()
+                        .withStatus(HttpServletResponse.SC_UNAUTHORIZED)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(AUTHENTICATE));
+        t.src(wireMockRule.url(AUTHENTICATE));
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();
@@ -167,31 +67,49 @@ public class AuthenticationTest extends TestBase {
      */
     @Test(expected = TaskExecutionException.class)
     public void invalidCredentials() throws Exception {
+        String wrongUser = USERNAME + "!";
+        String wrongPass = PASSWORD + "!";
+        String ahdr = "Basic " + Base64.encodeBase64String(
+                (wrongUser + ":" + wrongPass).getBytes(StandardCharsets.UTF_8));
+
+        wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
+                .withHeader("Authorization", equalTo(ahdr))
+                .willReturn(aResponse()
+                        .withStatus(HttpServletResponse.SC_UNAUTHORIZED)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(AUTHENTICATE));
+        t.src(wireMockRule.url(AUTHENTICATE));
         File dst = folder.newFile();
         t.dest(dst);
-        t.username(USERNAME + "!");
-        t.password(PASSWORD + "!");
+        t.username(wrongUser);
+        t.password(wrongPass);
         t.execute();
     }
-    
+
     /**
      * Tests if the plugin can access a protected resource
      * @throws Exception if anything goes wrong
      */
     @Test
     public void validUserAndPass() throws Exception {
+        String ahdr = "Basic " + Base64.encodeBase64String(
+                (USERNAME + ":" + PASSWORD).getBytes(StandardCharsets.UTF_8));
+
+        wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
+                .withHeader("Authorization", equalTo(ahdr))
+                .willReturn(aResponse()
+                        .withBody(CONTENTS)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(AUTHENTICATE));
+        t.src(wireMockRule.url(AUTHENTICATE));
         File dst = folder.newFile();
         t.dest(dst);
         t.username(USERNAME);
         t.password(PASSWORD);
         t.execute();
-        
+
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("auth: " + USERNAME + ":" + PASSWORD, dstContents);
+        assertEquals(CONTENTS, dstContents);
     }
 
     /**
@@ -200,9 +118,33 @@ public class AuthenticationTest extends TestBase {
      */
     @Test
     public void validDigest() throws Exception {
-        basic = false;
+        String ha1 = DigestUtils.md5Hex(
+                USERNAME + ":" + REALM + ":" + PASSWORD);
+        String ha2 = DigestUtils.md5Hex(
+                "GET:/" + AUTHENTICATE);
+        String expectedResponse = DigestUtils.md5Hex(
+                ha1 + ":" + NONCE + ":" + ha2);
+        String ahdr = "Digest username=\"" + USERNAME + "\", " +
+                "realm=\"" + REALM + "\", " +
+                "nonce=\"" + NONCE + "\", " +
+                "uri=\"/" + AUTHENTICATE + "\", " +
+                "response=\"" + expectedResponse + "\", " +
+                "algorithm=MD5";
+
+        wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
+                .withHeader("Authorization", absent())
+                .willReturn(aResponse()
+                        .withHeader("WWW-Authenticate",
+                                "Digest realm=\"" + REALM + "\"," +
+                                        "nonce=\"" + NONCE + "\"")
+                        .withStatus(HttpServletResponse.SC_UNAUTHORIZED)));
+        wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
+                .withHeader("Authorization", equalTo(ahdr))
+                .willReturn(aResponse()
+                        .withBody(CONTENTS)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(AUTHENTICATE));
+        t.src(wireMockRule.url(AUTHENTICATE));
         File dst = folder.newFile();
         t.dest(dst);
         t.username(USERNAME);
@@ -210,7 +152,7 @@ public class AuthenticationTest extends TestBase {
         t.authScheme("Digest");
         t.execute();
     }
-    
+
     /**
      * Make sure the plugin rejects an invalid authentication scheme
      * @throws Exception if anything goes wrong
@@ -218,13 +160,13 @@ public class AuthenticationTest extends TestBase {
     @Test(expected = IllegalArgumentException.class)
     public void invalidAuthSchemeString() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(makeSrc(AUTHENTICATE));
+        t.src(wireMockRule.url(AUTHENTICATE));
         File dst = folder.newFile();
         t.dest(dst);
         t.authScheme("Foobar");
         t.execute();
     }
-    
+
     /**
      * Tests if the plugin has no authentications scheme set by default
      */

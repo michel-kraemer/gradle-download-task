@@ -1,4 +1,4 @@
-// Copyright 2013 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,26 +14,44 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import groovy.lang.Closure;
+import org.apache.commons.io.FileUtils;
+import org.gradle.api.tasks.TaskExecutionException;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.File;
 import java.net.URL;
 import java.util.Arrays;
 
-import org.apache.commons.io.FileUtils;
-import org.gradle.api.tasks.TaskExecutionException;
-import org.junit.Test;
-
-import groovy.lang.Closure;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests the gradle-download-task plugin
  * @author Michel Kraemer
  */
-public class DownloadTest extends TestBase {
+public class DownloadTest extends TestBaseWithMockServer {
+    /**
+     * Create a WireMock stub for {@link #TEST_FILE_NAME} with {@link #CONTENTS}
+     * and {@link #TEST_FILE_NAME2} with {@link #CONTENTS2}
+     */
+    @Before
+    public void stubForTestFile() {
+        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+                .willReturn(aResponse()
+                        .withHeader("content-length", String.valueOf(CONTENTS.length()))
+                        .withBody(CONTENTS)));
+        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME2))
+                .willReturn(aResponse()
+                        .withHeader("content-length", String.valueOf(CONTENTS2.length()))
+                        .withBody(CONTENTS2)));
+    }
+
     /**
      * Tests if a single file can be downloaded
      * @throws Exception if anything goes wrong
@@ -41,7 +59,7 @@ public class DownloadTest extends TestBase {
     @Test
     public void downloadSingleFile() throws Exception {
         Download t = makeProjectAndTask();
-        String src = makeSrc(TEST_FILE_NAME);
+        String src = wireMockRule.url(TEST_FILE_NAME);
         t.src(src);
         File dst = folder.newFile();
         t.dest(dst);
@@ -51,8 +69,8 @@ public class DownloadTest extends TestBase {
         assertEquals(src, t.getSrc().toString());
         assertSame(dst, t.getDest());
         
-        byte[] dstContents = FileUtils.readFileToByteArray(dst);
-        assertArrayEquals(contents, dstContents);
+        String dstContents = FileUtils.readFileToString(dst);
+        assertEquals(CONTENTS, dstContents);
     }
     
     /**
@@ -62,17 +80,17 @@ public class DownloadTest extends TestBase {
     @Test
     public void downloadSingleURL() throws Exception {
         Download t = makeProjectAndTask();
-        URL src = new URL(makeSrc(TEST_FILE_NAME));
+        URL src = new URL(wireMockRule.url(TEST_FILE_NAME));
         t.src(src);
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();
-        
+
         assertSame(src, t.getSrc());
         assertSame(dst, t.getDest());
-        
-        byte[] dstContents = FileUtils.readFileToByteArray(dst);
-        assertArrayEquals(contents, dstContents);
+
+        String dstContents = FileUtils.readFileToString(dst);
+        assertEquals(CONTENTS, dstContents);
     }
     
     /**
@@ -82,14 +100,14 @@ public class DownloadTest extends TestBase {
     @Test
     public void downloadSingleFileToDir() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(makeSrc(TEST_FILE_NAME));
+        t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFolder();
         t.dest(dst);
         t.execute();
-        
-        byte[] dstContents = FileUtils.readFileToByteArray(
+
+        String dstContents = FileUtils.readFileToString(
                 new File(dst, TEST_FILE_NAME));
-        assertArrayEquals(contents, dstContents);
+        assertEquals(CONTENTS, dstContents);
     }
 
     /**
@@ -100,13 +118,13 @@ public class DownloadTest extends TestBase {
     @Test
     public void downloadSingleFileToRelativePath() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(makeSrc(TEST_FILE_NAME));
+        t.src(wireMockRule.url(TEST_FILE_NAME));
         t.dest(TEST_FILE_NAME);
         t.execute();
-        
-        byte[] dstContents = FileUtils.readFileToByteArray(
+
+        String dstContents = FileUtils.readFileToString(
                 new File(projectDir, TEST_FILE_NAME));
-        assertArrayEquals(contents, dstContents);
+        assertEquals(CONTENTS, dstContents);
     }
     
     /**
@@ -116,18 +134,19 @@ public class DownloadTest extends TestBase {
     @Test
     public void downloadMultipleFiles() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(Arrays.asList(makeSrc(TEST_FILE_NAME), makeSrc(TEST_FILE_NAME2)));
-        
+        t.src(Arrays.asList(wireMockRule.url(TEST_FILE_NAME),
+                wireMockRule.url(TEST_FILE_NAME2)));
+
         File dst = folder.newFolder();
         t.dest(dst);
         t.execute();
-        
-        byte[] dstContents = FileUtils.readFileToByteArray(
+
+        String dstContents = FileUtils.readFileToString(
                 new File(dst, TEST_FILE_NAME));
-        assertArrayEquals(contents, dstContents);
-        byte[] dstContents2 = FileUtils.readFileToByteArray(
+        assertEquals(CONTENTS, dstContents);
+        String dstContents2 = FileUtils.readFileToString(
                 new File(dst, TEST_FILE_NAME2));
-        assertArrayEquals(contents2, dstContents2);
+        assertEquals(CONTENTS2, dstContents2);
     }
 
     /**
@@ -138,7 +157,8 @@ public class DownloadTest extends TestBase {
     @Test
     public void downloadMultipleFilesCreatesDestDirAutomatically() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(Arrays.asList(makeSrc(TEST_FILE_NAME), makeSrc(TEST_FILE_NAME2)));
+        t.src(Arrays.asList(wireMockRule.url(TEST_FILE_NAME),
+                wireMockRule.url(TEST_FILE_NAME2)));
 
         File dst = folder.newFolder();
         assertTrue(dst.delete());
@@ -155,7 +175,8 @@ public class DownloadTest extends TestBase {
     @Test(expected = TaskExecutionException.class)
     public void downloadMultipleFilesToFile() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(Arrays.asList(makeSrc(TEST_FILE_NAME), makeSrc(TEST_FILE_NAME2)));
+        t.src(Arrays.asList(wireMockRule.url(TEST_FILE_NAME),
+                wireMockRule.url(TEST_FILE_NAME2)));
         File dst = folder.newFile();
         t.dest(dst);
         t.execute();
@@ -169,20 +190,20 @@ public class DownloadTest extends TestBase {
     public void lazySrcAndDest() throws Exception {
         final boolean[] srcCalled = new boolean[] { false };
         final boolean[] dstCalled = new boolean[] { false };
-        
+
         final File dst = folder.newFile();
-        
+
         Download t = makeProjectAndTask();
         t.src(new Closure<Object>(this, this) {
             private static final long serialVersionUID = -4463658999363261400L;
-            
+
             @SuppressWarnings("unused")
             public Object doCall() {
                 srcCalled[0] = true;
-                return makeSrc(TEST_FILE_NAME);
+                return wireMockRule.url(TEST_FILE_NAME);
             }
         });
-        
+
         t.dest(new Closure<Object>(this, this) {
             private static final long serialVersionUID = 932174549047352157L;
 
@@ -192,14 +213,14 @@ public class DownloadTest extends TestBase {
                 return dst;
             }
         });
-        
+
         t.execute();
-        
+
         assertTrue(srcCalled[0]);
         assertTrue(dstCalled[0]);
-        
-        byte[] dstContents = FileUtils.readFileToByteArray(dst);
-        assertArrayEquals(contents, dstContents);
+
+        String dstContents = FileUtils.readFileToString(dst);
+        assertEquals(CONTENTS, dstContents);
     }
     
     /**
@@ -211,17 +232,17 @@ public class DownloadTest extends TestBase {
         // write contents to destination file
         File dst = folder.newFile();
         FileUtils.writeStringToFile(dst, "Hello");
-        
+
         Download t = makeProjectAndTask();
-        String src = makeSrc(TEST_FILE_NAME);
+        String src = wireMockRule.url(TEST_FILE_NAME);
         t.src(src);
         t.dest(dst);
         t.overwrite(false); // do not overwrite the file
         t.execute();
 
         // contents must not be changed
-        byte[] dstContents = FileUtils.readFileToByteArray(dst);
-        assertArrayEquals("Hello".getBytes(), dstContents);
+        String dstContents = FileUtils.readFileToString(dst);
+        assertEquals("Hello", dstContents);
     }
 
     /**
@@ -259,7 +280,7 @@ public class DownloadTest extends TestBase {
     @Test(expected = TaskExecutionException.class)
     public void testExecuteEmptyDest() throws Exception {
         Download t = makeProjectAndTask();
-        String src = makeSrc(TEST_FILE_NAME);
+        String src = wireMockRule.url(TEST_FILE_NAME);
         t.src(src);
         t.execute();
     }
@@ -271,7 +292,7 @@ public class DownloadTest extends TestBase {
     @Test
     public void testArraySrc() throws Exception {
         Download t = makeProjectAndTask();
-        String src = makeSrc(TEST_FILE_NAME);
+        String src = wireMockRule.url(TEST_FILE_NAME);
         t.src(new Object[] { src });
         assertTrue(t.getSrc() instanceof URL);
     }

@@ -1,4 +1,4 @@
-// Copyright 2013-2016 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import org.junit.Test;
  * Test the offline capabilities of the download task plugin
  * @author Michel Kraemer
  */
-public class OfflineTest extends TestBase {
+public class OfflineTest extends TestBaseWithMockServer {
     /**
      * Test if the task is skipped if we're in offline mode
      * @throws Exception if anything goes wrong
@@ -35,7 +35,7 @@ public class OfflineTest extends TestBase {
     public void offlineSkip() throws Exception {
         Download t = makeProjectAndTask();
         t.getProject().getGradle().getStartParameter().setOffline(true);
-        t.src(makeSrc(TEST_FILE_NAME));
+        t.src(wireMockRule.baseUrl());
         
         // create empty destination file
         File dst = folder.newFile();
@@ -57,7 +57,7 @@ public class OfflineTest extends TestBase {
     public void offlineFail() throws Exception {
         Download t = makeProjectAndTask();
         t.getProject().getGradle().getStartParameter().setOffline(true);
-        t.src(makeSrc(TEST_FILE_NAME));
+        t.src(wireMockRule.baseUrl());
         File dst = new File(folder.getRoot(), "offlineFail");
         t.dest(dst);
         t.execute(); // should fail

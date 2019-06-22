@@ -1,4 +1,4 @@
-// Copyright 2013-2016 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,60 +14,28 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.apache.commons.io.FileUtils;
+import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.io.FileUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.handler.ContextHandler;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests if the plugin handles the last-modified header correctly
  * @author Michel Kraemer
  */
-public class OnlyIfModifiedTest extends TestBase {
+public class OnlyIfModifiedTest extends TestBaseWithMockServer {
     private static final String LAST_MODIFIED = "last-modified";
-    private String lastModified;
-    
-    @Override
-    protected Handler[] makeHandlers() throws IOException {
-        ContextHandler lastModifiedHandler = new ContextHandler("/" + LAST_MODIFIED) {
-            @Override
-            public void handle(String target, HttpServletRequest request,
-                    HttpServletResponse response, int dispatch)
-                            throws IOException, ServletException {
-                response.setStatus(200);
-                if (lastModified != null) {
-                    response.setHeader("Last-Modified", lastModified);
-                }
-                PrintWriter rw = response.getWriter();
-                rw.write("lm: " + String.valueOf(lastModified));
-                rw.close();
-            }
-        };
-        return new Handler[] { lastModifiedHandler };
-    }
-    
-    @Before
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        lastModified = null;
-    }
-    
+
     /**
      * Tests if the plugin can handle a missing Last-Modified header and still
      * downloads the file
@@ -75,17 +43,21 @@ public class OnlyIfModifiedTest extends TestBase {
      */
     @Test
     public void missingLastModified() throws Exception {
+        wireMockRule.stubFor(get(urlEqualTo("/" + LAST_MODIFIED))
+                .willReturn(aResponse()
+                        .withBody(CONTENTS)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(LAST_MODIFIED));
+        t.src(wireMockRule.url(LAST_MODIFIED));
         File dst = folder.newFile();
-        dst.delete();
+        assertTrue(dst.delete());
         assertFalse(dst.exists());
         t.dest(dst);
         t.onlyIfModified(true);
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("lm: null", dstContents);
+        assertEquals(CONTENTS, dstContents);
     }
     
     /**
@@ -94,20 +66,23 @@ public class OnlyIfModifiedTest extends TestBase {
      * @throws Exception if anything goes wrong
      */
     @Test
-    public void incorrectContentLength() throws Exception {
-        lastModified = "abcd";
+    public void incorrectLastModified() throws Exception {
+        wireMockRule.stubFor(get(urlEqualTo("/" + LAST_MODIFIED))
+                .willReturn(aResponse()
+                        .withHeader("Last-Modified", "abcd")
+                        .withBody(CONTENTS)));
         
         Download t = makeProjectAndTask();
-        t.src(makeSrc(LAST_MODIFIED));
+        t.src(wireMockRule.url(LAST_MODIFIED));
         File dst = folder.newFile();
-        dst.delete();
+        assertTrue(dst.delete());
         assertFalse(dst.exists());
         t.dest(dst);
         t.onlyIfModified(true);
         t.execute();
 
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("lm: abcd", dstContents);
+        assertEquals(CONTENTS, dstContents);
     }
     
     /**
@@ -120,12 +95,16 @@ public class OnlyIfModifiedTest extends TestBase {
         long expectedlmlong = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH)
                 .parse(lm)
                 .getTime();
-        lastModified = lm;
-        
+
+        wireMockRule.stubFor(get(urlEqualTo("/" + LAST_MODIFIED))
+                .willReturn(aResponse()
+                        .withHeader("Last-Modified", lm)
+                        .withBody(CONTENTS)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(LAST_MODIFIED));
+        t.src(wireMockRule.url(LAST_MODIFIED));
         File dst = folder.newFile();
-        dst.delete();
+        assertTrue(dst.delete());
         assertFalse(dst.exists());
         t.dest(dst);
         t.onlyIfModified(true);
@@ -135,9 +114,9 @@ public class OnlyIfModifiedTest extends TestBase {
         long lmlong = dst.lastModified();
         assertEquals(expectedlmlong, lmlong);
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("lm: " + lm, dstContents);
+        assertEquals(CONTENTS, dstContents);
     }
-    
+
     /**
      * Tests if the plugin doesn't download a file if the timestamp equals
      * the last-modified header
@@ -149,13 +128,17 @@ public class OnlyIfModifiedTest extends TestBase {
         long expectedlmlong = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH)
                 .parse(lm)
                 .getTime();
-        lastModified = lm;
-        
+
+        wireMockRule.stubFor(get(urlEqualTo("/" + LAST_MODIFIED))
+                .willReturn(aResponse()
+                        .withHeader("Last-Modified", lm)
+                        .withBody(CONTENTS)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(LAST_MODIFIED));
+        t.src(wireMockRule.url(LAST_MODIFIED));
         File dst = folder.newFile();
         FileUtils.writeStringToFile(dst, "Hello");
-        dst.setLastModified(expectedlmlong);
+        assertTrue(dst.setLastModified(expectedlmlong));
         t.dest(dst);
         t.onlyIfModified(true);
         t.execute();
@@ -164,8 +147,9 @@ public class OnlyIfModifiedTest extends TestBase {
         assertEquals(expectedlmlong, lmlong);
         String dstContents = FileUtils.readFileToString(dst);
         assertEquals("Hello", dstContents);
+        assertNotEquals(CONTENTS, dstContents);
     }
-    
+
     /**
      * Tests if the plugin doesn't download a file if the timestamp is newer
      * than the last-modified header
@@ -177,13 +161,17 @@ public class OnlyIfModifiedTest extends TestBase {
         long expectedlmlong = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH)
                 .parse(lm)
                 .getTime();
-        lastModified = lm;
-        
+
+        wireMockRule.stubFor(get(urlEqualTo("/" + LAST_MODIFIED))
+                .willReturn(aResponse()
+                        .withHeader("Last-Modified", lm)
+                        .withBody(CONTENTS)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(LAST_MODIFIED));
+        t.src(wireMockRule.url(LAST_MODIFIED));
         File dst = folder.newFile();
         FileUtils.writeStringToFile(dst, "Hello");
-        dst.setLastModified(expectedlmlong + 1000);
+        assertTrue(dst.setLastModified(expectedlmlong + 1000));
         t.dest(dst);
         t.onlyIfModified(true);
         t.execute();
@@ -192,8 +180,9 @@ public class OnlyIfModifiedTest extends TestBase {
         assertEquals(expectedlmlong + 1000, lmlong);
         String dstContents = FileUtils.readFileToString(dst);
         assertEquals("Hello", dstContents);
+        assertNotEquals(CONTENTS, dstContents);
     }
-    
+
     /**
      * Tests if the plugin downloads a file if the timestamp is older than
      * the last-modified header
@@ -205,13 +194,18 @@ public class OnlyIfModifiedTest extends TestBase {
         long expectedlmlong = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH)
                 .parse(lm)
                 .getTime();
-        lastModified = lm;
-        
+
+        wireMockRule.stubFor(get(urlEqualTo("/" + LAST_MODIFIED))
+                .willReturn(aResponse()
+                        .withHeader("Last-Modified", lm)
+                        .withBody(CONTENTS)));
+
         Download t = makeProjectAndTask();
-        t.src(makeSrc(LAST_MODIFIED));
+        t.src(wireMockRule.url(LAST_MODIFIED));
         File dst = folder.newFile();
         FileUtils.writeStringToFile(dst, "Hello");
-        dst.setLastModified(expectedlmlong - 1000);
+        assertNotEquals("Hello", CONTENTS);
+        assertTrue(dst.setLastModified(expectedlmlong - 1000));
         t.dest(dst);
         t.onlyIfModified(true);
         t.execute();
@@ -219,7 +213,7 @@ public class OnlyIfModifiedTest extends TestBase {
         long lmlong = dst.lastModified();
         assertEquals(expectedlmlong, lmlong);
         String dstContents = FileUtils.readFileToString(dst);
-        assertEquals("lm: " + lm, dstContents);
+        assertEquals(CONTENTS, dstContents);
     }
 
     /**
