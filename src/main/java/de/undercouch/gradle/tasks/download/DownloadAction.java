@@ -244,7 +244,7 @@ public class DownloadAction implements DownloadSpec {
         //create HTTP client
         CloseableHttpClient client = clientFactory.createHttpClient(
                 httpHost, acceptAnyCertificate);
-        
+
         //open URL connection
         String etag = null;
         if (onlyIfModified && useETag.enabled && destFile.exists()) {
@@ -255,20 +255,20 @@ public class DownloadAction implements DownloadSpec {
         }
         CloseableHttpResponse response = openConnection(httpHost, src.getFile(),
                 timestamp, etag, client);
-        //check if file on server was modified
-        long lastModified = parseLastModified(response);
-        int code = response.getStatusLine().getStatusCode();
-        if (code == HttpStatus.SC_NOT_MODIFIED ||
-                (lastModified != 0 && timestamp >= lastModified)) {
-            if (!quiet) {
-                project.getLogger().info("Not modified. Skipping '" + src + "'");
-            }
-            ++upToDate;
-            return;
-        }
-        
-        //perform the download
         try {
+            //check if file on server was modified
+            long lastModified = parseLastModified(response);
+            int code = response.getStatusLine().getStatusCode();
+            if (code == HttpStatus.SC_NOT_MODIFIED ||
+                    (lastModified != 0 && timestamp >= lastModified)) {
+                if (!quiet) {
+                    project.getLogger().info("Not modified. Skipping '" + src + "'");
+                }
+                ++upToDate;
+                return;
+            }
+        
+            //perform the download
             performDownload(response, destFile);
         } finally {
             response.close();
@@ -303,8 +303,8 @@ public class DownloadAction implements DownloadSpec {
         long contentLength = entity.getContentLength();
         if (contentLength >= 0) {
             size = toLengthText(contentLength);
+
         }
-        
         processedBytes = 0;
         loggedKb = 0;
         
@@ -624,6 +624,7 @@ public class DownloadAction implements DownloadSpec {
             } else {
                 phrase += " (HTTP status code " + code + ")";
             }
+            response.close();
             throw new ClientProtocolException(phrase);
         }
         
