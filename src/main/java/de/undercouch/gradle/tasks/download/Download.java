@@ -179,8 +179,13 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
 
     @Override
-    public void timeout(int milliseconds) {
-        action.timeout(milliseconds);
+    public void connectTimeout(int milliseconds) {
+        action.connectTimeout(milliseconds);
+    }
+
+    @Override
+    public void readTimeout(int milliseconds) {
+        action.readTimeout(milliseconds);
     }
 
     @Override
@@ -269,8 +274,13 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
 
     @Override
-    public int getTimeout() {
-        return action.getTimeout();
+    public int getConnectTimeout() {
+        return action.getConnectTimeout();
+    }
+
+    @Override
+    public int getReadTimeout() {
+        return action.getReadTimeout();
     }
 
     @Override

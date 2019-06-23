@@ -85,7 +85,8 @@ public class DownloadAction implements DownloadSpec {
     private String authScheme;
     private Map<String, String> headers;
     private boolean acceptAnyCertificate = false;
-    private int timeoutMs = -1;
+    private int connectTimeoutMs = -1;
+    private int readTimeoutMs = -1;
     private File downloadTaskDir;
     private boolean tempAndMove = false;
     private UseETag useETag = UseETag.FALSE;
@@ -569,10 +570,10 @@ public class DownloadAction implements DownloadSpec {
 
         //configure timeouts
         RequestConfig config = RequestConfig.custom()
-                .setConnectTimeout(timeoutMs)
-                .setConnectionRequestTimeout(timeoutMs)
+                .setConnectTimeout(connectTimeoutMs)
+                .setConnectionRequestTimeout(connectTimeoutMs)
+                .setSocketTimeout(readTimeoutMs)
                 .setCookieSpec(CookieSpecs.STANDARD)
-                .setSocketTimeout(timeoutMs)
                 .setContentCompressionEnabled(compress)
                 .build();
         get.setConfig(config);
@@ -865,8 +866,13 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
-    public void timeout(int milliseconds) {
-        this.timeoutMs = milliseconds;
+    public void connectTimeout(int milliseconds) {
+        this.connectTimeoutMs = milliseconds;
+    }
+
+    @Override
+    public void readTimeout(int milliseconds) {
+        this.readTimeoutMs = milliseconds;
     }
 
     @Override
@@ -987,8 +993,13 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
-    public int getTimeout() {
-        return timeoutMs;
+    public int getConnectTimeout() {
+        return connectTimeoutMs;
+    }
+
+    @Override
+    public int getReadTimeout() {
+        return readTimeoutMs;
     }
 
     @Override

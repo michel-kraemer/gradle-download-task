@@ -203,9 +203,13 @@ request <em>(optional)</em></dd>
 <dt>headers</dt>
 <dd>A map of request headers to set when making the download
 request <em>(optional)</em></dd>
-<dt>timeout</dt>
-<dd>The maximum number of milliseconds to wait until a connection is established or until the
-server returns data. A value of <code>0</code> (zero) means infinite timeout. A negative value
+<dt>connectTimeout</dt>
+<dd>The maximum number of milliseconds to wait until a connection is established.
+A value of <code>0</code> (zero) means infinite timeout. A negative value
+is interpreted as undefined. <em>(default: <code>-1</code>)</em></dd>
+<dt>readTimeout</dt>
+<dd>The maximum time in milliseconds to wait for data from the server.
+A value of <code>0</code> (zero) means infinite timeout. A negative value
 is interpreted as undefined. <em>(default: <code>-1</code>)</em></dd>
 </dl>
 

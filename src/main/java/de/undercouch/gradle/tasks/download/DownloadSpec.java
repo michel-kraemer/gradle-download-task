@@ -117,13 +117,20 @@ public interface DownloadSpec {
     void acceptAnyCertificate(boolean accept);
 
     /**
-     * Specifies a timeout in milliseconds which is the maximum time to wait
-     * until a connection is established or until the server returns data. A
-     * value of zero means infinite timeout. A negative value is interpreted
-     * as undefined.
+     * Specifies the maximum time to wait in milliseconds until a connection is
+     * established. A value of zero means infinite timeout. A negative value
+     * is interpreted as undefined.
      * @param milliseconds the timeout in milliseconds (default: -1)
      */
-    void timeout(int milliseconds);
+    void connectTimeout(int milliseconds);
+
+    /**
+     * Specifies the maximum time in milliseconds to wait for data from the
+     * server. A value of zero means infinite timeout. A negative value is
+     * interpreted as undefined.
+     * @param milliseconds the timeout in milliseconds (default: -1)
+     */
+    void readTimeout(int milliseconds);
 
     /**
      * Specifies the directory where gradle-download-task stores information
@@ -241,10 +248,16 @@ public interface DownloadSpec {
     boolean isAcceptAnyCertificate();
 
     /**
-     * @return the timeout in milliseconds which is the maximum time to wait
-     * until a connection is established or until the server returns data.
+     * @return the maximum time to wait in milliseconds until a connection
+     * is established
      */
-    int getTimeout();
+    int getConnectTimeout();
+
+    /**
+     * @return the maximum time in milliseconds to wait for data from the
+     * server
+     */
+    int getReadTimeout();
     
     /**
      * @return the directory where gradle-download-task stores information
