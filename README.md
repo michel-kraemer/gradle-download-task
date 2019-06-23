@@ -340,6 +340,26 @@ systemProp.https.proxyPassword=password
 systemProp.https.nonProxyHosts=*.nonproxyrepos.com|localhost
 ```
 
+Migrating from version 3.x to 4.x
+---------------------------------
+
+In gradle-download-task 4.x, we made the following breaking changes to the
+API:
+
+* The plugin now requires Gradle 2.x (or higher) and Java 7 (or higher)
+* We removed the `timeout` property and introduced `connectTimeout` and
+  `readTimeout` instead. This allows you to control the individual timeouts
+  better. Also, it improves compatibility with Gradle 5.x, where all tasks have
+  a `timeout` property by default. 
+* The `credentials` property has been removed. The same applies to the
+  possibility to pass instances of Apache HttpClient's `AuthScheme` to the
+  `authScheme` property. The strings `Basic` and `Digest` are now the only
+  accepted values. There is no replacement. If you need this functionality,
+  please file an issue.
+* The properties `requestInterceptor` and `responseInterceptor` have been
+  removed. There is no replacement. Again, if you need this functionality,
+  please file an issue.
+
 License
 -------
 
