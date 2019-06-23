@@ -15,6 +15,7 @@
 package de.undercouch.gradle.tasks.download.internal;
 
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpHost;
+import de.undercouch.gradle.tasks.download.org.apache.http.client.HttpRequestRetryHandler;
 import de.undercouch.gradle.tasks.download.org.apache.http.config.Registry;
 import de.undercouch.gradle.tasks.download.org.apache.http.config.RegistryBuilder;
 import de.undercouch.gradle.tasks.download.org.apache.http.conn.HttpClientConnectionManager;
@@ -25,17 +26,19 @@ import de.undercouch.gradle.tasks.download.org.apache.http.impl.client.Closeable
 import de.undercouch.gradle.tasks.download.org.apache.http.impl.client.HttpClientBuilder;
 import de.undercouch.gradle.tasks.download.org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import de.undercouch.gradle.tasks.download.org.apache.http.impl.conn.SystemDefaultRoutePlanner;
+import de.undercouch.gradle.tasks.download.org.apache.http.protocol.HttpContext;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
+import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
 /**
  * Default implementation of {@link HttpClientFactory}. Creates a new client
- * every time {@link #createHttpClient(HttpHost, boolean)}
+ * every time {@link #createHttpClient(HttpHost, boolean, int)}
  * is called. The caller is responsible for closing this client.
  * @author Michel Kraemer
  */
@@ -49,9 +52,21 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
 
     @Override
     public CloseableHttpClient createHttpClient(HttpHost httpHost,
-            boolean acceptAnyCertificate) {
+            boolean acceptAnyCertificate, final int retries) {
         HttpClientBuilder builder = HttpClientBuilder.create();
-        
+
+        //configure retries
+        if (retries == 0) {
+            builder.disableAutomaticRetries();
+        } else {
+            builder.setRetryHandler(new HttpRequestRetryHandler() {
+                @Override
+                public boolean retryRequest(IOException e, int i, HttpContext httpContext) {
+                    return retries < 0 || i <= retries;
+                }
+            });
+        }
+
         //configure proxy from system environment
         builder.setRoutePlanner(new SystemDefaultRoutePlanner(null));
         

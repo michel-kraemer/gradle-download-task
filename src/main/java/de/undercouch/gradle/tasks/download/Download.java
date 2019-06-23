@@ -189,6 +189,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
 
     @Override
+    public void retries(int retries) {
+        action.retries(retries);
+    }
+
+    @Override
     public void downloadTaskDir(Object dir) {
         action.downloadTaskDir(dir);
     }
@@ -281,6 +286,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public int getReadTimeout() {
         return action.getReadTimeout();
+    }
+
+    @Override
+    public int getRetries() {
+        return action.getRetries();
     }
 
     @Override

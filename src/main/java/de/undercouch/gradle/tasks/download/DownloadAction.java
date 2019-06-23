@@ -74,7 +74,7 @@ public class DownloadAction implements DownloadSpec {
             GradleVersion.version("2.0");
 
     private final Project project;
-    private List<URL> sources = new ArrayList<URL>(1);
+    private List<URL> sources = new ArrayList<>(1);
     private File dest;
     private boolean quiet = false;
     private boolean overwrite = true;
@@ -87,6 +87,7 @@ public class DownloadAction implements DownloadSpec {
     private boolean acceptAnyCertificate = false;
     private int connectTimeoutMs = -1;
     private int readTimeoutMs = -1;
+    private int retries = 0;
     private File downloadTaskDir;
     private boolean tempAndMove = false;
     private UseETag useETag = UseETag.FALSE;
@@ -244,7 +245,7 @@ public class DownloadAction implements DownloadSpec {
         
         //create HTTP client
         CloseableHttpClient client = clientFactory.createHttpClient(
-                httpHost, acceptAnyCertificate);
+                httpHost, acceptAnyCertificate, retries);
 
         //open URL connection
         String etag = null;
@@ -876,6 +877,11 @@ public class DownloadAction implements DownloadSpec {
     }
 
     @Override
+    public void retries(int retries) {
+        this.retries = retries;
+    }
+
+    @Override
     public void downloadTaskDir(Object dir) {
         if (dir instanceof Closure) {
             //lazily evaluate closure
@@ -1000,6 +1006,11 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public int getReadTimeout() {
         return readTimeoutMs;
+    }
+
+    @Override
+    public int getRetries() {
+        return retries;
     }
 
     @Override

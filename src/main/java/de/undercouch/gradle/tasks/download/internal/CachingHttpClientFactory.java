@@ -20,6 +20,7 @@ import de.undercouch.gradle.tasks.download.org.apache.http.impl.client.Closeable
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * An implementation of {@link HttpClientFactory} that caches created clients
@@ -31,11 +32,11 @@ public class CachingHttpClientFactory extends DefaultHttpClientFactory {
 
     @Override
     public CloseableHttpClient createHttpClient(HttpHost httpHost,
-            boolean acceptAnyCertificate) {
-        CacheKey key = new CacheKey(httpHost, acceptAnyCertificate);
+            boolean acceptAnyCertificate, int retries) {
+        CacheKey key = new CacheKey(httpHost, acceptAnyCertificate, retries);
         CloseableHttpClient c = cachedClients.get(key);
         if (c == null) {
-            c = super.createHttpClient(httpHost, acceptAnyCertificate);
+            c = super.createHttpClient(httpHost, acceptAnyCertificate, retries);
             cachedClients.put(key, c);
         }
         return c;
@@ -58,40 +59,31 @@ public class CachingHttpClientFactory extends DefaultHttpClientFactory {
     private static class CacheKey {
         private final HttpHost httpHost;
         private final boolean acceptAnyCertificate;
+        private final int retries;
 
-        CacheKey(HttpHost httpHost, boolean acceptAnyCertificate) {
+        CacheKey(HttpHost httpHost, boolean acceptAnyCertificate, int retries) {
             this.httpHost = httpHost;
             this.acceptAnyCertificate = acceptAnyCertificate;
+            this.retries = retries;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            CacheKey cacheKey = (CacheKey)o;
+            return acceptAnyCertificate == cacheKey.acceptAnyCertificate &&
+                    retries == cacheKey.retries &&
+                    httpHost.equals(cacheKey.httpHost);
         }
 
         @Override
         public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + (acceptAnyCertificate ? 1231 : 1237);
-            result = prime * result + ((httpHost == null) ? 0 : httpHost.hashCode());
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null) {
-                return false;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
-            CacheKey other = (CacheKey)obj;
-            if (acceptAnyCertificate != other.acceptAnyCertificate) {
-                return false;
-            }
-            if (httpHost == null) {
-                return other.httpHost == null;
-            }
-            return httpHost.equals(other.httpHost);
+            return Objects.hash(httpHost, acceptAnyCertificate, retries);
         }
     }
 }

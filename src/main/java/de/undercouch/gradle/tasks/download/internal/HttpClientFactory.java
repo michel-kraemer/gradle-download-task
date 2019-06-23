@@ -28,8 +28,9 @@ public interface HttpClientFactory {
      * @param acceptAnyCertificate true if HTTPS certificate verification
      * errors should be ignored and any certificate (even an invalid one)
      * should be accepted
+     * @param retries the number of retries to perform if an HTTP request fails
      * @return the HTTP client
      */
     CloseableHttpClient createHttpClient(HttpHost httpHost,
-            boolean acceptAnyCertificate);
+            boolean acceptAnyCertificate, int retries);
 }

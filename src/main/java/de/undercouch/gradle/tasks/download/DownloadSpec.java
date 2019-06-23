@@ -133,6 +133,14 @@ public interface DownloadSpec {
     void readTimeout(int milliseconds);
 
     /**
+     * Specifies the maximum number of retry attempts if a request has failed.
+     * By default, requests are never retried and the task fails immediately if
+     * the first request does not succeed.
+     * @param retries the maximum number of retries (default: 0)
+     */
+    void retries(int retries);
+
+    /**
      * Specifies the directory where gradle-download-task stores information
      * that should persist between builds
      * @param dir the directory (default: ${buildDir}/gradle-download-task)
@@ -258,6 +266,11 @@ public interface DownloadSpec {
      * server
      */
     int getReadTimeout();
+
+    /**
+     * @return the maximum number of retries
+     */
+    int getRetries();
     
     /**
      * @return the directory where gradle-download-task stores information

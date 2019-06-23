@@ -211,6 +211,8 @@ is interpreted as undefined. <em>(default: <code>-1</code>)</em></dd>
 <dd>The maximum time in milliseconds to wait for data from the server.
 A value of <code>0</code> (zero) means infinite timeout. A negative value
 is interpreted as undefined. <em>(default: <code>-1</code>)</em></dd>
+<dt>retries</dt>
+<dd>Specifies the maximum number of retry attempts if a request has failed. By default, requests are never retried and the task fails immediately if the first request does not succeed. If the value is greater than <code>0</code>, failed requests are retried regardless of the actual error. This includes failed connection attempts and file-not-found errors (404). A negative value means infinite retries. <em>(default: <code>0</code>)</em></dd>
 </dl>
 
 ### Authentication
