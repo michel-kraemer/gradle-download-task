@@ -43,7 +43,11 @@ public class DownloadExtension implements Configurable<DownloadExtension> {
         try {
             da.execute();
         } catch (IOException e) {
-            throw new IllegalStateException("Could not download file", e);
+            String message = e.getMessage();
+            if (message == null) {
+                message = "Could not download file";
+            }
+            throw new IllegalStateException(message, e);
         }
         return this;
     }
