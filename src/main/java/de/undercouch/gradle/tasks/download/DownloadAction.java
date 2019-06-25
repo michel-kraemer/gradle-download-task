@@ -45,6 +45,7 @@ import groovy.json.JsonSlurper;
 import groovy.lang.Closure;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
+import org.gradle.util.DeferredUtil;
 import org.gradle.util.GradleVersion;
 
 import java.io.BufferedInputStream;
@@ -74,8 +75,10 @@ public class DownloadAction implements DownloadSpec {
             GradleVersion.version("2.0");
 
     private final Project project;
-    private List<URL> sources = new ArrayList<>(1);
-    private File dest;
+    private List<Object> sourceObjects = new ArrayList<>(1);
+    private List<URL> cachedSources;
+    private Object destObject;
+    private File cachedDest;
     private boolean quiet = false;
     private boolean overwrite = true;
     private boolean onlyIfModified = false;
@@ -129,12 +132,15 @@ public class DownloadAction implements DownloadSpec {
                     "Java 7 or higher");
         }
 
-        if (sources.isEmpty()) {
+        if (sourceObjects.isEmpty()) {
             throw new IllegalArgumentException("Please provide a download source");
         }
-        if (dest == null) {
+        if (destObject == null) {
             throw new IllegalArgumentException("Please provide a download destination");
         }
+
+        List<URL> sources = getSources();
+        File dest = getDest();
 
         if (dest.equals(project.getBuildDir())) {
             //make sure build dir exists
@@ -510,11 +516,11 @@ public class DownloadAction implements DownloadSpec {
      * @return the path to the output file
      */
     private File makeDestFile(URL src) {
-        if (dest == null) {
+        File destFile = getDest();
+        if (destFile == null) {
             throw new IllegalArgumentException("Please provide a download destination");
         }
 
-        File destFile = dest;
         if (destFile.isDirectory()) {
             //guess name from URL
             String name = src.toString();
@@ -522,7 +528,7 @@ public class DownloadAction implements DownloadSpec {
                 name = name.substring(0, name.length() - 1);
             }
             name = name.substring(name.lastIndexOf('/') + 1);
-            destFile = new File(dest, name);
+            destFile = new File(destFile, name);
         } else {
             //create destination directory
             File parent = destFile.getParentFile();
@@ -730,13 +736,14 @@ public class DownloadAction implements DownloadSpec {
      * @return true if the download destination is up to date
      */
     public boolean isUpToDate() {
-        return upToDate == sources.size();
+        return upToDate == getSources().size();
     }
 
     /**
      * @return a list of files created by this action (i.e. the destination files)
      */
     public List<File> getOutputFiles() {
+        List<URL> sources = getSources();
         List<File> files = new ArrayList<>(sources.size());
         for (URL src : sources) {
             files.add(makeDestFile(src));
@@ -745,50 +752,13 @@ public class DownloadAction implements DownloadSpec {
     }
     
     @Override
-    public void src(Object src) throws MalformedURLException {
-        if (src instanceof Closure) {
-            //lazily evaluate closure
-            Closure<?> closure = (Closure<?>)src;
-            src = closure.call();
-        }
-        
-        if (src instanceof CharSequence) {
-            sources.add(new URL(src.toString()));
-        } else if (src instanceof URL) {
-            sources.add((URL)src);
-        } else if (src instanceof Collection) {
-            Collection<?> sc = (Collection<?>)src;
-            for (Object sco : sc) {
-                src(sco);
-            }
-        } else if (src != null && src.getClass().isArray()) {
-            int len = Array.getLength(src);
-            for (int i = 0; i < len; ++i) {
-                Object sco = Array.get(src, i);
-                src(sco);
-            }
-        } else {
-            throw new IllegalArgumentException("Download source must " +
-                "either be a URL, a CharSequence, a Collection or an array.");
-        }
+    public void src(Object src) {
+        sourceObjects.add(src);
     }
     
     @Override
     public void dest(Object dest) {
-        if (dest instanceof Closure) {
-            //lazily evaluate closure
-            Closure<?> closure = (Closure<?>)dest;
-            dest = closure.call();
-        }
-        
-        if (dest instanceof CharSequence) {
-            this.dest = project.file(dest.toString());
-        } else if (dest instanceof File) {
-            this.dest = (File)dest;
-        } else {
-            throw new IllegalArgumentException("Download destination must " +
-                "either be a File or a CharSequence");
-        }
+        destObject = dest;
     }
     
     @Override
@@ -923,17 +893,86 @@ public class DownloadAction implements DownloadSpec {
         }
     }
 
+    /**
+     * Recursively convert the given source to a list of URLs
+     * @param src the source to convert
+     * @return the list of URLs
+     */
+    private List<URL> convertSource(Object src) {
+        List<URL> result = new ArrayList<>();
+
+        src = DeferredUtil.unpack(src);
+        if (src instanceof CharSequence) {
+            try {
+                result.add(new URL(src.toString()));
+            } catch (MalformedURLException e) {
+                throw new IllegalArgumentException("Invalid source URL", e);
+            }
+        } else if (src instanceof URL) {
+            result.add((URL)src);
+        } else if (src instanceof Collection) {
+            Collection<?> sc = (Collection<?>)src;
+            for (Object sco : sc) {
+                result.addAll(convertSource(sco));
+            }
+        } else if (src != null && src.getClass().isArray()) {
+            int len = Array.getLength(src);
+            for (int i = 0; i < len; ++i) {
+                Object sco = Array.get(src, i);
+                result.addAll(convertSource(sco));
+            }
+        } else {
+            throw new IllegalArgumentException("Download source must " +
+                    "either be a URL, a CharSequence, a Collection or an array.");
+        }
+
+        return result;
+    }
+
+    /**
+     * Evaluate {@link #sourceObjects} and return a list of source URLs.
+     * Cache the result in {@link #cachedSources}
+     * @return the list of URLs
+     */
+    private List<URL> getSources() {
+        if (cachedSources != null) {
+            return cachedSources;
+        }
+
+        cachedSources = new ArrayList<>(sourceObjects.size());
+        for (Object src : sourceObjects) {
+            cachedSources.addAll(convertSource(src));
+        }
+
+        return cachedSources;
+    }
+
     @Override
     public Object getSrc() {
+        List<URL> sources = getSources();
         if (sources.size() == 1) {
             return sources.get(0);
         }
         return sources;
     }
-    
+
     @Override
     public File getDest() {
-        return dest;
+        if (cachedDest != null) {
+            return cachedDest;
+        }
+
+        destObject = DeferredUtil.unpack(destObject);
+        if (destObject instanceof CharSequence) {
+            cachedDest = project.file(destObject.toString());
+        } else if (destObject instanceof File) {
+            cachedDest = (File)destObject;
+        } else {
+            throw new IllegalArgumentException("Download destination must " +
+                    "either be a File or a CharSequence");
+        }
+
+        return cachedDest;
     }
     
     @Override

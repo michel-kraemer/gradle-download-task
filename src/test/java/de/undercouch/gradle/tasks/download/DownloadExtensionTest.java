@@ -58,7 +58,7 @@ public class DownloadExtensionTest extends TestBaseWithMockServer {
             private static final long serialVersionUID = -7729300978830802384L;
 
             @SuppressWarnings("unused")
-            public void doCall() throws Exception {
+            public void doCall() {
                 DownloadAction action = (DownloadAction)this.getDelegate();
                 action.src(src);
                 assertTrue(action.getSrc() instanceof URL);

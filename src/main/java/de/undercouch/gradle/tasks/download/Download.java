@@ -114,7 +114,7 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
     
     @Override
-    public void src(Object src) throws MalformedURLException {
+    public void src(Object src) {
         action.src(src);
     }
     

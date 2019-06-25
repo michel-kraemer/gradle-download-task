@@ -28,6 +28,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -214,6 +215,9 @@ public class DownloadTest extends TestBaseWithMockServer {
             }
         });
 
+        assertFalse(srcCalled[0]);
+        assertFalse(dstCalled[0]);
+
         t.execute();
 
         assertTrue(srcCalled[0]);
@@ -249,10 +253,12 @@ public class DownloadTest extends TestBaseWithMockServer {
      * Test if the plugin throws an exception if the 'src' property is invalid
      * @throws Exception if the test succeeds
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = TaskExecutionException.class)
     public void testInvalidSrc() throws Exception {
         Download t = makeProjectAndTask();
         t.src(new Object());
+        t.dest(folder.newFile());
+        t.execute();
     }
 
     /**
@@ -267,18 +273,20 @@ public class DownloadTest extends TestBaseWithMockServer {
     /**
      * Test if the plugin throws an exception if the 'dest' property is invalid
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = TaskExecutionException.class)
     public void testInvalidDest() {
         Download t = makeProjectAndTask();
+        String src = wireMockRule.url(TEST_FILE_NAME);
+        t.src(src);
         t.dest(new Object());
+        t.execute();
     }
 
     /**
      * Test if the plugin throws an exception if the 'dest' property is empty
-     * @throws Exception if the test succeeds
      */
     @Test(expected = TaskExecutionException.class)
-    public void testExecuteEmptyDest() throws Exception {
+    public void testExecuteEmptyDest() {
         Download t = makeProjectAndTask();
         String src = wireMockRule.url(TEST_FILE_NAME);
         t.src(src);
@@ -287,10 +295,9 @@ public class DownloadTest extends TestBaseWithMockServer {
 
     /**
      * Test if the plugin can handle an array containing one string as source
-     * @throws Exception if anything goes wrong
      */
     @Test
-    public void testArraySrc() throws Exception {
+    public void testArraySrc() {
         Download t = makeProjectAndTask();
         String src = wireMockRule.url(TEST_FILE_NAME);
         t.src(new Object[] { src });

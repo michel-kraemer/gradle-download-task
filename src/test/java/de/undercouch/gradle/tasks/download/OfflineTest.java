@@ -51,10 +51,9 @@ public class OfflineTest extends TestBaseWithMockServer {
     /**
      * Test if the task fails we're in offline mode and the file does
      * not exist already
-     * @throws Exception if anything goes wrong
      */
     @Test(expected = GradleException.class)
-    public void offlineFail() throws Exception {
+    public void offlineFail() {
         Download t = makeProjectAndTask();
         t.getProject().getGradle().getStartParameter().setOffline(true);
         t.src(wireMockRule.baseUrl());

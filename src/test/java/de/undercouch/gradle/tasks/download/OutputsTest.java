@@ -54,10 +54,9 @@ public class OutputsTest extends TestBaseWithMockServer {
     /**
      * Test if the output is generated correctly for a single source and a
      * destination folder
-     * @throws Exception if anything went wrong
      */
     @Test
-    public void singleOutputFileWithDestinationDirectory() throws Exception {
+    public void singleOutputFileWithDestinationDirectory() {
         Download t = makeProjectAndTask();
         t.src(wireMockRule.url("test1.txt"));
         t.dest(folder.getRoot());
@@ -68,10 +67,9 @@ public class OutputsTest extends TestBaseWithMockServer {
     /**
      * Test if the outputs are generated correctly for multiple sources and
      * a destination folder
-     * @throws Exception if anything went wrong
      */
     @Test
-    public void multipleOutputFiles() throws Exception {
+    public void multipleOutputFiles() {
         Download t = makeProjectAndTask();
         t.src(Arrays.asList(wireMockRule.url("test1.txt"), wireMockRule.url("test2.txt")));
         t.dest(folder.getRoot());
