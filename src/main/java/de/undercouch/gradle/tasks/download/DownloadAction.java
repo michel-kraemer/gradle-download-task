@@ -45,7 +45,6 @@ import groovy.json.JsonSlurper;
 import groovy.lang.Closure;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
-import org.gradle.util.DeferredUtil;
 import org.gradle.util.GradleVersion;
 
 import java.io.BufferedInputStream;
@@ -901,7 +900,12 @@ public class DownloadAction implements DownloadSpec {
     private List<URL> convertSource(Object src) {
         List<URL> result = new ArrayList<>();
 
-        src = DeferredUtil.unpack(src);
+        if (src instanceof Closure) {
+            // lazily evaluate closure
+            Closure<?> closure = (Closure<?>)src;
+            src = closure.call();
+        }
+
         if (src instanceof CharSequence) {
             try {
                 result.add(new URL(src.toString()));
@@ -962,7 +966,12 @@ public class DownloadAction implements DownloadSpec {
             return cachedDest;
         }
 
-        destObject = DeferredUtil.unpack(destObject);
+        if (destObject instanceof Closure) {
+            //lazily evaluate closure
+            Closure<?> closure = (Closure<?>)destObject;
+            destObject = closure.call();
+        }
+
         if (destObject instanceof CharSequence) {
             cachedDest = project.file(destObject.toString());
         } else if (destObject instanceof File) {
