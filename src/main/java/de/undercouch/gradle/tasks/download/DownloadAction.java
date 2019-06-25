@@ -363,10 +363,9 @@ public class DownloadAction implements DownloadSpec {
     private void stream(InputStream is, File destFile) throws IOException {
         try {
             startProgress();
-            OutputStream os = new FileOutputStream(destFile);
-            
+
             boolean finished = false;
-            try {
+            try (OutputStream os = new FileOutputStream(destFile)) {
                 byte[] buf = new byte[1024 * 10];
                 int read;
                 while ((read = is.read(buf)) >= 0) {
@@ -374,11 +373,10 @@ public class DownloadAction implements DownloadSpec {
                     processedBytes += read;
                     logProgress();
                 }
-                
+
                 os.flush();
                 finished = true;
             } finally {
-                os.close();
                 if (!finished) {
                     destFile.delete();
                 }
@@ -402,7 +400,7 @@ public class DownloadAction implements DownloadSpec {
             JsonSlurper slurper = new JsonSlurper();
             cachedETags = (Map<String, Object>)slurper.parse(cachedETagsFile, "UTF-8");
         } else {
-            cachedETags = new LinkedHashMap<String, Object>();
+            cachedETags = new LinkedHashMap<>();
         }
         return cachedETags;
     }
@@ -477,25 +475,22 @@ public class DownloadAction implements DownloadSpec {
         Map<String, Object> cachedETags = readCachedETags();
 
         //create new entry in cached ETags file
-        Map<String, String> etagMap = new LinkedHashMap<String, String>();
+        Map<String, String> etagMap = new LinkedHashMap<>();
         etagMap.put("ETag", etag);
 
         String uri = host.toURI();
         Map<String, Object> hostMap = (Map<String, Object>)cachedETags.get(uri);
         if (hostMap == null) {
-            hostMap = new LinkedHashMap<String, Object>();
+            hostMap = new LinkedHashMap<>();
             cachedETags.put(uri, hostMap);
         }
         hostMap.put(file, etagMap);
 
         //write cached ETags file
         String cachedETagsContents = JsonOutput.toJson(cachedETags);
-        PrintWriter writer = new PrintWriter(getCachedETagsFile(), "UTF-8");
-        try {
+        try (PrintWriter writer = new PrintWriter(getCachedETagsFile(), "UTF-8")) {
             writer.write(cachedETagsContents);
             writer.flush();
-        } finally {
-            writer.close();
         }
     }
 
@@ -741,7 +736,7 @@ public class DownloadAction implements DownloadSpec {
      * @return a list of files created by this action (i.e. the destination files)
      */
     public List<File> getOutputFiles() {
-        List<File> files = new ArrayList<File>(sources.size());
+        List<File> files = new ArrayList<>(sources.size());
         for (URL src : sources) {
             files.add(makeDestFile(src));
         }
@@ -844,7 +839,7 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public void headers(Map<String, String> headers) {
         if (this.headers == null) {
-            this.headers = new LinkedHashMap<String, String>();
+            this.headers = new LinkedHashMap<>();
         } else {
             this.headers.clear();
         }
@@ -856,7 +851,7 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public void header(String name, String value) {
         if (headers == null) {
-            headers = new LinkedHashMap<String, String>();
+            headers = new LinkedHashMap<>();
         }
         headers.put(name, value);
     }
@@ -1039,7 +1034,7 @@ public class DownloadAction implements DownloadSpec {
     /**
      * Possible values for the "useETag" flag
      */
-    private static enum UseETag {
+    private enum UseETag {
         /**
          * Do not use ETags
          */

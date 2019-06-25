@@ -1,4 +1,4 @@
-// Copyright 2015 Michel Kraemer
+// Copyright 2015-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,10 +14,8 @@
 
 package de.undercouch.gradle.tasks.download.internal;
 
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-
 import javax.net.ssl.X509TrustManager;
+import java.security.cert.X509Certificate;
 
 /**
  * An insecure trust manager that accepts all certificates.
@@ -25,14 +23,12 @@ import javax.net.ssl.X509TrustManager;
  */
 public class InsecureTrustManager implements X509TrustManager {
     @Override
-    public void checkClientTrusted(X509Certificate[] x509Certificates, String s)
-        throws CertificateException {
+    public void checkClientTrusted(X509Certificate[] x509Certificates, String s) {
         // accept all
     }
 
     @Override
-    public void checkServerTrusted(X509Certificate[] x509Certificates, String s)
-        throws CertificateException {
+    public void checkServerTrusted(X509Certificate[] x509Certificates, String s) {
         // accept all
     }
 

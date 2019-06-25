@@ -1,4 +1,4 @@
-// Copyright 2013-2018 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,9 +43,7 @@ public class VerifyExtension implements Configurable<VerifyExtension> {
         VerifyAction va = ConfigureUtil.configure(cl, new VerifyAction(project));
         try {
             va.execute();
-        } catch (IOException e) {
-            throw new IllegalStateException("Could not verify file checksum", e);
-        } catch (NoSuchAlgorithmException e) {
+        } catch (IOException | NoSuchAlgorithmException e) {
             throw new IllegalStateException("Could not verify file checksum", e);
         }
         return this;

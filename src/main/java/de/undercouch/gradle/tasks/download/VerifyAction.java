@@ -1,4 +1,4 @@
-// Copyright 2015 Michel Kraemer
+// Copyright 2015-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ public class VerifyAction implements VerifySpec {
     }
 
     private String toHex(byte[] barr) {
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder();
         for (byte b : barr) {
             result.append(String.format("%02X", b));
         }
@@ -70,17 +70,14 @@ public class VerifyAction implements VerifySpec {
         
         // calculate file's checksum
         MessageDigest md = MessageDigest.getInstance(algorithm);
-        FileInputStream fis = new FileInputStream(src);
         String calculatedChecksum;
-        try {
+        try (FileInputStream fis = new FileInputStream(src)) {
             byte[] buf = new byte[1024];
-            int read = 0;
+            int read;
             while ((read = fis.read(buf)) != -1) {
                 md.update(buf, 0, read);
             }
             calculatedChecksum = toHex(md.digest());
-        } finally {
-            fis.close();
         }
         
         // verify checksum

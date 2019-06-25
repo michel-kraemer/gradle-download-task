@@ -1,4 +1,4 @@
-// Copyright 2013-2016 Michel Kraemer
+// Copyright 2013-2019 Michel Kraemer
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -111,11 +111,7 @@ public class ProgressLoggerWrapper {
             Object... args) {
         try {
             invoke(obj, method, args);
-        } catch (NoSuchMethodException e) {
-            logger.trace("Unable to log progress", e);
-        } catch (InvocationTargetException e) {
-            logger.trace("Unable to log progress", e);
-        } catch (IllegalAccessException e) {
+        } catch (ReflectiveOperationException e) {
             logger.trace("Unable to log progress", e);
         }
     }
