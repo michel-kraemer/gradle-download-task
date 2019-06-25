@@ -616,10 +616,11 @@ public class DownloadAction implements DownloadSpec {
         int code = response.getStatusLine().getStatusCode();
         if ((code < 200 || code > 299) && code != HttpStatus.SC_NOT_MODIFIED) {
             String phrase = response.getStatusLine().getReasonPhrase();
+            String url = httpHost + file;
             if (phrase == null || phrase.isEmpty()) {
-                phrase = "HTTP status code " + code;
+                phrase = "HTTP status code: " + code + ", URL: " + url;
             } else {
-                phrase += " (HTTP status code " + code + ")";
+                phrase += " (HTTP status code: " + code + ", URL: " + url + ")";
             }
             response.close();
             throw new ClientProtocolException(phrase);
