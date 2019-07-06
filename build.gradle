@@ -213,6 +213,12 @@ pluginBundle {
     vcsUrl = 'https://github.com/michel-kraemer/gradle-download-task'
     description = 'Adds a download task to Gradle that displays progress information'
 
+    withDependencies {
+        // remove all dependencies from the pom file just as we do it
+        // when we publish the maven artifact
+        it.clear()
+    }
+
     plugins {
         greetingsPlugin {
             id = 'de.undercouch.download'
