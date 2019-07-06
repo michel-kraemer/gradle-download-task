@@ -87,8 +87,8 @@ public class DownloadAction implements DownloadSpec {
     private String authScheme;
     private Map<String, String> headers;
     private boolean acceptAnyCertificate = false;
-    private int connectTimeoutMs = -1;
-    private int readTimeoutMs = -1;
+    private int connectTimeoutMs = 30 * 1000;
+    private int readTimeoutMs = 30 * 1000;
     private int retries = 0;
     private File downloadTaskDir;
     private boolean tempAndMove = false;
