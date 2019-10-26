@@ -17,7 +17,7 @@ Apply plugin configuration
 
 ```groovy
 plugins {
-    id "de.undercouch.download" version "4.0.0"
+    id "de.undercouch.download" version "4.0.1"
 }
 ```
 
@@ -29,7 +29,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'de.undercouch:gradle-download-task:4.0.0'
+        classpath 'de.undercouch:gradle-download-task:4.0.1'
     }
 }
 
