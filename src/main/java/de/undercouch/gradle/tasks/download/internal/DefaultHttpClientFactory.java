@@ -14,6 +14,7 @@
 
 package de.undercouch.gradle.tasks.download.internal;
 
+import de.undercouch.gradle.tasks.download.org.apache.commons.logging.impl.NoOpLog;
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpHost;
 import de.undercouch.gradle.tasks.download.org.apache.http.client.HttpRequestRetryHandler;
 import de.undercouch.gradle.tasks.download.org.apache.http.config.Registry;
@@ -43,6 +44,9 @@ import java.security.SecureRandom;
  * @author Michel Kraemer
  */
 public class DefaultHttpClientFactory implements HttpClientFactory {
+    private static String LOG_PROPERTY =
+            "de.undercouch.gradle.tasks.download.org.apache.commons.logging.Log";
+
     private static final HostnameVerifier INSECURE_HOSTNAME_VERIFIER =
             new InsecureHostnameVerifier();
     private static final TrustManager[] INSECURE_TRUST_MANAGERS =
@@ -53,6 +57,12 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
     @Override
     public CloseableHttpClient createHttpClient(HttpHost httpHost,
             boolean acceptAnyCertificate, final int retries) {
+        //disable logging by default to improve download performance
+        //see issue 141 (https://github.com/michel-kraemer/gradle-download-task/issues/141)
+        if (System.getProperty(LOG_PROPERTY) == null) {
+            System.setProperty(LOG_PROPERTY, NoOpLog.class.getName());
+        }
+
         HttpClientBuilder builder = HttpClientBuilder.create();
 
         //configure retries
