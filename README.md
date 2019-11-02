@@ -64,15 +64,17 @@ As an alternative to the `Download` task, you may also use the `download`
 extension to retrieve a file anywhere in your build script:
 
 ```groovy
-task myTask << {
-    //do something ...
-    //... then download a file
-    download {
-        src 'http://www.example.com/index.html'
-        dest buildDir
-        overwrite false
+task myTask {
+    doLast {
+        //do something ...
+        //... then download a file
+        download {
+            src 'http://www.example.com/index.html'
+            dest buildDir
+            overwrite false
+        }
+        //... do something else
     }
-    //... do something else
 }
 ```
 
@@ -126,12 +128,14 @@ provides a simple directory listing you can use the following code:
 
 ```groovy
 task downloadDirectory {
-    def dir = 'http://central.maven.org/maven2/de/undercouch/gradle-download-task/1.0/'
-    def urlLister = new org.apache.ivy.util.url.ApacheURLLister()
-    def files = urlLister.listFiles(new URL(dir))
-    download {
-       src files
-       dest buildDir
+    doLast {
+        def dir = 'http://central.maven.org/maven2/de/undercouch/gradle-download-task/1.0/'
+        def urlLister = new org.apache.ivy.util.url.ApacheURLLister()
+        def files = urlLister.listFiles(new URL(dir))
+        download {
+           src files
+           dest buildDir
+        }
     }
 }
 ```
