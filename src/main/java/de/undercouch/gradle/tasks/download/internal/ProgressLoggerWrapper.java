@@ -75,7 +75,12 @@ public class ProgressLoggerWrapper {
         //configure progress logger
         String desc = "Download " + src;
         invoke(progressLogger, "setDescription", desc);
-        invoke(progressLogger, "setLoggingHeader", desc);
+        try {
+            // prior to Gradle 6.0
+            invoke(progressLogger, "setLoggingHeader", desc);
+        } catch (ReflectiveOperationException e) {
+            logger.lifecycle(desc);
+        }
     }
     
     /**
