@@ -19,6 +19,9 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 
 /**
@@ -67,16 +70,20 @@ public class Verify extends DefaultTask implements VerifySpec {
         action.checksum(checksum);
     }
 
+    @InputFile
     @Override
     public File getSrc() {
         return action.getSrc();
     }
 
+    @Input
+    @Optional
     @Override
     public String getAlgorithm() {
         return action.getAlgorithm();
     }
 
+    @Input
     @Override
     public String getChecksum() {
         return action.getChecksum();
