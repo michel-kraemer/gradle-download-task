@@ -1,11 +1,11 @@
 Gradle Download Task [![Actions Status](https://github.com/michel-kraemer/gradle-download-task/workflows/Java%20CI/badge.svg)](https://github.com/michel-kraemer/gradle-download-task/actions) [![codecov](https://codecov.io/gh/michel-kraemer/gradle-download-task/branch/master/graph/badge.svg)](https://codecov.io/gh/michel-kraemer/gradle-download-task) [![Apache License, Version 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 ====================
 
-This is a simple download task for [Gradle](http://www.gradle.org/).
+This is a download task for [Gradle](http://www.gradle.org/).
 It displays progress information just as Gradle does when it retrieves
 an artifact from a repository.
 
-The plugin has been sucessfully tested with Gradle 2.0 up to 5.4.1.
+The plugin has been successfully tested with Gradle 2.0 up to 6.0.1.
 It should work with newer versions as well.
 
 <img width="559" src="https://raw.githubusercontent.com/michel-kraemer/gradle-download-task/e6bbe00dedd5e0bdaab12f4b1980bd51d22d10d1/gradle-download-task.gif">
