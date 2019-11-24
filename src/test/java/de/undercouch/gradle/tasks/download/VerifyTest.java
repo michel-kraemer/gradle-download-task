@@ -17,6 +17,7 @@ package de.undercouch.gradle.tasks.download;
 import groovy.lang.Closure;
 import org.apache.commons.codec.binary.Hex;
 import org.gradle.api.tasks.TaskExecutionException;
+import org.gradle.api.tasks.TaskValidationException;
 import org.junit.Test;
 
 import java.io.File;
@@ -113,7 +114,7 @@ public class VerifyTest extends TestBaseWithMockServer {
     /**
      * Test if the plugin throws an exception if the 'src' property is empty
      */
-    @Test(expected = TaskExecutionException.class)
+    @Test(expected = TaskValidationException.class)
     public void testExecuteEmptySrc() {
         Download t = makeProjectAndTask();
 
@@ -148,7 +149,7 @@ public class VerifyTest extends TestBaseWithMockServer {
      * Test if the plugin throws an exception if the 'checksum' property is empty
      * @throws Exception if the test succeeds
      */
-    @Test(expected = TaskExecutionException.class)
+    @Test(expected = TaskValidationException.class)
     public void testExecuteEmptyChecksum() throws Exception {
         Download t = makeProjectAndTask();
         File dst = folder.newFile();
