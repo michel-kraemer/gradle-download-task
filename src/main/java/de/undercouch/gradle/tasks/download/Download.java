@@ -17,6 +17,10 @@ package de.undercouch.gradle.tasks.download;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
 import org.gradle.api.specs.Spec;
+import org.gradle.api.tasks.Console;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.TaskAction;
 
@@ -212,56 +216,71 @@ public class Download extends DefaultTask implements DownloadSpec {
         action.cachedETagsFile(location);
     }
 
+    @Input
     @Override
     public Object getSrc() {
         return action.getSrc();
     }
-    
+
+    @Internal // see #getOutputFiles()
     @Override
     public File getDest() {
         return action.getDest();
     }
-    
+
+    @Console
     @Override
     public boolean isQuiet() {
         return action.isQuiet();
     }
-    
+
+    @Input
     @Override
     public boolean isOverwrite() {
         return action.isOverwrite();
     }
-    
+
+    @Input
     @Override
     public boolean isOnlyIfModified() {
         return action.isOnlyIfModified();
     }
-    
+
+    @Input
     @Override
     public boolean isOnlyIfNewer() {
         return action.isOnlyIfNewer();
     }
-    
+
+    @Input
     @Override
     public boolean isCompress() {
         return action.isCompress();
     }
-    
+
+    @Input
+    @Optional
     @Override
     public String getUsername() {
         return action.getUsername();
     }
-    
+
+    @Input
+    @Optional
     @Override
     public String getPassword() {
         return action.getPassword();
     }
-    
+
+    @Input
+    @Optional
     @Override
     public String getAuthScheme() {
         return action.getAuthScheme();
     }
 
+    @Input
+    @Optional
     @Override
     public Map<String, String> getHeaders() {
         return action.getHeaders();
@@ -272,41 +291,50 @@ public class Download extends DefaultTask implements DownloadSpec {
         return action.getHeader(name);
     }
 
+    @Input
     @Override
     public boolean isAcceptAnyCertificate() {
         return action.isAcceptAnyCertificate();
     }
 
+    @Input
     @Override
     public int getConnectTimeout() {
         return action.getConnectTimeout();
     }
 
+    @Input
     @Override
     public int getReadTimeout() {
         return action.getReadTimeout();
     }
 
+    @Input
     @Override
     public int getRetries() {
         return action.getRetries();
     }
 
+    @Internal
     @Override
     public File getDownloadTaskDir() {
         return action.getDownloadTaskDir();
     }
 
+    @Input
     @Override
     public boolean isTempAndMove() {
         return action.isTempAndMove();
     }
 
+    @Input
+    @Optional
     @Override
     public Object getUseETag() {
         return action.getUseETag();
     }
 
+    @Internal
     @Override
     public File getCachedETagsFile() {
         return action.getCachedETagsFile();

@@ -434,6 +434,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
             "task processTask {\n" +
                 "inputs.files files(downloadTask)\n" +
                 "doLast {\n" +
+                    "assert !inputs.files.isEmpty()\n" +
                     "inputs.files.each { f -> assert f.isFile() }\n" +
                 "}\n" +
             "}\n");
