@@ -39,7 +39,8 @@ apply plugin: 'de.undercouch.download'
 Usage
 -----
 
-After you applied the plugin configuration (see above) you can use the `Download` task as follows:
+After you have applied the plugin configuration (see above), you can use the
+`Download` task as follows:
 
 ```groovy
 task downloadFile(type: Download) {
@@ -103,7 +104,7 @@ task downloadFile(type: Download) {
 ```
 
 Note that this feature depends on the server and whether it supports the
-`If-Modified-Since` request header and if it provides a `Last-Modified`
+`If-Modified-Since` request header and provides a `Last-Modified`
 timestamp in its response.
 
 ### Sequentially download a list of files to a directory
@@ -119,12 +120,12 @@ task downloadMultipleFiles(type: Download) {
 ```
 
 Please note that you have to specify a directory as destination if you
-download multiple files. Otherwise the plugin will fail.
+download multiple files. Otherwise, the plugin will fail.
 
 ### Download files from a directory
 
 If you want to download all files from a directory and the server
-provides a simple directory listing you can use the following code:
+provides a simple directory listing, you can use the following code:
 
 ```groovy
 task downloadDirectory {
@@ -142,7 +143,7 @@ task downloadDirectory {
 
 ### Download and extract a ZIP file
 
-To download and unpack a ZIP file you can combine the download task
+To download and unpack a ZIP file, you can combine the download task
 plugin with Gradle's built-in support for ZIP files:
 
 ```groovy
@@ -173,7 +174,7 @@ The download task and the extension support the following properties.
 <dl>
 <dt>src</dt>
 <dd>The URL from which to retrieve the file. Can be a list of URLs if
-multiple files shoud be downloaded. <em>(required)</em></dd>
+multiple files should be downloaded. <em>(required)</em></dd>
 <dt>dest</dt>
 <dd>The file or directory where to store the file <em>(required)</em></dd>
 <dt>quiet</dt>
@@ -216,7 +217,12 @@ is interpreted as undefined. <em>(default: <code>30 seconds</code>)</em></dd>
 A value of <code>0</code> (zero) means infinite timeout. A negative value
 is interpreted as undefined. <em>(default: <code>30 seconds</code>)</em></dd>
 <dt>retries</dt>
-<dd>Specifies the maximum number of retry attempts if a request has failed. By default, requests are never retried and the task fails immediately if the first request does not succeed. If the value is greater than <code>0</code>, failed requests are retried regardless of the actual error. This includes failed connection attempts and file-not-found errors (404). A negative value means infinite retries. <em>(default: <code>0</code>)</em></dd>
+<dd>Specifies the maximum number of retry attempts if a request has failed.
+By default, requests are never retried and the task fails immediately if the
+first request does not succeed. If the value is greater than <code>0</code>,
+failed requests are retried regardless of the actual error. This includes
+failed connection attempts and file-not-found errors (404). A negative value
+means infinite retries. <em>(default: <code>0</code>)</em></dd>
 </dl>
 
 ### Authentication
@@ -231,7 +237,7 @@ is interpreted as undefined. <em>(default: <code>30 seconds</code>)</em></dd>
 <dt>authScheme</dt>
 <dd>The authentication scheme to use (valid values are <code>Basic</code> and
 <code>Digest</code>). If <code>username</code> and <code>password</code> are
-set, the default value of this property will be <code>Basic</code>. Otherwise
+set, the default value of this property will be <code>Basic</code>. Otherwise,
 this property has no default value. <em>(optional)</em></dd>
 </dl>
 
@@ -239,7 +245,9 @@ this property has no default value. <em>(optional)</em></dd>
 
 <dl>
 <dt>downloadTaskDir</dt>
-<dd>The directory where the plugin stores information that should persist between builds. It will only be created if necessary. <em>(default: <code>${buildDir}/download-task</code>)</em></dd>
+<dd>The directory where the plugin stores information that should persist
+between builds. It will only be created if necessary.
+<em>(default: <code>${buildDir}/download-task</code>)</em></dd>
 <dt>tempAndMove</dt>
 <dd><code>true</code> if the file should be downloaded to a temporary location
 and, upon successful execution, moved to the final location. If
@@ -250,7 +258,12 @@ errors, regardless of the value of this flag. The default temporary location
 can be configured with the <code>downloadTaskDir</code> property. <em>(default:
 <code>false</code>)</em></dd>
 <dt>useETag</dt>
-<dd>Use this flag in combination with <code>onlyIfModified</code>. If both flags are <code>true</code> the plugin will check a file's timestamp as well as its entity tag (ETag) and only download it if it has been modified on the server since the last download. The plugin can differentiate between <a href="https://tools.ietf.org/html/rfc7232#section-2.1">strong and weak ETags</a>. Possible values are:
+<dd>Use this flag in combination with <code>onlyIfModified</code>. If both
+flags are <code>true</code>, the plugin will check a file's timestamp as well
+as its entity tag (ETag) and only download it if it has been modified on the
+server since the last download. The plugin can differentiate between
+<a href="https://tools.ietf.org/html/rfc7232#section-2.1">strong and weak
+ETags</a>. Possible values are:
 <dl>
 <dt><code>false</code> <em>(default)</em></dt>
 <dd>Do not use the ETag</dd>
