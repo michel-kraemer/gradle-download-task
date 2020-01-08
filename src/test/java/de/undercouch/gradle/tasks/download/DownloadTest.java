@@ -16,6 +16,7 @@ package de.undercouch.gradle.tasks.download;
 
 import groovy.lang.Closure;
 import org.apache.commons.io.FileUtils;
+import org.gradle.api.internal.provider.DefaultProvider;
 import org.gradle.api.tasks.TaskExecutionException;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,6 +24,7 @@ import org.junit.Test;
 import java.io.File;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.concurrent.Callable;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -214,6 +216,45 @@ public class DownloadTest extends TestBaseWithMockServer {
                 return dst;
             }
         });
+
+        assertFalse(srcCalled[0]);
+        assertFalse(dstCalled[0]);
+
+        t.execute();
+
+        assertTrue(srcCalled[0]);
+        assertTrue(dstCalled[0]);
+
+        String dstContents = FileUtils.readFileToString(dst);
+        assertEquals(CONTENTS, dstContents);
+    }
+
+    /**
+     * Tests lazy evaluation of 'src' and 'dest' properties if they are
+     * Providers
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void providerSrcAndDest() throws Exception {
+        final boolean[] srcCalled = new boolean[] { false };
+        final boolean[] dstCalled = new boolean[] { false };
+
+        final File dst = folder.newFile();
+
+        Download t = makeProjectAndTask();
+        t.src(new DefaultProvider<>(new Callable<Object>() {
+            public Object call() {
+                srcCalled[0] = true;
+                return wireMockRule.url(TEST_FILE_NAME);
+            }
+        }));
+
+        t.dest(new DefaultProvider<>(new Callable<Object>() {
+            public Object call() {
+                dstCalled[0] = true;
+                return dst;
+            }
+        }));
 
         assertFalse(srcCalled[0]);
         assertFalse(dstCalled[0]);

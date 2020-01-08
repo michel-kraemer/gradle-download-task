@@ -55,6 +55,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Array;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -893,6 +894,40 @@ public class DownloadAction implements DownloadSpec {
     }
 
     /**
+     * If the given object is a org.gradle.api.provider.Provider, get the
+     * provider's value and return it. Otherwise, just return the object.
+     * @param obj the object
+     * @return the provider's value or the object
+     */
+    private static Object tryGetProvider(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
+        //Provider class is only available with Gradle 4.0 or higher
+        Class<?> providerClass;
+        try {
+            providerClass = Class.forName("org.gradle.api.provider.Provider");
+        } catch (ClassNotFoundException e) {
+            return obj;
+        }
+
+        if (providerClass == null || !providerClass.isAssignableFrom(obj.getClass())) {
+            return obj;
+        }
+
+        try {
+            Method m = obj.getClass().getMethod("getOrNull");
+            m.setAccessible(true);
+            obj = m.invoke(obj);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalArgumentException(e);
+        }
+
+        return obj;
+    }
+
+    /**
      * Recursively convert the given source to a list of URLs
      * @param src the source to convert
      * @return the list of URLs
@@ -905,6 +940,8 @@ public class DownloadAction implements DownloadSpec {
             Closure<?> closure = (Closure<?>)src;
             src = closure.call();
         }
+
+        src = tryGetProvider(src);
 
         if (src instanceof CharSequence) {
             try {
@@ -971,6 +1008,9 @@ public class DownloadAction implements DownloadSpec {
             Closure<?> closure = (Closure<?>)destObject;
             destObject = closure.call();
         }
+
+        //lazily evaluate Provider
+        destObject = tryGetProvider(destObject);
 
         if (destObject instanceof CharSequence) {
             cachedDest = project.file(destObject.toString());
