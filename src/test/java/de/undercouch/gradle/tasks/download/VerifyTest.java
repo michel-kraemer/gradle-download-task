@@ -16,6 +16,7 @@ package de.undercouch.gradle.tasks.download;
 
 import groovy.lang.Closure;
 import org.apache.commons.codec.binary.Hex;
+import org.gradle.api.internal.provider.DefaultProvider;
 import org.gradle.api.tasks.TaskExecutionException;
 import org.gradle.api.tasks.TaskValidationException;
 import org.junit.Test;
@@ -26,6 +27,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -209,6 +211,38 @@ public class VerifyTest extends TestBaseWithMockServer {
                 return t.getDest().getAbsolutePath();
             }
         });
+
+        t.execute();
+        v.execute(); // will throw if the checksum is not OK
+
+        assertTrue(srcCalled[0]);
+    }
+
+    /**
+     * Tests lazy evaluation of the 'src' property if it is a Provider
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void providerSrc() throws Exception {
+        configureDefaultStub();
+
+        final boolean[] srcCalled = new boolean[] { false };
+
+        final Download t = makeProjectAndTask();
+        t.src(wireMockRule.url(TEST_FILE_NAME));
+        File dst = folder.newFile();
+        t.dest(dst);
+
+        Verify v = makeVerifyTask(t);
+        v.algorithm("MD5");
+        String calculatedChecksum = calculateChecksum();
+        v.checksum(calculatedChecksum);
+        v.src(new DefaultProvider<>(new Callable<Object>() {
+            public Object call() {
+                srcCalled[0] = true;
+                return t.getDest().getAbsolutePath();
+            }
+        }));
 
         t.execute();
         v.execute(); // will throw if the checksum is not OK

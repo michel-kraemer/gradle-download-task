@@ -25,6 +25,8 @@ import java.security.NoSuchAlgorithmException;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 
+import static de.undercouch.gradle.tasks.download.internal.ProviderHelper.tryGetProvider;
+
 /**
  * Verifies a file's integrity by calculating its checksum.
  * @author Michel Kraemer
@@ -95,6 +97,8 @@ public class VerifyAction implements VerifySpec {
             Closure<?> closure = (Closure<?>)src;
             src = closure.call();
         }
+
+        src = tryGetProvider(src);
         
         if (src instanceof CharSequence) {
             src = project.file(src.toString());

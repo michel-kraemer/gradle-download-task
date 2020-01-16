@@ -55,7 +55,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Array;
-import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -65,6 +64,8 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static de.undercouch.gradle.tasks.download.internal.ProviderHelper.tryGetProvider;
 
 /**
  * Downloads a file and displays progress
@@ -855,6 +856,8 @@ public class DownloadAction implements DownloadSpec {
             dir = closure.call();
         }
 
+        dir = tryGetProvider(dir);
+
         if (dir instanceof CharSequence) {
             this.downloadTaskDir = project.file(dir.toString());
         } else if (dir instanceof File) {
@@ -882,7 +885,9 @@ public class DownloadAction implements DownloadSpec {
             Closure<?> closure = (Closure<?>)location;
             location = closure.call();
         }
-        
+
+        location = tryGetProvider(location);
+
         if (location instanceof CharSequence) {
             this.cachedETagsFile = project.file(location.toString());
         } else if (location instanceof File) {
@@ -891,40 +896,6 @@ public class DownloadAction implements DownloadSpec {
             throw new IllegalArgumentException("Location for cached ETags must " +
                 "either be a File or a CharSequence");
         }
-    }
-
-    /**
-     * If the given object is a org.gradle.api.provider.Provider, get the
-     * provider's value and return it. Otherwise, just return the object.
-     * @param obj the object
-     * @return the provider's value or the object
-     */
-    private static Object tryGetProvider(Object obj) {
-        if (obj == null) {
-            return null;
-        }
-
-        //Provider class is only available with Gradle 4.0 or higher
-        Class<?> providerClass;
-        try {
-            providerClass = Class.forName("org.gradle.api.provider.Provider");
-        } catch (ClassNotFoundException e) {
-            return obj;
-        }
-
-        if (providerClass == null || !providerClass.isAssignableFrom(obj.getClass())) {
-            return obj;
-        }
-
-        try {
-            Method m = obj.getClass().getMethod("getOrNull");
-            m.setAccessible(true);
-            obj = m.invoke(obj);
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalArgumentException(e);
-        }
-
-        return obj;
     }
 
     /**
