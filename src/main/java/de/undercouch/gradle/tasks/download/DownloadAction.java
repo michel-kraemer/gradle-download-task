@@ -49,6 +49,7 @@ import org.gradle.util.GradleVersion;
 
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -323,6 +324,30 @@ public class DownloadAction implements DownloadSpec {
     }
 
     /**
+     * Move a file by calling {@link File#renameTo(File)} first and, if this
+     * fails, by copying and deleting it.
+     * @param src the file to move
+     * @param dest the destination
+     * @throws IOException if the file could not be moved
+     */
+    private void moveFile(File src, File dest) throws IOException {
+        if (src.renameTo(dest)) {
+            return;
+        }
+
+        // renameTo() failed. Try to copy the file and delete it afterwards.
+        // see issue #146
+        try (InputStream is = new FileInputStream(src)) {
+            stream(is, dest);
+        }
+        if (!src.delete()) {
+            throw new IOException("Could not delete temporary file '" +
+                    src.getAbsolutePath() + "' after copying it to '" +
+                    dest.getAbsolutePath() + "'.");
+        }
+    }
+
+    /**
      * If {@link #tempAndMove} is <code>true</code>, copy bytes from an input
      * stream to a temporary file and log progress. Upon successful
      * completion, move the temporary file to the given destination. If
@@ -353,10 +378,12 @@ public class DownloadAction implements DownloadSpec {
                             destFile.getAbsolutePath() + "'.");
                 }
             }
-            if (!tempFile.renameTo(destFile)) {
+            try {
+                moveFile(tempFile, destFile);
+            } catch (IOException e) {
                 throw new IOException("Failed to move temporary file '" +
                         tempFile.getAbsolutePath() + "' to destination file '" +
-                        destFile.getAbsolutePath() + "'.");
+                        destFile.getAbsolutePath() + "'.", e);
             }
         }
     }
