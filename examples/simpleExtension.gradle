@@ -11,7 +11,7 @@ plugins {
 task downloadFile {
     doLast {
         download {
-            src 'http://central.maven.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar'
+            src 'https://repo.maven.apache.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar'
             dest buildDir
             overwrite true
         }

@@ -10,8 +10,8 @@ plugins {
  */
 task downloadFiles(type: Download) {
     src([
-        'http://central.maven.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar',
-        'http://central.maven.org/maven2/org/eclipse/jetty/jetty-server/9.1.3.v20140225/jetty-server-9.1.3.v20140225-javadoc.jar'
+        'https://repo.maven.apache.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar',
+        'https://repo.maven.apache.org/maven2/org/eclipse/jetty/jetty-server/9.1.3.v20140225/jetty-server-9.1.3.v20140225-javadoc.jar'
     ])
     dest buildDir
     overwrite true

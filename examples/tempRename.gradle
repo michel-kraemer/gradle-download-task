@@ -9,7 +9,7 @@ plugins {
  * Download a single file using a temporary name. Rename it afterwards.
  */
 task downloadFile(type: Download) {
-    src 'http://central.maven.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar'
+    src 'https://repo.maven.apache.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar'
     dest new File(buildDir, "styles-1.0.jar")
     overwrite false
     tempAndMove true

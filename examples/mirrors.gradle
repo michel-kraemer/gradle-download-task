@@ -11,9 +11,9 @@ plugins {
 task downloadFile {
     doLast {
         def mirrors = [
-            'http://central.maven-non-existing.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar',
-            'http://central.maven.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar',
-            'http://central.maven-non-existing2.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar'
+            'https://repo.maven-non-existing.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar',
+            'https://repo.maven.apache.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar',
+            'https://repo.maven-non-existing2.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar'
         ] as Queue
         while(true) {
             def mirror = mirrors.poll()
