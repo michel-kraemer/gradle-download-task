@@ -15,6 +15,7 @@ import org.mortbay.jetty.handler.DefaultHandler
 import org.mortbay.jetty.handler.HandlerList
 import org.mortbay.jetty.handler.ResourceHandler
 import org.mortbay.resource.Resource
+import org.gradle.util.GradleVersion
 
 task integrationTest {
     doLast {
@@ -122,8 +123,11 @@ task integrationTest {
                 def downloadedTestFile2 = new File(testProjectDir, 'build/test2.txt')
 
                 //create second destination test file to simulate onlyIfModified = true and overwrite = false
-                downloadedTestFile2.getParentFile().mkdirs()
-                downloadedTestFile2.write(testStr2)
+                def createTestFile2 = {
+                    downloadedTestFile2.getParentFile().mkdirs()
+                    downloadedTestFile2.write(testStr2)
+                }
+                createTestFile2()
 
                 //execute Gradle to create a Gradle wrapper for the test project
                 def gradlew = [ new File(rootDir, 'gradlew').getAbsolutePath() ]
@@ -147,6 +151,22 @@ task integrationTest {
                 exec {
                     workingDir testProjectDir
                     commandLine gradlew + ['--no-daemon', 'downloadFile', 'downloadFile2', 'verifyFile']
+                }
+                if (GradleVersion.version(version).baseVersion >= GradleVersion.version("6.6")) {
+                    // Store the configuration cache
+                    project.delete(new File(testProjectDir, 'build'))
+                    createTestFile2()
+                    exec {
+                        workingDir testProjectDir
+                        commandLine gradlew + ['--no-daemon', '--configuration-cache', 'downloadFile', 'downloadFile2', 'verifyFile']
+                    }
+                    // Reuse the configuration cache
+                    project.delete(new File(testProjectDir, 'build'))
+                    createTestFile2()
+                    exec {
+                        workingDir testProjectDir
+                        commandLine gradlew + ['--no-daemon', '--configuration-cache', 'downloadFile', 'downloadFile2', 'verifyFile']
+                    }
                 }
 
                 //check test files
