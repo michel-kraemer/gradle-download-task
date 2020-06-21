@@ -14,6 +14,7 @@
 
 package de.undercouch.gradle.tasks.download;
 
+import de.undercouch.gradle.tasks.download.internal.ProjectApiHelper;
 import groovy.lang.Closure;
 
 import java.io.File;
@@ -32,7 +33,7 @@ import static de.undercouch.gradle.tasks.download.internal.ProviderHelper.tryGet
  * @author Michel Kraemer
  */
 public class VerifyAction implements VerifySpec {
-    private final Project project;
+    private final ProjectApiHelper projectApi;
     private File src;
     private String algorithm = "MD5";
     private String checksum;
@@ -42,7 +43,7 @@ public class VerifyAction implements VerifySpec {
      * @param project the project to be built
      */
     public VerifyAction(Project project) {
-        this.project = project;
+        this.projectApi = ProjectApiHelper.newInstance(project);
     }
 
     private String toHex(byte[] barr) {
@@ -101,7 +102,7 @@ public class VerifyAction implements VerifySpec {
         src = tryGetProvider(src);
         
         if (src instanceof CharSequence) {
-            src = project.file(src.toString());
+            src = projectApi.file(src.toString());
         }
         if (src instanceof File) {
             this.src = (File)src;

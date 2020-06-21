@@ -16,6 +16,8 @@ package de.undercouch.gradle.tasks.download;
 
 import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
+import de.undercouch.gradle.tasks.download.internal.ProjectApiHelper;
+import de.undercouch.gradle.tasks.download.internal.ProgressLoggerFactoryWrapper;
 import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
 import de.undercouch.gradle.tasks.download.org.apache.http.Header;
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpEntity;
@@ -45,8 +47,11 @@ import groovy.json.JsonSlurper;
 import groovy.lang.Closure;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.logging.Logger;
 import org.gradle.util.GradleVersion;
 
+import javax.annotation.Nullable;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -76,8 +81,11 @@ public class DownloadAction implements DownloadSpec {
     private static final GradleVersion MIN_GRADLE_VERSION =
             GradleVersion.version("2.0");
 
-    private final Project project;
-    private List<Object> sourceObjects = new ArrayList<>(1);
+    private final ProjectApiHelper projectApi;
+    private final Logger logger;
+    private final ProgressLoggerFactoryWrapper progressLoggerFactory;
+    private final boolean isOffline;
+    private final List<Object> sourceObjects = new ArrayList<>(1);
     private List<URL> cachedSources;
     private Object destObject;
     private File cachedDest;
@@ -107,10 +115,19 @@ public class DownloadAction implements DownloadSpec {
 
     /**
      * Creates a new download action
+     * @param isOffline whether the build is offline
      * @param project the project to be built
+     * @param task the task to be executed, if applicable
      */
-    public DownloadAction(Project project) {
-        this.project = project;
+    public DownloadAction(boolean isOffline, Project project, @Nullable Task task) {
+        this.projectApi = ProjectApiHelper.newInstance(project);
+        this.logger = project.getLogger();
+        if (task != null) {
+            this.progressLoggerFactory = new ProgressLoggerFactoryWrapper(logger, task);
+        } else {
+            this.progressLoggerFactory = new ProgressLoggerFactoryWrapper(logger, project);
+        }
+        this.isOffline = isOffline;
         this.downloadTaskDir = new File(project.getBuildDir(), "download-task");
     }
 
@@ -120,14 +137,14 @@ public class DownloadAction implements DownloadSpec {
      */
     public void execute() throws IOException {
         if (GradleVersion.current().compareTo(MIN_GRADLE_VERSION) < 0 && !quiet) {
-            // project.getLogger().warn("Support for running gradle-download-task "
+            // logger.warn("Support for running gradle-download-task "
             //         + "with Gradle 1.x has been deprecated and will be removed in "
             //         + "gradle-download-task 4.0.0");
             throw new IllegalStateException("gradle-download-task requires " +
                     "Gradle 2.x or higher");
         }
         if (JavaVersion.current().compareTo(JavaVersion.VERSION_1_7) < 0 && !quiet) {
-            // project.getLogger().warn("Support for running gradle-download-task "
+            // logger.warn("Support for running gradle-download-task "
             //         + "using Java 6 has been deprecated and will be removed in "
             //         + "gradle-download-task 4.0.0");
             throw new IllegalStateException("gradle-download-task requires " +
@@ -144,7 +161,7 @@ public class DownloadAction implements DownloadSpec {
         List<URL> sources = getSources();
         File dest = getDest();
 
-        if (dest.equals(project.getBuildDir())) {
+        if (dest.equals(projectApi.getBuildDirectory())) {
             //make sure build dir exists
             dest.mkdirs();
         }
@@ -173,7 +190,7 @@ public class DownloadAction implements DownloadSpec {
         final File destFile = makeDestFile(src);
         if (!overwrite && destFile.exists()) {
             if (!quiet) {
-                project.getLogger().info("Destination file already exists. "
+                logger.info("Destination file already exists. "
                         + "Skipping '" + destFile.getName() + "'");
             }
             ++upToDate;
@@ -182,10 +199,10 @@ public class DownloadAction implements DownloadSpec {
         
         // in case offline mode is enabled don't try to download if
         // destination already exists
-        if (project.getGradle().getStartParameter().isOffline()) {
+        if (isOffline) {
             if (destFile.exists()) {
                 if (!quiet) {
-                    project.getLogger().info("Skipping existing file '" +
+                    logger.info("Skipping existing file '" +
                             destFile.getName() + "' in offline mode.");
                 }
                 return;
@@ -199,10 +216,10 @@ public class DownloadAction implements DownloadSpec {
         //create progress logger
         if (!quiet) {
             try {
-                progressLogger = new ProgressLoggerWrapper(project, src.toString());
+                progressLogger = progressLoggerFactory.newInstance(src.toString());
             } catch (Exception e) {
                 //unable to get progress logger
-                project.getLogger().error("Unable to get progress logger. Download "
+                logger.error("Unable to get progress logger. Download "
                         + "progress will not be displayed.");
             }
         }
@@ -221,7 +238,7 @@ public class DownloadAction implements DownloadSpec {
             srcFile = new File(src.toURI());
             size = toLengthText(srcFile.length());
         } catch (URISyntaxException e) {
-            project.getLogger().warn("Unable to determine file length.");
+            logger.warn("Unable to determine file length.");
         }
         
         //check if file was modified
@@ -230,7 +247,7 @@ public class DownloadAction implements DownloadSpec {
             lastModified = srcFile.lastModified();
             if (lastModified != 0 && timestamp >= lastModified) {
                 if (!quiet) {
-                    project.getLogger().info("Not modified. Skipping '" + src + "'");
+                    logger.info("Not modified. Skipping '" + src + "'");
                 }
                 ++upToDate;
                 return;
@@ -272,7 +289,7 @@ public class DownloadAction implements DownloadSpec {
             if (code == HttpStatus.SC_NOT_MODIFIED ||
                     (lastModified != 0 && timestamp >= lastModified)) {
                 if (!quiet) {
-                    project.getLogger().info("Not modified. Skipping '" + src + "'");
+                    logger.info("Not modified. Skipping '" + src + "'");
                 }
                 ++upToDate;
                 return;
@@ -478,7 +495,7 @@ public class DownloadAction implements DownloadSpec {
         Header etagHdr = response.getFirstHeader("ETag");
         if (etagHdr == null) {
             if (!quiet) {
-                project.getLogger().warn("Server response does not include an "
+                logger.warn("Server response does not include an "
                         + "entity tag (ETag).");
             }
             return;
@@ -488,7 +505,7 @@ public class DownloadAction implements DownloadSpec {
         //handle weak ETags
         if (isWeakETag(etag)) {
             if (useETag.displayWarningForWeak && !quiet) {
-                project.getLogger().warn("Weak entity tag (ETag) encountered. "
+                logger.warn("Weak entity tag (ETag) encountered. "
                         + "Please make sure you want to compare resources based on "
                         + "weak ETags. If yes, set the 'useETag' flag to \"all\", "
                         + "otherwise set it to \"strongOnly\".");
@@ -886,7 +903,7 @@ public class DownloadAction implements DownloadSpec {
         dir = tryGetProvider(dir);
 
         if (dir instanceof CharSequence) {
-            this.downloadTaskDir = project.file(dir.toString());
+            this.downloadTaskDir = projectApi.file(dir.toString());
         } else if (dir instanceof File) {
             this.downloadTaskDir = (File)dir;
         } else {
@@ -916,7 +933,7 @@ public class DownloadAction implements DownloadSpec {
         location = tryGetProvider(location);
 
         if (location instanceof CharSequence) {
-            this.cachedETagsFile = project.file(location.toString());
+            this.cachedETagsFile = projectApi.file(location.toString());
         } else if (location instanceof File) {
             this.cachedETagsFile = (File)location;
         } else {
@@ -1011,7 +1028,7 @@ public class DownloadAction implements DownloadSpec {
         destObject = tryGetProvider(destObject);
 
         if (destObject instanceof CharSequence) {
-            cachedDest = project.file(destObject.toString());
+            cachedDest = projectApi.file(destObject.toString());
         } else if (destObject instanceof File) {
             cachedDest = (File)destObject;
         } else {

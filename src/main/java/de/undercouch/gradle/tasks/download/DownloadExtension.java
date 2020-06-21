@@ -39,7 +39,8 @@ public class DownloadExtension implements Configurable<DownloadExtension> {
     
     @Override
     public DownloadExtension configure(@SuppressWarnings("rawtypes") Closure cl) {
-        DownloadAction da = ConfigureUtil.configure(cl, new DownloadAction(project));
+        boolean isOffline = project.getGradle().getStartParameter().isOffline();
+        DownloadAction da = ConfigureUtil.configure(cl, new DownloadAction(isOffline, project, null));
         try {
             da.execute();
         } catch (IOException e) {
