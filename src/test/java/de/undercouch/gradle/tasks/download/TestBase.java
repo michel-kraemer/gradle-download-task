@@ -14,12 +14,14 @@
 
 package de.undercouch.gradle.tasks.download;
 
+import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,7 +61,15 @@ public abstract class TestBase {
      * @return the unconfigured download task
      */
     protected Download makeProjectAndTask() {
+        return makeProjectAndTask(null);
+    }
+
+    protected Download makeProjectAndTask(@Nullable Action<Project> projectConfiguration) {
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build();
+
+        if (projectConfiguration != null) {
+            projectConfiguration.execute(project);
+        }
         
         Map<String, Object> applyParams = new HashMap<>();
         applyParams.put("plugin", "de.undercouch.download");
