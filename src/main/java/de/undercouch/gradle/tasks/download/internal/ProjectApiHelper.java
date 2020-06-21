@@ -10,7 +10,7 @@ import java.io.File;
 public abstract class ProjectApiHelper {
 
     public static ProjectApiHelper newInstance(Project project) {
-        if (GradleVersion.current().getBaseVersion().compareTo(GradleVersion.version("6.6")) >= 0) {
+        if (GradleVersion.current().getBaseVersion().compareTo(GradleVersion.version("4.3")) >= 0) {
             return project.getObjects().newInstance(DefaultProjectApiHelper.class);
         }
         return new LegacyProjectApiHelper(project);
@@ -32,7 +32,7 @@ class DefaultProjectApiHelper extends ProjectApiHelper {
 
     @Override
     public File getBuildDirectory() {
-        return layout.getBuildDirectory().getAsFile().get();
+        return layout.getBuildDirectory().get().getAsFile();
     }
 
     @Override
