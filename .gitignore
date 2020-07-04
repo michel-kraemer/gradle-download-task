@@ -12,3 +12,4 @@ bin/
 *.i??
 out/
 .DS_Store
+.idea

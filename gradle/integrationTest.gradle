@@ -2,7 +2,7 @@ buildscript {
     dependencies {
         classpath 'org.mortbay.jetty:jetty-embedded:6.1.25'
     }
-    
+
     repositories {
         mavenCentral()
     }
@@ -15,6 +15,7 @@ import org.mortbay.jetty.handler.DefaultHandler
 import org.mortbay.jetty.handler.HandlerList
 import org.mortbay.jetty.handler.ResourceHandler
 import org.mortbay.resource.Resource
+import org.gradle.util.GradleVersion
 
 task integrationTest {
     doLast {
@@ -32,7 +33,8 @@ task integrationTest {
             '5.4', '5.4.1', '5.5', '5.5.1',
             '5.6', '5.6.1', '5.6.2', '5.6.3', '5.6.4',
             '6.0', '6.0.1', '6.1', '6.1.1', '6.2', '6.2.1', '6.2.2',
-            '6.3', '6.4'
+            '6.3', '6.4', '6.5',
+            '6.6-milestone-2'
         ]
 
         //handle regex to only include certain gradle versions
@@ -85,27 +87,27 @@ task integrationTest {
                         dependencies {
                             classpath '${project.group}:${project.name}:${project.version}'
                         }
-                        
+
                         repositories {
                             mavenLocal()
                             mavenCentral()
                         }
                     }
-                    
+
                     apply plugin: 'de.undercouch.download'
-                    
+
                     task downloadFile(type: Download) {
                         src '${testFileSrc}'
                         dest buildDir
                     }
-                    
+
                     task downloadFile2(type: Download) {
                         src '${testFile2Src}'
                         dest buildDir
                         overwrite false
                         onlyIfModified true
                     }
-                    
+
                     task verifyFile(type: Verify, dependsOn: downloadFile) {
                         src new File(buildDir, '${testFile.name}')
                         algorithm 'MD5'
@@ -121,8 +123,11 @@ task integrationTest {
                 def downloadedTestFile2 = new File(testProjectDir, 'build/test2.txt')
 
                 //create second destination test file to simulate onlyIfModified = true and overwrite = false
-                downloadedTestFile2.getParentFile().mkdirs()
-                downloadedTestFile2.write(testStr2)
+                def createTestFile2 = {
+                    downloadedTestFile2.getParentFile().mkdirs()
+                    downloadedTestFile2.write(testStr2)
+                }
+                createTestFile2()
 
                 //execute Gradle to create a Gradle wrapper for the test project
                 def gradlew = [ new File(rootDir, 'gradlew').getAbsolutePath() ]
@@ -143,9 +148,27 @@ task integrationTest {
                     workingDir testProjectDir
                     commandLine gradlew + ['--version']
                 }
+                def execArgs = ['--no-daemon', 'downloadFile', 'downloadFile2', 'verifyFile']
                 exec {
                     workingDir testProjectDir
-                    commandLine gradlew + ['--no-daemon', 'downloadFile', 'downloadFile2', 'verifyFile']
+                    commandLine gradlew + execArgs
+                }
+                if (GradleVersion.version(version).baseVersion >= GradleVersion.version("6.6")) {
+                    // Store the configuration cache
+                    project.delete(new File(testProjectDir, 'build'))
+                    createTestFile2()
+                    def execArgsCache = [ '--configuration-cache' ] + execArgs
+                    exec {
+                        workingDir testProjectDir
+                        commandLine gradlew + execArgsCache
+                    }
+                    // Reuse the configuration cache
+                    project.delete(new File(testProjectDir, 'build'))
+                    createTestFile2()
+                    exec {
+                        workingDir testProjectDir
+                        commandLine gradlew + execArgsCache
+                    }
                 }
 
                 //check test files

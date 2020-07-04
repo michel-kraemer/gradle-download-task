@@ -16,8 +16,8 @@ package de.undercouch.gradle.tasks.download.internal;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
-import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
 /**
@@ -33,7 +33,8 @@ public class ProgressLoggerWrapper {
     
     /**
      * Create a progress logger wrapper
-     * @param project the current Gradle project
+     * @param logger the Gradle logger
+     * @param servicesOwner the Gradle services owner
      * @param src the URL to the file to be downloaded
      * @throws ClassNotFoundException if one of Gradle's internal classes
      * could not be found
@@ -44,11 +45,11 @@ public class ProgressLoggerWrapper {
      * @throws IllegalAccessException if a method from one of Gradle's
      * internal classes is not accessible
      */
-    public ProgressLoggerWrapper(Project project, String src)
+    public ProgressLoggerWrapper(Logger logger, Object servicesOwner, String src)
             throws ClassNotFoundException, NoSuchMethodException,
                 InvocationTargetException, IllegalAccessException {
-        logger = project.getLogger();
-        
+        this.logger = logger;
+
         //we are about to access an internal class. Use reflection here to provide
         //as much compatibility to different Gradle versions as possible
         
@@ -65,7 +66,7 @@ public class ProgressLoggerWrapper {
         }
         
         //get ProgressLoggerFactory service
-        Object serviceFactory = invoke(project, "getServices");
+        Object serviceFactory = invoke(servicesOwner, "getServices");
         Object progressLoggerFactory = invoke(serviceFactory, "get",
                 progressLoggerFactoryClass);
         
@@ -100,11 +101,37 @@ public class ProgressLoggerWrapper {
         for (int i = 0; i < args.length; ++i) {
             argumentTypes[i] = args[i].getClass();
         }
-        Method m = obj.getClass().getMethod(method, argumentTypes);
+        Method m = findMethod(obj, method, argumentTypes);
         m.setAccessible(true);
         return m.invoke(obj, args);
     }
-    
+
+    /**
+     * Uses reflection to find a method with the given name and argument types
+     * from the given object or its superclasses.
+     * @param obj the object
+     * @param methodName the name of the method to return
+     * @param argumentTypes the method's argument types
+     * @return the method object
+     * @throws NoSuchMethodException if the method could not be found
+     */
+    private static Method findMethod(Object obj, String methodName,
+            Class<?>[] argumentTypes) throws NoSuchMethodException {
+        Class<?> clazz = obj.getClass();
+        while (clazz != null) {
+            Method[] methods = clazz.getDeclaredMethods();
+            for (Method method : methods) {
+                if (method.getName().equals(methodName) &&
+                        Arrays.equals(method.getParameterTypes(), argumentTypes)) {
+                    return method;
+                }
+            }
+            clazz = clazz.getSuperclass();
+        }
+        throw new NoSuchMethodException("Method " + methodName + "(" +
+                Arrays.toString(argumentTypes) + ") on " + obj.getClass());
+    }
+
     /**
      * Invoke a method using reflection but don't throw any exceptions.
      * Just log errors instead.

@@ -47,7 +47,11 @@ public class Download extends DefaultTask implements DownloadSpec {
      * Default constructor
      */
     public Download() {
-        action = new DownloadAction(getProject());
+        // get required project properties now to enable configuration cache
+        final boolean isOffline = getProject().getGradle().getStartParameter().isOffline();
+
+        action = new DownloadAction(getProject(), this);
+
         getOutputs().upToDateWhen(new Spec<Task>() {
             @Override
             public boolean isSatisfiedBy(Task task) {
@@ -60,7 +64,7 @@ public class Download extends DefaultTask implements DownloadSpec {
             public boolean isSatisfiedBy(Task task) {
                 // in case offline mode is enabled don't try to download if
                 // destination already exists
-                if (getProject().getGradle().getStartParameter().isOffline()) {
+                if (isOffline) {
                     for (File f : getOutputFiles()) {
                         if (f.exists()) {
                             if (!isQuiet()) {
