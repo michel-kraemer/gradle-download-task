@@ -77,8 +77,10 @@ import static de.undercouch.gradle.tasks.download.internal.ProviderHelper.tryGet
  * @author Michel Kraemer
  */
 public class DownloadAction implements DownloadSpec {
-    private static final GradleVersion MIN_GRADLE_VERSION =
+    private static final GradleVersion HARD_MIN_GRADLE_VERSION =
             GradleVersion.version("2.0");
+    private static final GradleVersion SOFT_MIN_GRADLE_VERSION =
+            GradleVersion.version("5.0");
 
     private final ProjectApiHelper projectApi;
     private final Logger logger;
@@ -135,19 +137,23 @@ public class DownloadAction implements DownloadSpec {
      * @throws IOException if the file could not downloaded
      */
     public void execute() throws IOException {
-        if (GradleVersion.current().compareTo(MIN_GRADLE_VERSION) < 0 && !quiet) {
-            // logger.warn("Support for running gradle-download-task "
-            //         + "with Gradle 1.x has been deprecated and will be removed in "
-            //         + "gradle-download-task 4.0.0");
+        if (GradleVersion.current().compareTo(HARD_MIN_GRADLE_VERSION) < 0 && !quiet) {
             throw new IllegalStateException("gradle-download-task requires " +
                     "Gradle 2.x or higher");
         }
+        if (GradleVersion.current().compareTo(SOFT_MIN_GRADLE_VERSION) < 0 && !quiet) {
+            logger.warn("Support for running gradle-download-task "
+                    + "with Gradle 2.x, 3.x, and 4.x has been deprecated and will be removed in "
+                    + "gradle-download-task 5.0.0");
+        }
         if (JavaVersion.current().compareTo(JavaVersion.VERSION_1_7) < 0 && !quiet) {
-            // logger.warn("Support for running gradle-download-task "
-            //         + "using Java 6 has been deprecated and will be removed in "
-            //         + "gradle-download-task 4.0.0");
             throw new IllegalStateException("gradle-download-task requires " +
                     "Java 7 or higher");
+        }
+        if (JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) < 0 && !quiet) {
+            logger.warn("Support for running gradle-download-task "
+                    + "using Java 7 has been deprecated and will be removed in "
+                    + "gradle-download-task 5.0.0");
         }
 
         if (sourceObjects.isEmpty()) {
