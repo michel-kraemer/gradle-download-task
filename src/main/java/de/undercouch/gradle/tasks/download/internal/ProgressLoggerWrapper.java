@@ -34,7 +34,7 @@ public class ProgressLoggerWrapper {
     /**
      * Create a progress logger wrapper
      * @param logger the Gradle logger
-     * @param hasServices the Gradle services owner
+     * @param servicesOwner the Gradle services owner
      * @param src the URL to the file to be downloaded
      * @throws ClassNotFoundException if one of Gradle's internal classes
      * could not be found
@@ -45,7 +45,7 @@ public class ProgressLoggerWrapper {
      * @throws IllegalAccessException if a method from one of Gradle's
      * internal classes is not accessible
      */
-    public ProgressLoggerWrapper(Logger logger, Object hasServices, String src)
+    public ProgressLoggerWrapper(Logger logger, Object servicesOwner, String src)
             throws ClassNotFoundException, NoSuchMethodException,
                 InvocationTargetException, IllegalAccessException {
         this.logger = logger;
@@ -66,7 +66,7 @@ public class ProgressLoggerWrapper {
         }
         
         //get ProgressLoggerFactory service
-        Object serviceFactory = invoke(hasServices, "getServices");
+        Object serviceFactory = invoke(servicesOwner, "getServices");
         Object progressLoggerFactory = invoke(serviceFactory, "get",
                 progressLoggerFactoryClass);
         
@@ -106,21 +106,30 @@ public class ProgressLoggerWrapper {
         return m.invoke(obj, args);
     }
 
-    private static Method findMethod(Object obj, String methodName, Class<?>[] argumentTypes)
-            throws NoSuchMethodException {
+    /**
+     * Uses reflection to find a method with the given name and argument types
+     * from the given object or its superclasses.
+     * @param obj the object
+     * @param methodName the name of the method to return
+     * @param argumentTypes the method's argument types
+     * @return the method object
+     * @throws NoSuchMethodException if the method could not be found
+     */
+    private static Method findMethod(Object obj, String methodName,
+            Class<?>[] argumentTypes) throws NoSuchMethodException {
         Class<?> clazz = obj.getClass();
         while (clazz != null) {
             Method[] methods = clazz.getDeclaredMethods();
             for (Method method : methods) {
-                if (method.getName().equals(methodName) && Arrays.equals(method.getParameterTypes(), argumentTypes)) {
+                if (method.getName().equals(methodName) &&
+                        Arrays.equals(method.getParameterTypes(), argumentTypes)) {
                     return method;
                 }
             }
             clazz = clazz.getSuperclass();
         }
-        throw new NoSuchMethodException(
-                "Method " + methodName + "(" + Arrays.toString(argumentTypes) + ") on " + obj.getClass()
-        );
+        throw new NoSuchMethodException("Method " + methodName + "(" +
+                Arrays.toString(argumentTypes) + ") on " + obj.getClass());
     }
 
     /**

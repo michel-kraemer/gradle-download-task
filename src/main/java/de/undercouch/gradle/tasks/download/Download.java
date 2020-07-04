@@ -47,8 +47,11 @@ public class Download extends DefaultTask implements DownloadSpec {
      * Default constructor
      */
     public Download() {
+        // get required project properties now to enable configuration cache
         final boolean isOffline = getProject().getGradle().getStartParameter().isOffline();
-        action = new DownloadAction(isOffline, getProject(), this);
+
+        action = new DownloadAction(getProject(), this);
+
         getOutputs().upToDateWhen(new Spec<Task>() {
             @Override
             public boolean isSatisfiedBy(Task task) {

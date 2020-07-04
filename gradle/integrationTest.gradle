@@ -148,24 +148,26 @@ task integrationTest {
                     workingDir testProjectDir
                     commandLine gradlew + ['--version']
                 }
+                def execArgs = ['--no-daemon', 'downloadFile', 'downloadFile2', 'verifyFile']
                 exec {
                     workingDir testProjectDir
-                    commandLine gradlew + ['--no-daemon', 'downloadFile', 'downloadFile2', 'verifyFile']
+                    commandLine gradlew + execArgs
                 }
                 if (GradleVersion.version(version).baseVersion >= GradleVersion.version("6.6")) {
                     // Store the configuration cache
                     project.delete(new File(testProjectDir, 'build'))
                     createTestFile2()
+                    def execArgsCache = [ '--configuration-cache' ] + execArgs
                     exec {
                         workingDir testProjectDir
-                        commandLine gradlew + ['--no-daemon', '--configuration-cache', 'downloadFile', 'downloadFile2', 'verifyFile']
+                        commandLine gradlew + execArgsCache
                     }
                     // Reuse the configuration cache
                     project.delete(new File(testProjectDir, 'build'))
                     createTestFile2()
                     exec {
                         workingDir testProjectDir
-                        commandLine gradlew + ['--no-daemon', '--configuration-cache', 'downloadFile', 'downloadFile2', 'verifyFile']
+                        commandLine gradlew + execArgsCache
                     }
                 }
 

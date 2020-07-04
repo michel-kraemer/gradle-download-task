@@ -17,7 +17,6 @@ package de.undercouch.gradle.tasks.download;
 import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.ProjectApiHelper;
-import de.undercouch.gradle.tasks.download.internal.ProgressLoggerFactoryWrapper;
 import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
 import de.undercouch.gradle.tasks.download.org.apache.http.Header;
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpEntity;
@@ -83,7 +82,7 @@ public class DownloadAction implements DownloadSpec {
 
     private final ProjectApiHelper projectApi;
     private final Logger logger;
-    private final ProgressLoggerFactoryWrapper progressLoggerFactory;
+    private final Object servicesOwner;
     private final boolean isOffline;
     private final List<Object> sourceObjects = new ArrayList<>(1);
     private List<URL> cachedSources;
@@ -115,19 +114,19 @@ public class DownloadAction implements DownloadSpec {
 
     /**
      * Creates a new download action
-     * @param isOffline whether the build is offline
      * @param project the project to be built
      * @param task the task to be executed, if applicable
      */
-    public DownloadAction(boolean isOffline, Project project, @Nullable Task task) {
+    public DownloadAction(Project project, @Nullable Task task) {
+        // get required project properties now to enable configuration cache
         this.projectApi = ProjectApiHelper.newInstance(project);
         this.logger = project.getLogger();
         if (task != null) {
-            this.progressLoggerFactory = new ProgressLoggerFactoryWrapper(logger, task);
+            this.servicesOwner = task;
         } else {
-            this.progressLoggerFactory = new ProgressLoggerFactoryWrapper(logger, project);
+            this.servicesOwner = project;
         }
-        this.isOffline = isOffline;
+        this.isOffline = project.getGradle().getStartParameter().isOffline();
         this.downloadTaskDir = new File(project.getBuildDir(), "download-task");
     }
 
@@ -216,7 +215,7 @@ public class DownloadAction implements DownloadSpec {
         //create progress logger
         if (!quiet) {
             try {
-                progressLogger = progressLoggerFactory.newInstance(src.toString());
+                progressLogger = new ProgressLoggerWrapper(logger, servicesOwner, src.toString());
             } catch (Exception e) {
                 //unable to get progress logger
                 logger.error("Unable to get progress logger. Download "

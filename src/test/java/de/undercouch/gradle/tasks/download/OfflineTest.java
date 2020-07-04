@@ -21,6 +21,7 @@ import java.io.File;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
+import org.gradle.api.NonNullApi;
 import org.gradle.api.Project;
 import org.junit.Test;
 
@@ -63,6 +64,10 @@ public class OfflineTest extends TestBaseWithMockServer {
         t.execute(); // should fail
     }
 
+    /**
+     * Creates a Download task and configures it to run in offline mode
+     * @return the task
+     */
     private Download makeOfflineProjectAndTask() {
         return makeProjectAndTask(new Action<Project>() {
             @Override
