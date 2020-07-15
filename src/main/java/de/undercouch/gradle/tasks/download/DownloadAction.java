@@ -117,6 +117,14 @@ public class DownloadAction implements DownloadSpec {
     /**
      * Creates a new download action
      * @param project the project to be built
+     */
+    public DownloadAction(Project project) {
+        this(project, null);
+    }
+
+    /**
+     * Creates a new download action
+     * @param project the project to be built
      * @param task the task to be executed, if applicable
      */
     public DownloadAction(Project project, @Nullable Task task) {
