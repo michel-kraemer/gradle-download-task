@@ -39,7 +39,7 @@ public class DownloadExtension implements Configurable<DownloadExtension> {
     
     @Override
     public DownloadExtension configure(Closure cl) {
-        DownloadAction da = ConfigureUtil.configure(cl, new DownloadAction(project, null));
+        DownloadAction da = ConfigureUtil.configure(cl, new DownloadAction(project));
         try {
             da.execute();
         } catch (IOException e) {
