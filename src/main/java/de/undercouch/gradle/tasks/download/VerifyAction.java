@@ -25,8 +25,8 @@ import java.security.NoSuchAlgorithmException;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
-
-import static de.undercouch.gradle.tasks.download.internal.ProviderHelper.tryGetProvider;
+import org.gradle.api.provider.Provider;
+import org.gradle.util.GradleVersion;
 
 /**
  * Verifies a file's integrity by calculating its checksum.
@@ -99,7 +99,9 @@ public class VerifyAction implements VerifySpec {
             src = closure.call();
         }
 
-        src = tryGetProvider(src);
+        if (GradleVersion.current().compareTo(GradleVersion.version("4.0")) > 0 && src instanceof Provider) {
+            src = ((Provider)src).getOrNull();
+        }
         
         if (src instanceof CharSequence) {
             src = projectApi.file(src.toString());
