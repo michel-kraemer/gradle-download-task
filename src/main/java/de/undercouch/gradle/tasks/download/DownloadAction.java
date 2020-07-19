@@ -15,9 +15,11 @@
 package de.undercouch.gradle.tasks.download;
 
 import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
+import de.undercouch.gradle.tasks.download.internal.DirectoryGet;
 import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.ProjectApiHelper;
 import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
+import de.undercouch.gradle.tasks.download.internal.RegularFileGet;
 import de.undercouch.gradle.tasks.download.org.apache.http.Header;
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpEntity;
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpHost;
@@ -1042,8 +1044,15 @@ public class DownloadAction implements DownloadSpec {
 
         if (destObject instanceof CharSequence) {
             cachedDest = projectApi.file(destObject.toString());
+        } else if (GradleVersion.current().compareTo(GradleVersion.version("4.1")) > 0 && DirectoryGet.isDirectory(destObject)) {
+            cachedDest = DirectoryGet.getDirectory(destObject);
+        } else if (GradleVersion.current().compareTo(GradleVersion.version("4.1")) > 0 && RegularFileGet.isRegularFile(destObject)) {
+            cachedDest = RegularFileGet.getRegularFile(destObject);
         } else if (destObject instanceof File) {
             cachedDest = (File)destObject;
+        } else if (GradleVersion.current().compareTo(GradleVersion.version("4.1")) > 0) {
+            throw new IllegalArgumentException("Download destination must " +
+                    "be one of a File, Directory, RegularFile, or a CharSequence");
         } else {
             throw new IllegalArgumentException("Download destination must " +
                     "either be a File or a CharSequence");
