@@ -46,6 +46,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -194,7 +195,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileUsingRegularFileProperty() throws Exception {
-        Assume.assumeTrue(GradleVersion.version("4.1").compareTo(GradleVersion.version(gradleVersion))<0);
+        Assume.assumeTrue(GradleVersion.version("5.0").compareTo(GradleVersion.version(gradleVersion)) < 0);
         configureDefaultStub();
         String setup = "RegularFileProperty fp = project.objects.fileProperty();\n" +
                 "fp.set(" + dest + ")\n";
@@ -209,7 +210,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      */
     @Test
     public void downloadSingleFileUsingFileProperty() throws Exception {
-        Assume.assumeTrue(GradleVersion.version("4.0").compareTo(GradleVersion.version(gradleVersion))<0);
+        Assume.assumeTrue(GradleVersion.version("4.3").compareTo(GradleVersion.version(gradleVersion)) < 0);
         configureDefaultStub();
         String setup = "Property fp = project.objects.property(File.class);\n" +
                 "fp.set(" + dest + ")\n";
@@ -218,8 +219,39 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         assertEquals(CONTENTS, FileUtils.readFileToString(destFile));
     }
 
-    //todo: add regular provider tests (for strings and the like)
-    //todo: add dest directory support tests
+
+    /**
+     * Test if a single file can be downloaded successfully where destination uses the buildDirectory DirectoryProperty
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void downloadSingleFileUsingBuildDirectoryFile() throws Exception {
+        Assume.assumeTrue(GradleVersion.version("4.3").compareTo(GradleVersion.version(gradleVersion)) < 0);
+        configureDefaultStub();
+        String dest = "layout.buildDirectory.file('download/outputfile')";
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
+        File destFile = new File(testProjectDir.getRoot(), "build/download/outputfile");
+        assertTrue(destFile.isFile());
+        assertEquals(CONTENTS, FileUtils.readFileToString(destFile));
+    }
+
+
+    /**
+     * Test if a single file can be downloaded successfully where destination uses the buildDirectory DirectoryProperty
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void downloadSingleFileUsingBuildDirectoryDir() throws Exception {
+        Assume.assumeTrue(GradleVersion.version("4.3").compareTo(GradleVersion.version(gradleVersion)) < 0);
+        configureDefaultStub();
+        String dest = "layout.buildDirectory.dir('download/')";
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
+        File[] destFiles = new File(testProjectDir.getRoot(), "build/download/").listFiles();
+        assertNotNull(destFiles);
+        File destFile = destFiles[0];
+        assertTrue(destFile.isFile());
+        assertEquals(CONTENTS, FileUtils.readFileToString(destFile));
+    }
 
     /**
      * Test if a single file can be downloaded successfully with quiet mode
