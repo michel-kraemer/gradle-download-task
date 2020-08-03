@@ -15,9 +15,11 @@
 package de.undercouch.gradle.tasks.download;
 
 import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
+import de.undercouch.gradle.tasks.download.internal.DirectoryGet;
 import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.ProjectApiHelper;
 import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
+import de.undercouch.gradle.tasks.download.internal.RegularFileGet;
 import de.undercouch.gradle.tasks.download.org.apache.http.Header;
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpEntity;
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpHost;
@@ -47,10 +49,7 @@ import groovy.lang.Closure;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.file.Directory;
-import org.gradle.api.file.RegularFile;
 import org.gradle.api.logging.Logger;
-import org.gradle.api.provider.Provider;
 import org.gradle.util.GradleVersion;
 
 import javax.annotation.Nullable;
@@ -72,6 +71,8 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static de.undercouch.gradle.tasks.download.internal.ProviderHelper.tryGetProvider;
 
 /**
  * Downloads a file and displays progress
@@ -914,19 +915,12 @@ public class DownloadAction implements DownloadSpec {
             dir = closure.call();
         }
 
-        if (GradleVersion.current().compareTo(GradleVersion.version("4.0")) > 0 && dir instanceof Provider) {
-            dir = ((Provider)dir).getOrNull();
-        }
+        dir = tryGetProvider(dir);
 
         if (dir instanceof CharSequence) {
             this.downloadTaskDir = projectApi.file(dir.toString());
-        } else if (GradleVersion.current().compareTo(GradleVersion.version("4.1")) > 0 && dir instanceof Directory) {
-            this.downloadTaskDir = ((Directory)dir).getAsFile();
         } else if (dir instanceof File) {
             this.downloadTaskDir = (File)dir;
-        } else if (GradleVersion.current().compareTo(GradleVersion.version("4.1")) > 0) {
-            throw new IllegalArgumentException("download-task directory must " +
-                    "be a File, Directory, or a CharSequence");
         } else {
             throw new IllegalArgumentException("download-task directory must " +
                 "either be a File or a CharSequence");
@@ -951,19 +945,12 @@ public class DownloadAction implements DownloadSpec {
             location = closure.call();
         }
 
-        if (GradleVersion.current().compareTo(GradleVersion.version("4.0")) > 0 && location instanceof Provider) {
-            location = ((Provider)location).getOrNull();
-        }
+        location = tryGetProvider(location);
 
         if (location instanceof CharSequence) {
             this.cachedETagsFile = projectApi.file(location.toString());
-        } else if (GradleVersion.current().compareTo(GradleVersion.version("4.1")) > 0 && location instanceof RegularFile) {
-            this.cachedETagsFile = ((RegularFile)location).getAsFile();
         } else if (location instanceof File) {
             this.cachedETagsFile = (File)location;
-        } else if (GradleVersion.current().compareTo(GradleVersion.version("4.1")) > 0) {
-            throw new IllegalArgumentException("Location for cached ETags must " +
-                    "be a File, RegularFile, or a CharSequence");
         } else {
             throw new IllegalArgumentException("Location for cached ETags must " +
                 "either be a File or a CharSequence");
@@ -984,9 +971,7 @@ public class DownloadAction implements DownloadSpec {
             src = closure.call();
         }
 
-        if (GradleVersion.current().compareTo(GradleVersion.version("4.0")) > 0 && src instanceof Provider) {
-            src = ((Provider)src).getOrNull();
-        }
+        src = tryGetProvider(src);
 
         if (src instanceof CharSequence) {
             try {
@@ -1054,22 +1039,20 @@ public class DownloadAction implements DownloadSpec {
             destObject = closure.call();
         }
 
-        if (GradleVersion.current().compareTo(GradleVersion.version("4.0")) > 0 && destObject instanceof Provider) {
-            destObject = ((Provider)destObject).getOrNull();
-        }
+        //lazily evaluate Provider
+        destObject = tryGetProvider(destObject);
 
         if (destObject instanceof CharSequence) {
             cachedDest = projectApi.file(destObject.toString());
-        } else if (GradleVersion.current().compareTo(GradleVersion.version("4.1")) > 0 && destObject instanceof Directory) {
-            cachedDest = ((Directory)destObject).getAsFile();
-            cachedDest.mkdirs();
-        } else if (GradleVersion.current().compareTo(GradleVersion.version("4.1")) > 0 && destObject instanceof RegularFile) {
-            cachedDest = ((RegularFile)destObject).getAsFile();
+        } else if (GradleVersion.current().compareTo(GradleVersion.version("4.1")) > 0 && DirectoryGet.isDirectory(destObject)) {
+            cachedDest = DirectoryGet.getDirectory(destObject);
+        } else if (GradleVersion.current().compareTo(GradleVersion.version("4.1")) > 0 && RegularFileGet.isRegularFile(destObject)) {
+            cachedDest = RegularFileGet.getRegularFile(destObject);
         } else if (destObject instanceof File) {
             cachedDest = (File)destObject;
         } else if (GradleVersion.current().compareTo(GradleVersion.version("4.1")) > 0) {
             throw new IllegalArgumentException("Download destination must " +
-                    "be a File, Directory, RegularFile, or a CharSequence");
+                    "be one of a File, Directory, RegularFile, or a CharSequence");
         } else {
             throw new IllegalArgumentException("Download destination must " +
                     "either be a File or a CharSequence");
