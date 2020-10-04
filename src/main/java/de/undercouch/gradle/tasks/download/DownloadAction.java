@@ -948,19 +948,8 @@ public class DownloadAction implements DownloadSpec {
 
     @Override
     public void downloadTaskDir(Object dir) {
-        if (dir instanceof Closure) {
-            //lazily evaluate closure
-            Closure<?> closure = (Closure<?>)dir;
-            dir = closure.call();
-        }
-
-        dir = tryGetProvider(dir);
-
-        if (dir instanceof CharSequence) {
-            this.downloadTaskDir = projectApi.file(dir.toString());
-        } else if (dir instanceof File) {
-            this.downloadTaskDir = (File)dir;
-        } else {
+        downloadTaskDir = getDestinationFromDirProperty(dir);
+        if (downloadTaskDir == null) {
             throw new IllegalArgumentException("download-task directory must " +
                 "either be a File or a CharSequence");
         }
@@ -988,6 +977,8 @@ public class DownloadAction implements DownloadSpec {
 
         if (location instanceof CharSequence) {
             this.cachedETagsFile = projectApi.file(location.toString());
+        } else if (isRegularFile(location)) {
+            this.cachedETagsFile = getFileFromRegularFile(location);
         } else if (location instanceof File) {
             this.cachedETagsFile = (File)location;
         } else {
