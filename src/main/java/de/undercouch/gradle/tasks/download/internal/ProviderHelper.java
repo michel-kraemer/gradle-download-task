@@ -1,9 +1,9 @@
 package de.undercouch.gradle.tasks.download.internal;
 
-import java.lang.reflect.Method;
+import org.gradle.util.GradleVersion;
 
 /**
- * Helper methods to dynamically access {@code org.gradle.api.provider.Provider}
+ * Helper methods to access {@code org.gradle.api.provider.Provider}
  * @author Michel Kraemer
  */
 public class ProviderHelper {
@@ -19,25 +19,10 @@ public class ProviderHelper {
         }
 
         //Provider class is only available in Gradle 4.0 or higher
-        Class<?> providerClass;
-        try {
-            providerClass = Class.forName("org.gradle.api.provider.Provider");
-        } catch (ClassNotFoundException e) {
+        if (GradleVersion.current().compareTo(GradleVersion.version("4.0")) > 0 && ProviderGet.isProvider(obj)) {
+            return ProviderGet.getOrNull(obj);
+        } else {
             return obj;
         }
-
-        if (providerClass == null || !providerClass.isAssignableFrom(obj.getClass())) {
-            return obj;
-        }
-
-        try {
-            Method m = obj.getClass().getMethod("getOrNull");
-            m.setAccessible(true);
-            obj = m.invoke(obj);
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalArgumentException(e);
-        }
-
-        return obj;
     }
 }
