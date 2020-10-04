@@ -15,11 +15,9 @@
 package de.undercouch.gradle.tasks.download;
 
 import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
-import de.undercouch.gradle.tasks.download.internal.DirectoryGet;
 import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
-import de.undercouch.gradle.tasks.download.internal.ProjectApiHelper;
 import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
-import de.undercouch.gradle.tasks.download.internal.RegularFileGet;
+import de.undercouch.gradle.tasks.download.internal.ProjectApiHelper;
 import de.undercouch.gradle.tasks.download.org.apache.http.Header;
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpEntity;
 import de.undercouch.gradle.tasks.download.org.apache.http.HttpHost;
@@ -72,7 +70,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static de.undercouch.gradle.tasks.download.internal.DirectoryHelper.getFileFromDirectory;
+import static de.undercouch.gradle.tasks.download.internal.DirectoryHelper.isDirectory;
 import static de.undercouch.gradle.tasks.download.internal.ProviderHelper.tryGetProvider;
+import static de.undercouch.gradle.tasks.download.internal.RegularFileHelper.getFileFromRegularFile;
+import static de.undercouch.gradle.tasks.download.internal.RegularFileHelper.isRegularFile;
 
 /**
  * Downloads a file and displays progress
@@ -907,6 +909,43 @@ public class DownloadAction implements DownloadSpec {
         this.retries = retries;
     }
 
+    /**
+     * Get a destination file from a property. This method accepts various
+     * input objects and tries to convert them to a {@link File} object
+     * @param dir the property
+     * @return the {@link File} object or {@code null} if the property was
+     * {@code null} or could not be converted
+     */
+    private File getDestinationFromDirProperty(Object dir) {
+        if (dir instanceof Closure) {
+            // lazily evaluate closure
+            Closure<?> closure = (Closure<?>)dir;
+            dir = closure.call();
+        }
+
+        // lazily evaluate Provider
+        dir = tryGetProvider(dir);
+
+        if (dir instanceof CharSequence) {
+            return projectApi.file(dir.toString());
+        } else if (isDirectory(dir)) {
+            File f = getFileFromDirectory(dir);
+
+            // Make sure the directory exists so we actually download to a file
+            // inside this directory. Otherwise, we will just create a file
+            // with the name of this directory.
+            f.mkdirs();
+
+            return f;
+        } else if (isRegularFile(dir)) {
+            return getFileFromRegularFile(dir);
+        } else if (dir instanceof File) {
+            return (File)dir;
+        }
+
+        return null;
+    }
+
     @Override
     public void downloadTaskDir(Object dir) {
         if (dir instanceof Closure) {
@@ -1033,29 +1072,10 @@ public class DownloadAction implements DownloadSpec {
             return cachedDest;
         }
 
-        if (destObject instanceof Closure) {
-            //lazily evaluate closure
-            Closure<?> closure = (Closure<?>)destObject;
-            destObject = closure.call();
-        }
-
-        //lazily evaluate Provider
-        destObject = tryGetProvider(destObject);
-
-        if (destObject instanceof CharSequence) {
-            cachedDest = projectApi.file(destObject.toString());
-        } else if (GradleVersion.current().compareTo(GradleVersion.version("4.1")) > 0 && DirectoryGet.isDirectory(destObject)) {
-            cachedDest = DirectoryGet.getDirectory(destObject);
-        } else if (GradleVersion.current().compareTo(GradleVersion.version("4.1")) > 0 && RegularFileGet.isRegularFile(destObject)) {
-            cachedDest = RegularFileGet.getRegularFile(destObject);
-        } else if (destObject instanceof File) {
-            cachedDest = (File)destObject;
-        } else if (GradleVersion.current().compareTo(GradleVersion.version("4.1")) > 0) {
+        cachedDest = getDestinationFromDirProperty(destObject);
+        if (cachedDest == null) {
             throw new IllegalArgumentException("Download destination must " +
                     "be one of a File, Directory, RegularFile, or a CharSequence");
-        } else {
-            throw new IllegalArgumentException("Download destination must " +
-                    "either be a File or a CharSequence");
         }
 
         return cachedDest;
