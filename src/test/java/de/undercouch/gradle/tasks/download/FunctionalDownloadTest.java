@@ -78,7 +78,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                     "3.5.1",
                     "4.10.3",
                     "5.6.4",
-                    "6.6.1"
+                    "6.8"
             );
         } else {
             return Arrays.asList(
@@ -89,7 +89,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                     "5.4", "5.4.1", "5.5", "5.5.1",
                     "5.6", "5.6.1", "5.6.2", "5.6.3", "5.6.4",
                     "6.0", "6.0.1", "6.1", "6.1.1", "6.2", "6.2.1", "6.2.2",
-                    "6.3", "6.4", "6.4.1", "6.5", "6.5.1", "6.6", "6.6.1"
+                    "6.3", "6.4", "6.4.1", "6.5", "6.5.1", "6.6", "6.6.1",
+                    "6.7", "6.7.1", "6.8"
             );
         }
     }
