@@ -31,7 +31,6 @@ idea {
 eclipseClasspath.dependsOn pluginUnderTestMetadata
 
 repositories {
-    jcenter()
     mavenCentral()
 }
 

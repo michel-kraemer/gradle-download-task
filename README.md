@@ -26,7 +26,9 @@ plugins {
 ```groovy
 buildscript {
     repositories {
-        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
         classpath 'de.undercouch:gradle-download-task:4.1.2'
