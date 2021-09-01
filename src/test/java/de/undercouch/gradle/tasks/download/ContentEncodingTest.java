@@ -14,43 +14,43 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import org.apache.commons.io.FileUtils;
-import org.junit.Test;
-
-import java.io.File;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static org.junit.Assert.assertArrayEquals;
-
-/**
- * Tests if the plugin can handle invalid or missing Content-Encoding header.
- * See https://github.com/michel-kraemer/gradle-download-task/issues/55
- * @author Michel Kraemer
- */
-public class ContentEncodingTest extends TestBaseWithMockServer {
-    private static final byte[] CONTENTS_BYTES = new byte[] { 0x00, 0x01 };
-
-    /**
-     * Tests if the plugin can handle the invalid value 'none'
-     * @throws Exception if anything goes wrong
-     */
-    @Test
-    public void contentEncodingNone() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
-                .willReturn(aResponse()
-                        .withHeader("Content-Encoding", "None")
-                        .withHeader("Content-Length", String.valueOf(CONTENTS_BYTES.length))
-                        .withBody(CONTENTS_BYTES)));
-
-        Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
-        t.dest(dst);
-        t.execute();
-
-        byte[] dstContents = FileUtils.readFileToByteArray(dst);
-        assertArrayEquals(CONTENTS_BYTES, dstContents);
-    }
-}
+//import org.apache.commons.io.FileUtils;
+//import org.junit.Test;
+//
+//import java.io.File;
+//
+//import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+//import static com.github.tomakehurst.wiremock.client.WireMock.get;
+//import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+//import static org.junit.Assert.assertArrayEquals;
+//
+///**
+// * Tests if the plugin can handle invalid or missing Content-Encoding header.
+// * See https://github.com/michel-kraemer/gradle-download-task/issues/55
+// * @author Michel Kraemer
+// */
+//public class ContentEncodingTest extends TestBaseWithMockServer {
+//    private static final byte[] CONTENTS_BYTES = new byte[] { 0x00, 0x01 };
+//
+//    /**
+//     * Tests if the plugin can handle the invalid value 'none'
+//     * @throws Exception if anything goes wrong
+//     */
+//    @Test
+//    public void contentEncodingNone() throws Exception {
+//        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+//                .willReturn(aResponse()
+//                        .withHeader("Content-Encoding", "None")
+//                        .withHeader("Content-Length", String.valueOf(CONTENTS_BYTES.length))
+//                        .withBody(CONTENTS_BYTES)));
+//
+//        Download t = makeProjectAndTask();
+//        t.src(wireMockRule.url(TEST_FILE_NAME));
+//        File dst = folder.newFile();
+//        t.dest(dst);
+//        t.execute();
+//
+//        byte[] dstContents = FileUtils.readFileToByteArray(dst);
+//        assertArrayEquals(CONTENTS_BYTES, dstContents);
+//    }
+//}

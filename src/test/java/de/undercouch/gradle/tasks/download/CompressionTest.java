@@ -14,63 +14,63 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import org.apache.commons.io.FileUtils;
-import org.junit.Test;
-
-import java.io.File;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.absent;
-import static com.github.tomakehurst.wiremock.client.WireMock.containing;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static org.junit.Assert.assertEquals;
-
-/**
- * Tests if the plugin can handle compressed content
- * @author Michel Kraemer
- */
-public class CompressionTest extends TestBaseWithMockServer {
-    /**
-     * Tests if the plugin can handle compressed content
-     * @throws Exception if anything goes wrong
-     */
-    @Test
-    public void compressed() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
-                .withHeader("accept-encoding", containing("gzip"))
-                .willReturn(aResponse()
-                        .withBody(CONTENTS)));
-
-        Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
-        t.dest(dst);
-        t.execute();
-
-        String dstContents = FileUtils.readFileToString(dst);
-        assertEquals(CONTENTS, dstContents);
-    }
-    
-    /**
-     * Tests if the plugin can request uncompressed content
-     * @throws Exception if anything goes wrong
-     */
-    @Test
-    public void uncompressed() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
-                .withHeader("accept-encoding", absent())
-                .willReturn(aResponse()
-                        .withBody(CONTENTS)));
-
-        Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
-        t.dest(dst);
-        t.compress(false);
-        t.execute();
-
-        String dstContents = FileUtils.readFileToString(dst);
-        assertEquals(CONTENTS, dstContents);
-    }
-}
+//import org.apache.commons.io.FileUtils;
+//import org.junit.Test;
+//
+//import java.io.File;
+//
+//import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+//import static com.github.tomakehurst.wiremock.client.WireMock.absent;
+//import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+//import static com.github.tomakehurst.wiremock.client.WireMock.get;
+//import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+//import static org.junit.Assert.assertEquals;
+//
+///**
+// * Tests if the plugin can handle compressed content
+// * @author Michel Kraemer
+// */
+//public class CompressionTest extends TestBaseWithMockServer {
+//    /**
+//     * Tests if the plugin can handle compressed content
+//     * @throws Exception if anything goes wrong
+//     */
+//    @Test
+//    public void compressed() throws Exception {
+//        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+//                .withHeader("accept-encoding", containing("gzip"))
+//                .willReturn(aResponse()
+//                        .withBody(CONTENTS)));
+//
+//        Download t = makeProjectAndTask();
+//        t.src(wireMockRule.url(TEST_FILE_NAME));
+//        File dst = folder.newFile();
+//        t.dest(dst);
+//        t.execute();
+//
+//        String dstContents = FileUtils.readFileToString(dst);
+//        assertEquals(CONTENTS, dstContents);
+//    }
+//
+//    /**
+//     * Tests if the plugin can request uncompressed content
+//     * @throws Exception if anything goes wrong
+//     */
+//    @Test
+//    public void uncompressed() throws Exception {
+//        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+//                .withHeader("accept-encoding", absent())
+//                .willReturn(aResponse()
+//                        .withBody(CONTENTS)));
+//
+//        Download t = makeProjectAndTask();
+//        t.src(wireMockRule.url(TEST_FILE_NAME));
+//        File dst = folder.newFile();
+//        t.dest(dst);
+//        t.compress(false);
+//        t.execute();
+//
+//        String dstContents = FileUtils.readFileToString(dst);
+//        assertEquals(CONTENTS, dstContents);
+//    }
+//}
