@@ -30,7 +30,7 @@ jobs:
 
     strategy:
       matrix:
-        version: [2, 3, 4, 5, 6]
+        version: [2, 3, 4, 5, 6, 7]
 
     steps:
       - uses: actions/checkout@v1
