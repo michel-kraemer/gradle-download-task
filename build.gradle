@@ -40,7 +40,7 @@ dependencies {
 
     testCompile 'junit:junit:4.12'
     testCompile 'com.github.tomakehurst:wiremock:2.23.2'
-    testCompile 'org.littleshoot:littleproxy:1.1.0-beta2'
+    testCompile 'org.littleshoot:littleproxy:1.1.2'
 }
 
 jacocoTestReport {
