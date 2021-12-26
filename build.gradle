@@ -1,5 +1,5 @@
 plugins {
-    id "com.gradle.plugin-publish" version "0.9.9"
+    id "com.gradle.plugin-publish" version "0.18.0"
 }
 
 apply plugin: 'java-gradle-plugin'
