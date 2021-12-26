@@ -18,6 +18,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
@@ -56,7 +57,8 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         t.onlyIfModified(true);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
     
@@ -81,7 +83,8 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         t.onlyIfModified(true);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
     
@@ -113,7 +116,8 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         assertTrue(dst.exists());
         long lmlong = dst.lastModified();
         assertEquals(expectedlmlong, lmlong);
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
 
@@ -137,7 +141,7 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         Download t = makeProjectAndTask();
         t.src(wireMockRule.url(LAST_MODIFIED));
         File dst = folder.newFile();
-        FileUtils.writeStringToFile(dst, "Hello");
+        FileUtils.writeStringToFile(dst, "Hello", StandardCharsets.UTF_8);
         assertTrue(dst.setLastModified(expectedlmlong));
         t.dest(dst);
         t.onlyIfModified(true);
@@ -145,7 +149,8 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
 
         long lmlong = dst.lastModified();
         assertEquals(expectedlmlong, lmlong);
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals("Hello", dstContents);
         assertNotEquals(CONTENTS, dstContents);
     }
@@ -170,7 +175,7 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         Download t = makeProjectAndTask();
         t.src(wireMockRule.url(LAST_MODIFIED));
         File dst = folder.newFile();
-        FileUtils.writeStringToFile(dst, "Hello");
+        FileUtils.writeStringToFile(dst, "Hello", StandardCharsets.UTF_8);
         assertTrue(dst.setLastModified(expectedlmlong + 1000));
         t.dest(dst);
         t.onlyIfModified(true);
@@ -178,7 +183,8 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
 
         long lmlong = dst.lastModified();
         assertEquals(expectedlmlong + 1000, lmlong);
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals("Hello", dstContents);
         assertNotEquals(CONTENTS, dstContents);
     }
@@ -203,7 +209,7 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         Download t = makeProjectAndTask();
         t.src(wireMockRule.url(LAST_MODIFIED));
         File dst = folder.newFile();
-        FileUtils.writeStringToFile(dst, "Hello");
+        FileUtils.writeStringToFile(dst, "Hello", StandardCharsets.UTF_8);
         assertNotEquals("Hello", CONTENTS);
         assertTrue(dst.setLastModified(expectedlmlong - 1000));
         t.dest(dst);
@@ -212,7 +218,8 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
 
         long lmlong = dst.lastModified();
         assertEquals(expectedlmlong, lmlong);
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
 

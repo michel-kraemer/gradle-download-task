@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 
@@ -72,7 +73,8 @@ public class DownloadTest extends TestBaseWithMockServer {
         assertEquals(src, t.getSrc().toString());
         assertSame(dst, t.getDest());
         
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
     
@@ -92,7 +94,8 @@ public class DownloadTest extends TestBaseWithMockServer {
         assertSame(src, t.getSrc());
         assertSame(dst, t.getDest());
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
     
@@ -109,7 +112,7 @@ public class DownloadTest extends TestBaseWithMockServer {
         t.execute();
 
         String dstContents = FileUtils.readFileToString(
-                new File(dst, TEST_FILE_NAME));
+                new File(dst, TEST_FILE_NAME), StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
 
@@ -126,7 +129,7 @@ public class DownloadTest extends TestBaseWithMockServer {
         t.execute();
 
         String dstContents = FileUtils.readFileToString(
-                new File(projectDir, TEST_FILE_NAME));
+                new File(projectDir, TEST_FILE_NAME), StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
     
@@ -145,10 +148,10 @@ public class DownloadTest extends TestBaseWithMockServer {
         t.execute();
 
         String dstContents = FileUtils.readFileToString(
-                new File(dst, TEST_FILE_NAME));
+                new File(dst, TEST_FILE_NAME), StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
         String dstContents2 = FileUtils.readFileToString(
-                new File(dst, TEST_FILE_NAME2));
+                new File(dst, TEST_FILE_NAME2), StandardCharsets.UTF_8);
         assertEquals(CONTENTS2, dstContents2);
     }
 
@@ -225,7 +228,8 @@ public class DownloadTest extends TestBaseWithMockServer {
         assertTrue(srcCalled[0]);
         assertTrue(dstCalled[0]);
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
 
@@ -264,7 +268,8 @@ public class DownloadTest extends TestBaseWithMockServer {
         assertTrue(srcCalled[0]);
         assertTrue(dstCalled[0]);
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
     
@@ -276,7 +281,7 @@ public class DownloadTest extends TestBaseWithMockServer {
     public void skipExisting() throws Exception {
         // write contents to destination file
         File dst = folder.newFile();
-        FileUtils.writeStringToFile(dst, "Hello");
+        FileUtils.writeStringToFile(dst, "Hello", StandardCharsets.UTF_8);
 
         Download t = makeProjectAndTask();
         String src = wireMockRule.url(TEST_FILE_NAME);
@@ -286,7 +291,8 @@ public class DownloadTest extends TestBaseWithMockServer {
         t.execute();
 
         // contents must not be changed
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals("Hello", dstContents);
     }
 

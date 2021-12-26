@@ -21,6 +21,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -64,7 +65,7 @@ public class SslTest extends TestBase {
         assertTrue(t.isAcceptAnyCertificate());
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
     

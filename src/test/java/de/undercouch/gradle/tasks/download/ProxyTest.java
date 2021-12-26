@@ -35,6 +35,7 @@ import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -205,7 +206,7 @@ public class ProxyTest extends TestBaseWithMockServer {
             t.dest(dst);
             t.execute();
             
-            String dstContents = FileUtils.readFileToString(dst);
+            String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
             assertEquals(CONTENTS, dstContents);
             assertEquals(expectedProxyCounter, proxyCounter);
         } finally {

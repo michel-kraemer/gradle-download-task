@@ -18,6 +18,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,7 +58,8 @@ public class HeadersTest extends TestBaseWithMockServer {
         t.dest(dst);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
 
@@ -85,7 +87,8 @@ public class HeadersTest extends TestBaseWithMockServer {
         assertEquals(VALUE_A, t.getHeader(X_HEADER_TEST_A));
         assertEquals(VALUE_B, t.getHeader(X_HEADER_TEST_B));
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
     

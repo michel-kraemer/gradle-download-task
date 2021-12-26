@@ -108,7 +108,7 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         t.password(PASSWORD);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
 

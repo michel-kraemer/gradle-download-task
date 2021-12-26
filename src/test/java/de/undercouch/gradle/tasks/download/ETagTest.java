@@ -21,6 +21,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -61,7 +62,8 @@ public class ETagTest extends TestBaseWithMockServer {
         t.compress(false);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
         assertFalse(t.getCachedETagsFile().exists());
     }
@@ -90,7 +92,8 @@ public class ETagTest extends TestBaseWithMockServer {
         t.compress(false);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
 
@@ -140,9 +143,11 @@ public class ETagTest extends TestBaseWithMockServer {
         t.execute();
 
         // check server responses
-        String dst1Contents = FileUtils.readFileToString(dst1);
+        String dst1Contents = FileUtils.readFileToString(dst1,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS + "1", dst1Contents);
-        String dst2Contents = FileUtils.readFileToString(dst2);
+        String dst2Contents = FileUtils.readFileToString(dst2,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS + "2", dst2Contents);
 
         // read cached etags file
@@ -194,7 +199,8 @@ public class ETagTest extends TestBaseWithMockServer {
         t.compress(false);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
 
         File buildDir = new File(projectDir, "build");
@@ -246,7 +252,8 @@ public class ETagTest extends TestBaseWithMockServer {
         t.compress(false);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
 
         assertEquals(newDownloadTaskDir, t.getDownloadTaskDir());
@@ -282,7 +289,8 @@ public class ETagTest extends TestBaseWithMockServer {
         t.compress(false);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
 
         assertEquals(newCachedETagsFile, t.getCachedETagsFile());
@@ -302,7 +310,8 @@ public class ETagTest extends TestBaseWithMockServer {
         Map<String, Object> cachedETags = new LinkedHashMap<>();
         cachedETags.put(wireMockRule.baseUrl(), hostMap);
         String cachedETagsContents = JsonOutput.toJson(cachedETags);
-        FileUtils.writeStringToFile(cachedETagsFile, cachedETagsContents);
+        FileUtils.writeStringToFile(cachedETagsFile, cachedETagsContents,
+                StandardCharsets.UTF_8);
     }
 
     /**
@@ -322,7 +331,7 @@ public class ETagTest extends TestBaseWithMockServer {
         Download t = makeProjectAndTask();
         t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
-        FileUtils.writeStringToFile(dst, "Hello");
+        FileUtils.writeStringToFile(dst, "Hello", StandardCharsets.UTF_8);
         t.dest(dst);
         t.onlyIfModified(true);
         t.useETag(true);
@@ -332,7 +341,8 @@ public class ETagTest extends TestBaseWithMockServer {
         t.compress(false);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals("Hello", dstContents);
         assertNotEquals(CONTENTS, dstContents);
     }
@@ -365,7 +375,8 @@ public class ETagTest extends TestBaseWithMockServer {
         t.compress(false);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
 
@@ -388,7 +399,7 @@ public class ETagTest extends TestBaseWithMockServer {
         Download t = makeProjectAndTask();
         t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
-        FileUtils.writeStringToFile(dst, "Hello");
+        FileUtils.writeStringToFile(dst, "Hello", StandardCharsets.UTF_8);
         t.dest(dst);
         t.onlyIfModified(true);
         t.useETag(true);
@@ -398,7 +409,8 @@ public class ETagTest extends TestBaseWithMockServer {
         t.compress(false);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
 
@@ -429,7 +441,8 @@ public class ETagTest extends TestBaseWithMockServer {
         t.execute();
 
         // check server response
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
 
         // read cached etags file
@@ -475,7 +488,8 @@ public class ETagTest extends TestBaseWithMockServer {
         t.execute();
 
         // check server response
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
 
         // read cached etags file
@@ -541,9 +555,11 @@ public class ETagTest extends TestBaseWithMockServer {
         t.execute();
 
         // check server responses
-        String dst1Contents = FileUtils.readFileToString(dst1);
+        String dst1Contents = FileUtils.readFileToString(dst1,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS + "1", dst1Contents);
-        String dst2Contents = FileUtils.readFileToString(dst2);
+        String dst2Contents = FileUtils.readFileToString(dst2,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS + "2", dst2Contents);
 
         // read cached etags file
