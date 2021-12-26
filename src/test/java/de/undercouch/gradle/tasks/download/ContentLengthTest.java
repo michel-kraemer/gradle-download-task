@@ -19,6 +19,7 @@ import org.gradle.api.tasks.TaskExecutionException;
 import org.junit.Test;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -49,7 +50,7 @@ public class ContentLengthTest extends TestBaseWithMockServer {
         t.dest(dst);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(contents, dstContents);
     }
     
@@ -73,7 +74,7 @@ public class ContentLengthTest extends TestBaseWithMockServer {
         t.dest(dst);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(contents, dstContents);
     }
     

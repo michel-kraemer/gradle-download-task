@@ -22,6 +22,7 @@ import org.gradle.api.tasks.TaskExecutionException;
 import org.junit.Test;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -99,7 +100,7 @@ public class RetryTest extends TestBaseWithMockServer {
         t.dest(dst);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
 
         wireMockRule.verify(2, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
@@ -142,7 +143,7 @@ public class RetryTest extends TestBaseWithMockServer {
         t.dest(dst);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
 
         wireMockRule.verify(4, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
@@ -179,7 +180,7 @@ public class RetryTest extends TestBaseWithMockServer {
         t.dest(dst);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
 
         wireMockRule.verify(3, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
@@ -261,7 +262,7 @@ public class RetryTest extends TestBaseWithMockServer {
         t.dest(dst);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
 
         wireMockRule.verify(3, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));

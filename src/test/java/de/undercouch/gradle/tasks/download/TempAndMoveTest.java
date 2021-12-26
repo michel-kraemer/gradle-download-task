@@ -26,6 +26,7 @@ import java.io.FilenameFilter;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -154,7 +155,8 @@ public class TempAndMoveTest extends TestBase {
         assertTrue(dst.exists());
         assertNull(getTempFile());
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst,
+                StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
 

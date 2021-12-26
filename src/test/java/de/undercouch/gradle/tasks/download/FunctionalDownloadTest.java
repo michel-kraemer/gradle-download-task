@@ -187,7 +187,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         configureDefaultStub();
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
         assertTrue(destFile.isFile());
-        assertEquals(CONTENTS, FileUtils.readFileToString(destFile));
+        assertEquals(CONTENTS, FileUtils.readFileToString(destFile,
+                StandardCharsets.UTF_8));
     }
 
     /**
@@ -204,7 +205,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 "fp.set(" + dest + ")\n";
         assertTaskSuccess(download(new Parameters(singleSrc, "fp", setup, true, false)));
         assertTrue(destFile.isFile());
-        assertEquals(CONTENTS, FileUtils.readFileToString(destFile));
+        assertEquals(CONTENTS, FileUtils.readFileToString(destFile,
+                StandardCharsets.UTF_8));
     }
 
     /**
@@ -221,7 +223,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 "fp.set(" + dest + ")\n";
         assertTaskSuccess(download(new Parameters(singleSrc, "fp", setup, true, false)));
         assertTrue(destFile.isFile());
-        assertEquals(CONTENTS, FileUtils.readFileToString(destFile));
+        assertEquals(CONTENTS, FileUtils.readFileToString(destFile,
+                StandardCharsets.UTF_8));
     }
 
 
@@ -239,7 +242,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
         File destFile = new File(testProjectDir.getRoot(), "build/download/outputfile");
         assertTrue(destFile.isFile());
-        assertEquals(CONTENTS, FileUtils.readFileToString(destFile));
+        assertEquals(CONTENTS, FileUtils.readFileToString(destFile,
+                StandardCharsets.UTF_8));
     }
 
 
@@ -259,7 +263,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         assertNotNull(destFiles);
         File destFile = destFiles[0];
         assertTrue(destFile.isFile());
-        assertEquals(CONTENTS, FileUtils.readFileToString(destFile));
+        assertEquals(CONTENTS, FileUtils.readFileToString(destFile,
+                StandardCharsets.UTF_8));
     }
 
     /**
@@ -272,7 +277,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true,
                 false, true, false, true)));
         assertTrue(destFile.isFile());
-        assertEquals(CONTENTS, FileUtils.readFileToString(destFile));
+        assertEquals(CONTENTS, FileUtils.readFileToString(destFile,
+                StandardCharsets.UTF_8));
     }
 
     /**
@@ -286,7 +292,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true,
                 false, false, false, false)));
         assertTrue(destFile.isFile());
-        assertEquals(CONTENTS, FileUtils.readFileToString(destFile));
+        assertEquals(CONTENTS, FileUtils.readFileToString(destFile,
+                StandardCharsets.UTF_8));
     }
 
     /**
@@ -300,9 +307,9 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         assertTaskSuccess(download(new Parameters(multipleSrc, dest, true, false)));
         assertTrue(destFile.isDirectory());
         assertEquals(CONTENTS, FileUtils.readFileToString(
-                new File(destFile, TEST_FILE_NAME)));
+                new File(destFile, TEST_FILE_NAME), StandardCharsets.UTF_8));
         assertEquals(CONTENTS2, FileUtils.readFileToString(
-                new File(destFile, TEST_FILE_NAME2)));
+                new File(destFile, TEST_FILE_NAME2), StandardCharsets.UTF_8));
     }
 
     /**
@@ -432,7 +439,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     public void downloadFileURLOnlyIfNewer() throws Exception {
         File srcFile = folder.newFile();
         FileUtils.writeStringToFile(srcFile, CONTENTS, StandardCharsets.UTF_8);
-        String srcFileUri = "'" + srcFile.toURI().toString() + "'";
+        String srcFileUri = "'" + srcFile.toURI() + "'";
         assertTaskSuccess(download(new Parameters(srcFileUri, dest, true, true)));
         assertTrue(destFile.setLastModified(srcFile.lastModified()));
         assertTaskUpToDate(download(new Parameters(srcFileUri, dest, true, true)));
@@ -463,9 +470,9 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         assertTaskSuccess(runTask(":processTask", new Parameters(multipleSrc, dest, true, false)));
         assertTrue(destFile.isDirectory());
         assertEquals(CONTENTS, FileUtils.readFileToString(
-                new File(destFile, TEST_FILE_NAME)));
+                new File(destFile, TEST_FILE_NAME), StandardCharsets.UTF_8));
         assertEquals(CONTENTS2, FileUtils.readFileToString(
-                new File(destFile, TEST_FILE_NAME2)));
+                new File(destFile, TEST_FILE_NAME2), StandardCharsets.UTF_8));
     }
 
     /**

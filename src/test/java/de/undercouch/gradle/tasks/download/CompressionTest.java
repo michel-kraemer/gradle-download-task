@@ -18,6 +18,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
@@ -48,7 +49,7 @@ public class CompressionTest extends TestBaseWithMockServer {
         t.dest(dst);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
     
@@ -70,7 +71,7 @@ public class CompressionTest extends TestBaseWithMockServer {
         t.compress(false);
         t.execute();
 
-        String dstContents = FileUtils.readFileToString(dst);
+        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
     }
 }
