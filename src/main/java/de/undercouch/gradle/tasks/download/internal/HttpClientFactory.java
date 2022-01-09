@@ -14,8 +14,8 @@
 
 package de.undercouch.gradle.tasks.download.internal;
 
-import de.undercouch.gradle.tasks.download.org.apache.http.HttpHost;
-import de.undercouch.gradle.tasks.download.org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.HttpHost;
+import org.apache.http.impl.client.CloseableHttpClient;
 
 /**
  * Factory for Apache {@link CloseableHttpClient} objects

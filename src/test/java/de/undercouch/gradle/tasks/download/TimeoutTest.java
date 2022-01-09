@@ -14,7 +14,7 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import de.undercouch.gradle.tasks.download.org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.gradle.api.UncheckedIOException;
 import org.junit.Test;
 

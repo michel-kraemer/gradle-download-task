@@ -14,20 +14,20 @@
 
 package de.undercouch.gradle.tasks.download.internal;
 
-import de.undercouch.gradle.tasks.download.org.apache.commons.logging.impl.NoOpLog;
-import de.undercouch.gradle.tasks.download.org.apache.http.HttpHost;
-import de.undercouch.gradle.tasks.download.org.apache.http.client.HttpRequestRetryHandler;
-import de.undercouch.gradle.tasks.download.org.apache.http.config.Registry;
-import de.undercouch.gradle.tasks.download.org.apache.http.config.RegistryBuilder;
-import de.undercouch.gradle.tasks.download.org.apache.http.conn.HttpClientConnectionManager;
-import de.undercouch.gradle.tasks.download.org.apache.http.conn.socket.ConnectionSocketFactory;
-import de.undercouch.gradle.tasks.download.org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import de.undercouch.gradle.tasks.download.org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import de.undercouch.gradle.tasks.download.org.apache.http.impl.client.CloseableHttpClient;
-import de.undercouch.gradle.tasks.download.org.apache.http.impl.client.HttpClientBuilder;
-import de.undercouch.gradle.tasks.download.org.apache.http.impl.conn.BasicHttpClientConnectionManager;
-import de.undercouch.gradle.tasks.download.org.apache.http.impl.conn.SystemDefaultRoutePlanner;
-import de.undercouch.gradle.tasks.download.org.apache.http.protocol.HttpContext;
+import org.apache.commons.logging.impl.NoOpLog;
+import org.apache.http.HttpHost;
+import org.apache.http.client.HttpRequestRetryHandler;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.HttpClientConnectionManager;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
+import org.apache.http.impl.conn.SystemDefaultRoutePlanner;
+import org.apache.http.protocol.HttpContext;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;

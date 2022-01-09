@@ -15,8 +15,8 @@
 package de.undercouch.gradle.tasks.download;
 
 import com.github.tomakehurst.wiremock.http.Fault;
-import de.undercouch.gradle.tasks.download.org.apache.http.NoHttpResponseException;
 import org.apache.commons.io.FileUtils;
+import org.apache.http.NoHttpResponseException;
 import org.gradle.api.UncheckedIOException;
 import org.junit.Test;
 

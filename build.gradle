@@ -1,5 +1,6 @@
 plugins {
     id "com.gradle.plugin-publish" version "0.9.9"
+    id 'com.github.johnrengelman.shadow' version '6.1.0'
 }
 
 apply plugin: 'java-gradle-plugin'
@@ -7,6 +8,8 @@ apply plugin: 'jacoco'
 apply plugin: 'maven'
 apply plugin: 'signing'
 apply from: "gradle/integrationTest.gradle"
+
+import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
 
 group = 'de.undercouch'
 version = '5.0.0-SNAPSHOT'
@@ -18,8 +21,8 @@ repositories {
 }
 
 dependencies {
-    compile gradleApi()
-    compile project(path: "apache-httpclient-relocated", configuration: "shadow")
+    shadow gradleApi()
+    implementation 'org.apache.httpcomponents:httpclient:4.5.3'
 
     testCompile 'junit:junit:4.13.2'
     testCompile 'commons-io:commons-io:2.11.0'
@@ -47,15 +50,14 @@ test {
 jar {
     // include license into jar
     from 'LICENSE.txt'
-
-    // include contents of "apache-httpclient-relocated" into jar
-    from configurations.compile.findAll { it =~ "apache-httpclient-relocated" }.collect {
-        zipTree(it).matching {
-            include "mozilla/**"
-            include "de/undercouch/**"
-        }
-    }
 }
+
+task relocateShadowJar(type: ConfigureShadowRelocation) {
+    target = tasks.shadowJar
+    prefix = "de.undercouch.gradle.tasks.download"
+}
+
+tasks.shadowJar.dependsOn tasks.relocateShadowJar
 
 // package javadoc into a jar file
 task packageJavadoc(type: Jar, dependsOn: 'javadoc') {
