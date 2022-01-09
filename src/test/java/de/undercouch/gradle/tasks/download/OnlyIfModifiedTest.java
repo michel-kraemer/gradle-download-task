@@ -55,7 +55,7 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         assertFalse(dst.exists());
         t.dest(dst);
         t.onlyIfModified(true);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst,
                 StandardCharsets.UTF_8);
@@ -81,7 +81,7 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         assertFalse(dst.exists());
         t.dest(dst);
         t.onlyIfModified(true);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst,
                 StandardCharsets.UTF_8);
@@ -111,7 +111,7 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         assertFalse(dst.exists());
         t.dest(dst);
         t.onlyIfModified(true);
-        t.execute();
+        execute(t);
 
         assertTrue(dst.exists());
         long lmlong = dst.lastModified();
@@ -145,7 +145,7 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         assertTrue(dst.setLastModified(expectedlmlong));
         t.dest(dst);
         t.onlyIfModified(true);
-        t.execute();
+        execute(t);
 
         long lmlong = dst.lastModified();
         assertEquals(expectedlmlong, lmlong);
@@ -179,7 +179,7 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         assertTrue(dst.setLastModified(expectedlmlong + 1000));
         t.dest(dst);
         t.onlyIfModified(true);
-        t.execute();
+        execute(t);
 
         long lmlong = dst.lastModified();
         assertEquals(expectedlmlong + 1000, lmlong);
@@ -214,7 +214,7 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         assertTrue(dst.setLastModified(expectedlmlong - 1000));
         t.dest(dst);
         t.onlyIfModified(true);
-        t.execute();
+        execute(t);
 
         long lmlong = dst.lastModified();
         assertEquals(expectedlmlong, lmlong);

@@ -23,7 +23,7 @@ import com.github.tomakehurst.wiremock.http.Response;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.github.tomakehurst.wiremock.matching.UrlPattern;
 import org.apache.commons.io.FileUtils;
-import org.gradle.api.tasks.TaskExecutionException;
+import org.gradle.api.UncheckedIOException;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -106,7 +106,7 @@ public class RedirectTest extends TestBaseWithMockServer {
         t.src(wireMockRule.url(REDIRECT));
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst,
                 StandardCharsets.UTF_8);
@@ -138,7 +138,7 @@ public class RedirectTest extends TestBaseWithMockServer {
         t.src(redirectWireMockRule.url(REDIRECT) + "?r=10");
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst,
                 StandardCharsets.UTF_8);
@@ -152,7 +152,7 @@ public class RedirectTest extends TestBaseWithMockServer {
     * Tests if the plugin can handle circular redirects
     * @throws Exception if anything goes wrong
     */
-   @Test(expected = TaskExecutionException.class)
+   @Test(expected = UncheckedIOException.class)
    public void circularRedirect() throws Exception {
        UrlPattern up1 = urlPathEqualTo("/" + REDIRECT);
        wireMockRule.stubFor(get(up1)
@@ -164,14 +164,14 @@ public class RedirectTest extends TestBaseWithMockServer {
        t.src(wireMockRule.url(REDIRECT));
        File dst = folder.newFile();
        t.dest(dst);
-       t.execute();
+       execute(t);
    }
 
     /**
      * Make sure the plugin fails with too many redirects
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = TaskExecutionException.class)
+    @Test(expected = UncheckedIOException.class)
     public void tooManyRedirects() throws Exception {
         UrlPattern up1 = urlPathEqualTo("/" + REDIRECT);
         redirectWireMockRule.stubFor(get(up1)
@@ -184,6 +184,6 @@ public class RedirectTest extends TestBaseWithMockServer {
         t.src(redirectWireMockRule.url(REDIRECT) + "?r=52");
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
     }
 }

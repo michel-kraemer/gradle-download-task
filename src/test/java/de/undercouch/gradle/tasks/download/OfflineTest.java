@@ -14,16 +14,15 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.junit.Assert.assertArrayEquals;
+import org.apache.commons.io.FileUtils;
+import org.gradle.api.Action;
+import org.gradle.api.Project;
+import org.gradle.api.UncheckedIOException;
+import org.junit.Test;
 
 import java.io.File;
 
-import org.apache.commons.io.FileUtils;
-import org.gradle.api.Action;
-import org.gradle.api.GradleException;
-import org.gradle.api.NonNullApi;
-import org.gradle.api.Project;
-import org.junit.Test;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Test the offline capabilities of the download task plugin
@@ -43,7 +42,7 @@ public class OfflineTest extends TestBaseWithMockServer {
         File dst = folder.newFile();
         t.dest(dst);
         
-        t.execute();
+        execute(t);
         
         // file should still be empty
         byte[] dstContents = FileUtils.readFileToByteArray(dst);
@@ -54,14 +53,14 @@ public class OfflineTest extends TestBaseWithMockServer {
      * Test if the task fails we're in offline mode and the file does
      * not exist already
      */
-    @Test(expected = GradleException.class)
+    @Test(expected = UncheckedIOException.class)
     public void offlineFail() {
         Download t = makeProjectAndTask();
         t.getProject().getGradle().getStartParameter().setOffline(true);
         t.src(wireMockRule.baseUrl());
         File dst = new File(folder.getRoot(), "offlineFail");
         t.dest(dst);
-        t.execute(); // should fail
+        execute(t); // should fail
     }
 
     /**

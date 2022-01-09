@@ -16,6 +16,7 @@ package de.undercouch.gradle.tasks.download;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.Before;
 import org.junit.Rule;
@@ -24,6 +25,7 @@ import org.junit.rules.TemporaryFolder;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -78,5 +80,12 @@ public abstract class TestBase {
         Map<String, Object> taskParams = new HashMap<>();
         taskParams.put("type", Download.class);
         return (Download)project.task(taskParams, "downloadFile");
+    }
+
+    protected void execute(Task t) {
+        List<Action<? super Task>> actions = t.getActions();
+        for (Action<? super Task> a : actions) {
+            a.execute(t);
+        }
     }
 }

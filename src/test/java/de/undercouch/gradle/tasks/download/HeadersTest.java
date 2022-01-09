@@ -56,7 +56,7 @@ public class HeadersTest extends TestBaseWithMockServer {
         t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst,
                 StandardCharsets.UTF_8);
@@ -81,7 +81,7 @@ public class HeadersTest extends TestBaseWithMockServer {
         t.dest(dst);
         t.header(X_HEADER_TEST_A, VALUE_A);
         t.header(X_HEADER_TEST_B, VALUE_B);
-        t.execute();
+        execute(t);
 
         assertEquals(2, t.getHeaders().size());
         assertEquals(VALUE_A, t.getHeader(X_HEADER_TEST_A));

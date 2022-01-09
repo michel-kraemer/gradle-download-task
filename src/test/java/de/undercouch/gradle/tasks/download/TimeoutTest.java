@@ -16,7 +16,6 @@ package de.undercouch.gradle.tasks.download;
 
 import de.undercouch.gradle.tasks.download.org.apache.http.conn.ConnectTimeoutException;
 import org.gradle.api.UncheckedIOException;
-import org.gradle.api.tasks.TaskExecutionException;
 import org.junit.Test;
 
 import java.io.File;
@@ -55,11 +54,10 @@ public class TimeoutTest extends TestBaseWithMockServer {
         File dst = folder.newFile();
         t.dest(dst);
         try {
-            t.execute();
+            execute(t);
             fail("Connection should have timed out by now");
-        } catch (TaskExecutionException e) {
-            assertTrue(e.getCause() instanceof UncheckedIOException);
-            assertTrue(e.getCause().getCause() instanceof SocketTimeoutException);
+        } catch (UncheckedIOException e) {
+            assertTrue(e.getCause() instanceof SocketTimeoutException);
         }
     }
 
@@ -77,11 +75,10 @@ public class TimeoutTest extends TestBaseWithMockServer {
         t.dest(dst);
         long start = System.currentTimeMillis();
         try {
-            t.execute();
+            execute(t);
             fail("Connection should have timed out by now");
-        } catch (TaskExecutionException e) {
-            assertTrue(e.getCause() instanceof UncheckedIOException);
-            assertTrue(e.getCause().getCause() instanceof ConnectTimeoutException);
+        } catch (UncheckedIOException e) {
+            assertTrue(e.getCause() instanceof ConnectTimeoutException);
             long end = System.currentTimeMillis();
             if (end - start > TIMEOUT_MS * 2) {
                 fail("Timeout took way too long");

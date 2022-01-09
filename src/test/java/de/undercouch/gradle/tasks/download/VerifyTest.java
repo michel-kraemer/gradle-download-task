@@ -16,9 +16,8 @@ package de.undercouch.gradle.tasks.download;
 
 import groovy.lang.Closure;
 import org.apache.commons.codec.binary.Hex;
+import org.gradle.api.GradleException;
 import org.gradle.api.internal.provider.DefaultProvider;
-import org.gradle.api.tasks.TaskExecutionException;
-import org.gradle.api.tasks.TaskValidationException;
 import org.junit.Test;
 
 import java.io.File;
@@ -87,15 +86,15 @@ public class VerifyTest extends TestBaseWithMockServer {
         v.src(t.getDest());
         assertEquals(t.getDest(), v.getSrc());
 
-        t.execute();
-        v.execute(); // will throw if the checksum is not OK
+        execute(t);
+        execute(v); // will throw if the checksum is not OK
     }
 
     /**
      * Tests if the Verify task fails if the checksum is wrong
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = TaskExecutionException.class)
+    @Test(expected = GradleException.class)
     public void verifyWrongMD5() throws Exception {
         configureDefaultStub();
 
@@ -109,14 +108,14 @@ public class VerifyTest extends TestBaseWithMockServer {
         v.checksum("WRONG");
         v.src(t.getDest());
 
-        t.execute();
-        v.execute(); // should throw
+        execute(t);
+        execute(v); // should throw
     }
 
     /**
      * Test if the plugin throws an exception if the 'src' property is empty
      */
-    @Test(expected = TaskValidationException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testExecuteEmptySrc() {
         Download t = makeProjectAndTask();
 
@@ -125,14 +124,14 @@ public class VerifyTest extends TestBaseWithMockServer {
         String calculatedChecksum = calculateChecksum();
         v.checksum(calculatedChecksum);
 
-        v.execute(); // should throw
+        execute(v); // should throw
     }
 
     /**
      * Test if the plugin throws an exception if the 'algorithm' property is empty
      * @throws Exception if the test succeeds
      */
-    @Test(expected = TaskExecutionException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testExecuteEmptyAlgorithm() throws Exception {
         Download t = makeProjectAndTask();
         File dst = folder.newFile();
@@ -144,14 +143,14 @@ public class VerifyTest extends TestBaseWithMockServer {
         v.algorithm(null);
         v.src(t.getDest());
 
-        v.execute(); // should throw
+        execute(v); // should throw
     }
 
     /**
      * Test if the plugin throws an exception if the 'checksum' property is empty
      * @throws Exception if the test succeeds
      */
-    @Test(expected = TaskValidationException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testExecuteEmptyChecksum() throws Exception {
         Download t = makeProjectAndTask();
         File dst = folder.newFile();
@@ -161,7 +160,7 @@ public class VerifyTest extends TestBaseWithMockServer {
         v.algorithm("MD5");
         v.src(t.getDest());
 
-        v.execute(); // should throw
+        execute(v); // should throw
     }
 
     /**
@@ -180,7 +179,7 @@ public class VerifyTest extends TestBaseWithMockServer {
         v.algorithm("MD5");
         v.src(new Object());
 
-        v.execute(); // should throw
+        execute(v); // should throw
     }
 
     /**
@@ -212,8 +211,8 @@ public class VerifyTest extends TestBaseWithMockServer {
             }
         });
 
-        t.execute();
-        v.execute(); // will throw if the checksum is not OK
+        execute(t);
+        execute(v); // will throw if the checksum is not OK
 
         assertTrue(srcCalled[0]);
     }
@@ -244,8 +243,8 @@ public class VerifyTest extends TestBaseWithMockServer {
             }
         }));
 
-        t.execute();
-        v.execute(); // will throw if the checksum is not OK
+        execute(t);
+        execute(v); // will throw if the checksum is not OK
 
         assertTrue(srcCalled[0]);
     }

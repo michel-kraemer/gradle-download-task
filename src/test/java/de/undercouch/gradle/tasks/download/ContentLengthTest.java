@@ -15,7 +15,7 @@
 package de.undercouch.gradle.tasks.download;
 
 import org.apache.commons.io.FileUtils;
-import org.gradle.api.tasks.TaskExecutionException;
+import org.gradle.api.UncheckedIOException;
 import org.junit.Test;
 
 import java.io.File;
@@ -48,7 +48,7 @@ public class ContentLengthTest extends TestBaseWithMockServer {
         t.src(wireMockRule.url(testFileName));
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(contents, dstContents);
@@ -72,7 +72,7 @@ public class ContentLengthTest extends TestBaseWithMockServer {
         t.src(wireMockRule.url(testFileName));
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(contents, dstContents);
@@ -82,7 +82,7 @@ public class ContentLengthTest extends TestBaseWithMockServer {
      * Tests if the plugin can handle an incorrect Content-Length header
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = TaskExecutionException.class)
+    @Test(expected = UncheckedIOException.class)
     public void tooLargeContentLength() throws Exception {
         String testFileName = "/test.txt";
         String contents = "Hello";
@@ -97,6 +97,6 @@ public class ContentLengthTest extends TestBaseWithMockServer {
         t.src(wireMockRule.url(testFileName));
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
     }
 }

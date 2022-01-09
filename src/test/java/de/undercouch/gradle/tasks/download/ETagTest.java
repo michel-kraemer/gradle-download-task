@@ -60,7 +60,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.onlyIfModified(true);
         t.useETag(true);
         t.compress(false);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst,
                 StandardCharsets.UTF_8);
@@ -90,7 +90,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.onlyIfModified(true);
         t.useETag(true);
         t.compress(false);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst,
                 StandardCharsets.UTF_8);
@@ -128,7 +128,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.onlyIfModified(true);
         t.useETag(true);
         t.compress(false);
-        t.execute();
+        execute(t);
 
         // download second file
         t = makeProjectAndTask();
@@ -140,7 +140,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.onlyIfModified(true);
         t.useETag(true);
         t.compress(false);
-        t.execute();
+        execute(t);
 
         // check server responses
         String dst1Contents = FileUtils.readFileToString(dst1,
@@ -197,7 +197,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.useETag(true);
         assertTrue((Boolean)t.getUseETag());
         t.compress(false);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst,
                 StandardCharsets.UTF_8);
@@ -250,7 +250,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.onlyIfModified(true);
         t.useETag(true);
         t.compress(false);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst,
                 StandardCharsets.UTF_8);
@@ -287,7 +287,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.onlyIfModified(true);
         t.useETag(true);
         t.compress(false);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst,
                 StandardCharsets.UTF_8);
@@ -339,7 +339,7 @@ public class ETagTest extends TestBaseWithMockServer {
         prepareCachedETagsFile(t.getCachedETagsFile(), etag);
 
         t.compress(false);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst,
                 StandardCharsets.UTF_8);
@@ -373,7 +373,7 @@ public class ETagTest extends TestBaseWithMockServer {
         prepareCachedETagsFile(t.getCachedETagsFile(), etag);
 
         t.compress(false);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst,
                 StandardCharsets.UTF_8);
@@ -407,7 +407,7 @@ public class ETagTest extends TestBaseWithMockServer {
         prepareCachedETagsFile(t.getCachedETagsFile(), wrongEtag);
 
         t.compress(false);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst,
                 StandardCharsets.UTF_8);
@@ -438,7 +438,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.useETag(true);
         assertEquals(Boolean.TRUE, t.getUseETag());
         t.compress(false);
-        t.execute();
+        execute(t);
 
         // check server response
         String dstContents = FileUtils.readFileToString(dst,
@@ -485,7 +485,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.useETag("all");
         assertEquals("all", t.getUseETag());
         t.compress(false);
-        t.execute();
+        execute(t);
 
         // check server response
         String dstContents = FileUtils.readFileToString(dst,
@@ -539,7 +539,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.useETag("strongOnly");
         assertEquals("strongOnly", t.getUseETag());
         t.compress(false);
-        t.execute();
+        execute(t);
 
         // download second file
         t = makeProjectAndTask();
@@ -552,7 +552,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.useETag("strongOnly");
         assertEquals("strongOnly", t.getUseETag());
         t.compress(false);
-        t.execute();
+        execute(t);
 
         // check server responses
         String dst1Contents = FileUtils.readFileToString(dst1,

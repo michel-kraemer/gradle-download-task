@@ -121,7 +121,6 @@ public class OutputsTest extends TestBaseWithMockServer {
      * the destination is a valid RegularFile (using the ProjectLayout API)
      */
     @Test
-    @SuppressWarnings("UnstableApiUsage")
     public void singleOutputFileWithDestinationAsProviderRegularFile() {
         Download t = makeProjectAndTask();
         t.src(wireMockRule.baseUrl());
@@ -129,24 +128,6 @@ public class OutputsTest extends TestBaseWithMockServer {
                 .getBuildDirectory().file("exampledownload");
         t.dest(file); // test if dest is build dir
         assertEquals(file.get().getAsFile(), t.getOutputs().getFiles()
-                .getSingleFile());
-    }
-
-    /**
-     * Test if the output is generated correctly for a single source and if
-     * the destination is a valid RegularFileProperty (using the
-     * ProjectLayout API)
-     */
-    @Test
-    @SuppressWarnings("UnstableApiUsage")
-    public void singleOutputFileWithDestinationAsRegularFileProperty() {
-        Download t = makeProjectAndTask();
-        t.src(wireMockRule.baseUrl());
-        RegularFileProperty file = t.getProject().getLayout()
-                .fileProperty(t.getProject().getLayout().getBuildDirectory()
-                        .file("exampledownload"));
-        t.dest(file); // test if dest is build dir
-        assertEquals(file.getAsFile().get(), t.getOutputs().getFiles()
                 .getSingleFile());
     }
 

@@ -48,7 +48,7 @@ public class ContentEncodingTest extends TestBaseWithMockServer {
         t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
 
         byte[] dstContents = FileUtils.readFileToByteArray(dst);
         assertArrayEquals(CONTENTS_BYTES, dstContents);

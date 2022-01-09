@@ -204,7 +204,7 @@ public class ProxyTest extends TestBaseWithMockServer {
             t.src("http://" + localHostName + ":" + wireMockRule.port() + "/" + TEST_FILE_NAME);
             File dst = folder.newFile();
             t.dest(dst);
-            t.execute();
+            execute(t);
             
             String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
             assertEquals(CONTENTS, dstContents);

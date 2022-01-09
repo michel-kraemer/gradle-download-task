@@ -17,7 +17,6 @@ package de.undercouch.gradle.tasks.download;
 import groovy.lang.Closure;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.internal.provider.DefaultProvider;
-import org.gradle.api.tasks.TaskExecutionException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -67,7 +66,7 @@ public class DownloadTest extends TestBaseWithMockServer {
         t.src(src);
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
         
         assertTrue(t.getSrc() instanceof URL);
         assertEquals(src, t.getSrc().toString());
@@ -89,7 +88,7 @@ public class DownloadTest extends TestBaseWithMockServer {
         t.src(src);
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
 
         assertSame(src, t.getSrc());
         assertSame(dst, t.getDest());
@@ -109,7 +108,7 @@ public class DownloadTest extends TestBaseWithMockServer {
         t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFolder();
         t.dest(dst);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(
                 new File(dst, TEST_FILE_NAME), StandardCharsets.UTF_8);
@@ -126,7 +125,7 @@ public class DownloadTest extends TestBaseWithMockServer {
         Download t = makeProjectAndTask();
         t.src(wireMockRule.url(TEST_FILE_NAME));
         t.dest(TEST_FILE_NAME);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(
                 new File(projectDir, TEST_FILE_NAME), StandardCharsets.UTF_8);
@@ -145,7 +144,7 @@ public class DownloadTest extends TestBaseWithMockServer {
 
         File dst = folder.newFolder();
         t.dest(dst);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(
                 new File(dst, TEST_FILE_NAME), StandardCharsets.UTF_8);
@@ -169,7 +168,7 @@ public class DownloadTest extends TestBaseWithMockServer {
         File dst = folder.newFolder();
         assertTrue(dst.delete());
         t.dest(dst);
-        t.execute();
+        execute(t);
         assertTrue(dst.isDirectory());
     }
     
@@ -178,14 +177,14 @@ public class DownloadTest extends TestBaseWithMockServer {
      * multiple files to a single destination file
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = TaskExecutionException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void downloadMultipleFilesToFile() throws Exception {
         Download t = makeProjectAndTask();
         t.src(Arrays.asList(wireMockRule.url(TEST_FILE_NAME),
                 wireMockRule.url(TEST_FILE_NAME2)));
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
     }
 
     /**
@@ -223,7 +222,7 @@ public class DownloadTest extends TestBaseWithMockServer {
         assertFalse(srcCalled[0]);
         assertFalse(dstCalled[0]);
 
-        t.execute();
+        execute(t);
 
         assertTrue(srcCalled[0]);
         assertTrue(dstCalled[0]);
@@ -263,7 +262,7 @@ public class DownloadTest extends TestBaseWithMockServer {
         assertFalse(srcCalled[0]);
         assertFalse(dstCalled[0]);
 
-        t.execute();
+        execute(t);
 
         assertTrue(srcCalled[0]);
         assertTrue(dstCalled[0]);
@@ -288,7 +287,7 @@ public class DownloadTest extends TestBaseWithMockServer {
         t.src(src);
         t.dest(dst);
         t.overwrite(false); // do not overwrite the file
-        t.execute();
+        execute(t);
 
         // contents must not be changed
         String dstContents = FileUtils.readFileToString(dst,
@@ -300,44 +299,44 @@ public class DownloadTest extends TestBaseWithMockServer {
      * Test if the plugin throws an exception if the 'src' property is invalid
      * @throws Exception if the test succeeds
      */
-    @Test(expected = TaskExecutionException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testInvalidSrc() throws Exception {
         Download t = makeProjectAndTask();
         t.src(new Object());
         t.dest(folder.newFile());
-        t.execute();
+        execute(t);
     }
 
     /**
      * Test if the plugin throws an exception if the 'src' property is empty
      */
-    @Test(expected = TaskExecutionException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testExecuteEmptySrc() {
         Download t = makeProjectAndTask();
-        t.execute();
+        execute(t);
     }
 
     /**
      * Test if the plugin throws an exception if the 'dest' property is invalid
      */
-    @Test(expected = TaskExecutionException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testInvalidDest() {
         Download t = makeProjectAndTask();
         String src = wireMockRule.url(TEST_FILE_NAME);
         t.src(src);
         t.dest(new Object());
-        t.execute();
+        execute(t);
     }
 
     /**
      * Test if the plugin throws an exception if the 'dest' property is empty
      */
-    @Test(expected = TaskExecutionException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testExecuteEmptyDest() {
         Download t = makeProjectAndTask();
         String src = wireMockRule.url(TEST_FILE_NAME);
         t.src(src);
-        t.execute();
+        execute(t);
     }
 
     /**
@@ -370,7 +369,7 @@ public class DownloadTest extends TestBaseWithMockServer {
 
         t.src(new Object[] { url.toExternalForm() });
         t.dest(dst);
-        t.execute();
+        execute(t);
 
         String content = FileUtils.readFileToString(dst, "UTF-8");
         assertEquals(testContent, content);
@@ -397,7 +396,7 @@ public class DownloadTest extends TestBaseWithMockServer {
         t.src(new Object[] { url.toExternalForm() });
         t.dest(dst);
         t.overwrite(true);
-        t.execute();
+        execute(t);
 
         String content = FileUtils.readFileToString(dst, "UTF-8");
         assertEquals(testContent, content);

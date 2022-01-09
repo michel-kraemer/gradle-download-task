@@ -16,7 +16,7 @@ package de.undercouch.gradle.tasks.download;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.apache.commons.io.FileUtils;
-import org.gradle.api.tasks.TaskExecutionException;
+import org.gradle.api.UncheckedIOException;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -63,7 +63,7 @@ public class SslTest extends TestBase {
         t.dest(dst);
         t.acceptAnyCertificate(true);
         assertTrue(t.isAcceptAnyCertificate());
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
@@ -73,13 +73,13 @@ public class SslTest extends TestBase {
      * Tests if connecting to a HTTPS URL fails if the certificate is unknown
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = TaskExecutionException.class)
+    @Test(expected = UncheckedIOException.class)
     public void unknownCertificate() throws Exception {
         Download t = makeProjectAndTask();
         t.src(sslWireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
         t.dest(dst);
         assertFalse(t.isAcceptAnyCertificate());
-        t.execute();
+        execute(t);
     }
 }

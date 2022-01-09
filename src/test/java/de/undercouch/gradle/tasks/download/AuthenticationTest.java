@@ -17,7 +17,7 @@ package de.undercouch.gradle.tasks.download;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
-import org.gradle.api.tasks.TaskExecutionException;
+import org.gradle.api.UncheckedIOException;
 import org.junit.Test;
 
 import javax.servlet.http.HttpServletResponse;
@@ -47,7 +47,7 @@ public class AuthenticationTest extends TestBaseWithMockServer {
      * Tests if the plugin can handle failed authentication
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = TaskExecutionException.class)
+    @Test(expected = UncheckedIOException.class)
     public void noAuthorization() throws Exception {
         wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
                 .withHeader("Authorization", absent())
@@ -58,14 +58,14 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         t.src(wireMockRule.url(AUTHENTICATE));
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
     }
     
     /**
      * Tests if the plugin can handle failed authentication
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = TaskExecutionException.class)
+    @Test(expected = UncheckedIOException.class)
     public void invalidCredentials() throws Exception {
         String wrongUser = USERNAME + "!";
         String wrongPass = PASSWORD + "!";
@@ -83,7 +83,7 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         t.dest(dst);
         t.username(wrongUser);
         t.password(wrongPass);
-        t.execute();
+        execute(t);
     }
 
     /**
@@ -106,7 +106,7 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         t.dest(dst);
         t.username(USERNAME);
         t.password(PASSWORD);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
@@ -150,7 +150,7 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         t.username(USERNAME);
         t.password(PASSWORD);
         t.authScheme("Digest");
-        t.execute();
+        execute(t);
     }
 
     /**
@@ -164,7 +164,7 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         File dst = folder.newFile();
         t.dest(dst);
         t.authScheme("Foobar");
-        t.execute();
+        execute(t);
     }
 
     /**

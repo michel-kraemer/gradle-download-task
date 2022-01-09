@@ -47,7 +47,7 @@ public class CompressionTest extends TestBaseWithMockServer {
         t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
@@ -69,7 +69,7 @@ public class CompressionTest extends TestBaseWithMockServer {
         File dst = folder.newFile();
         t.dest(dst);
         t.compress(false);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);

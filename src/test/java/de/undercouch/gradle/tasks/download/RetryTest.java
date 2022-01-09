@@ -18,7 +18,6 @@ import com.github.tomakehurst.wiremock.http.Fault;
 import de.undercouch.gradle.tasks.download.org.apache.http.NoHttpResponseException;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.UncheckedIOException;
-import org.gradle.api.tasks.TaskExecutionException;
 import org.junit.Test;
 
 import java.io.File;
@@ -66,12 +65,11 @@ public class RetryTest extends TestBaseWithMockServer {
         File dst = folder.newFile();
         t.dest(dst);
         try {
-            t.execute();
+            execute(t);
             fail("Request should have failed");
-        } catch (TaskExecutionException e) {
+        } catch (UncheckedIOException e) {
             wireMockRule.verify(1, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
-            assertTrue(e.getCause() instanceof UncheckedIOException);
-            assertTrue(e.getCause().getCause() instanceof NoHttpResponseException);
+            assertTrue(e.getCause() instanceof NoHttpResponseException);
         }
     }
 
@@ -98,7 +96,7 @@ public class RetryTest extends TestBaseWithMockServer {
         t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
@@ -141,7 +139,7 @@ public class RetryTest extends TestBaseWithMockServer {
         t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
@@ -178,7 +176,7 @@ public class RetryTest extends TestBaseWithMockServer {
         t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
@@ -222,12 +220,11 @@ public class RetryTest extends TestBaseWithMockServer {
         File dst = folder.newFile();
         t.dest(dst);
         try {
-            t.execute();
+            execute(t);
             fail("Request should have failed");
-        } catch (TaskExecutionException e) {
+        } catch (UncheckedIOException e) {
             wireMockRule.verify(3, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
-            assertTrue(e.getCause() instanceof UncheckedIOException);
-            assertTrue(e.getCause().getCause() instanceof NoHttpResponseException);
+            assertTrue(e.getCause() instanceof NoHttpResponseException);
         }
     }
 
@@ -260,7 +257,7 @@ public class RetryTest extends TestBaseWithMockServer {
         t.src(wireMockRule.url(TEST_FILE_NAME));
         File dst = folder.newFile();
         t.dest(dst);
-        t.execute();
+        execute(t);
 
         String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
         assertEquals(CONTENTS, dstContents);
