@@ -5,15 +5,15 @@ This is a download task for [Gradle](http://www.gradle.org/).
 It displays progress information just as Gradle does when it retrieves
 an artifact from a repository.
 
-The plugin has been successfully tested with Gradle 2.0 up to 7.3.
+The plugin has been successfully tested with Gradle 5.0 up to 7.3.
 It should work with newer versions as well.
 
 <img width="559" src="https://raw.githubusercontent.com/michel-kraemer/gradle-download-task/e6bbe00dedd5e0bdaab12f4b1980bd51d22d10d1/gradle-download-task.gif">
 
-Apply plugin configuration
---------------------------
+Usage
+-----
 
-### Gradle 2.1 and higher
+First, apply the plugin configuration:
 
 ```groovy
 plugins {
@@ -21,28 +21,7 @@ plugins {
 }
 ```
 
-### Gradle 2.0
-
-```groovy
-buildscript {
-    repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        classpath 'de.undercouch:gradle-download-task:4.1.2'
-    }
-}
-
-apply plugin: 'de.undercouch.download'
-```
-
-Usage
------
-
-After you have applied the plugin configuration (see above), you can use the
-`Download` task as follows:
+Then, use the `Download` task as follows:
 
 ```groovy
 task downloadFile(type: Download) {
@@ -86,11 +65,11 @@ Minimum requirements
 
 The plugin requires:
 
-* Gradle 2.x or higher
-* Java 7 or higher
+* Gradle 5.x or higher
+* Java 8 or higher
 
-If you need to run the plugin with Gradle 1.x or Java 6, use
-gradle-download-task version 3.4.3.
+If you need to run the plugin with Gradle 2.x up to 4.x or Java 7, use
+gradle-download-task version 4.1.2.
 
 Examples
 --------

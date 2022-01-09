@@ -6,29 +6,12 @@ apply plugin: 'java-gradle-plugin'
 apply plugin: 'jacoco'
 apply plugin: 'maven'
 apply plugin: 'signing'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
 apply from: "gradle/integrationTest.gradle"
 
 group = 'de.undercouch'
-version = '4.1.2'
-sourceCompatibility = '1.7'
-targetCompatibility = '1.7'
-
-idea {
-  project {
-    languageLevel = '1.7'
-    ipr {
-      withXml { provider ->
-        provider.node.component
-          .find { it.@name == 'VcsDirectoryMappings' }
-          .mapping.@vcs = 'Git'
-      }
-    }
-  }
-}
-
-eclipseClasspath.dependsOn pluginUnderTestMetadata
+version = '5.0.0-SNAPSHOT'
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
 
 repositories {
     mavenCentral()
@@ -53,11 +36,7 @@ jacocoTestReport {
 
 // improve test output when we're using a plain console (e.g. on the CI server)
 test {
-    if (JavaVersion.current().isJava8Compatible()) {
-        jvmArgs += ['-Xmx512M']
-    } else {
-        jvmArgs += ['-Xmx512M', '-XX:MaxPermSize=256M']
-    }
+    jvmArgs += ['-Xmx512M']
     if (gradle.startParameter.consoleOutput == ConsoleOutput.Plain) {
         testLogging {
             events "standard_out", "passed", "skipped", "failed"
