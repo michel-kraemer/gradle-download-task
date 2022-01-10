@@ -30,7 +30,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 /**
  * Tests if the plugin can access a resource that requires authentication
@@ -158,30 +157,6 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         t.dest(dst);
         t.username(USERNAME);
         t.password(PASSWORD);
-        t.authScheme("Digest");
         execute(t);
-    }
-
-    /**
-     * Make sure the plugin rejects an invalid authentication scheme
-     * @throws Exception if anything goes wrong
-     */
-    @Test(expected = IllegalArgumentException.class)
-    public void invalidAuthSchemeString() throws Exception {
-        Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(AUTHENTICATE));
-        File dst = folder.newFile();
-        t.dest(dst);
-        t.authScheme("Foobar");
-        execute(t);
-    }
-
-    /**
-     * Tests if the plugin has no authentications scheme set by default
-     */
-    @Test
-    public void noDefaultAuthScheme() {
-        Download t = makeProjectAndTask();
-        assertNull(t.getAuthScheme());
     }
 }

@@ -23,7 +23,6 @@ import groovy.json.JsonSlurper;
 import groovy.lang.Closure;
 import org.apache.hc.client5.http.ClientProtocolException;
 import org.apache.hc.client5.http.auth.AuthCache;
-import org.apache.hc.client5.http.auth.AuthScheme;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.Credentials;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
@@ -33,8 +32,6 @@ import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
-import org.apache.hc.client5.http.impl.auth.BasicScheme;
-import org.apache.hc.client5.http.impl.auth.DigestScheme;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
@@ -101,7 +98,6 @@ public class DownloadAction implements DownloadSpec {
     private boolean compress = true;
     private String username;
     private String password;
-    private String authScheme;
     private Map<String, String> headers;
     private boolean acceptAnyCertificate = false;
     private int connectTimeoutMs = 30 * 1000;
@@ -616,18 +612,12 @@ public class DownloadAction implements DownloadSpec {
      */
     private CloseableHttpResponse openConnection(HttpHost httpHost, String file,
             long timestamp, String etag, CloseableHttpClient client) throws IOException {
-        //perform preemptive authentication
+        // configure authentication
         HttpClientContext context = null;
         if (username != null && password != null) {
             context = HttpClientContext.create();
-            AuthScheme as;
-            if ("Digest".equalsIgnoreCase(authScheme)) {
-                as = new DigestScheme();
-            } else {
-                as = new BasicScheme();
-            }
             Credentials c = new UsernamePasswordCredentials(username, password.toCharArray());
-            addAuthentication(httpHost, c, as, context);
+            addAuthentication(httpHost, c, context);
         }
         
         //create request
@@ -658,7 +648,7 @@ public class DownloadAction implements DownloadSpec {
             HttpHost proxy = new HttpHost(scheme, proxyHost, nProxyPort);
             Credentials credentials = new UsernamePasswordCredentials(
                     proxyUser, proxyPassword.toCharArray());
-            addAuthentication(proxy, credentials, null, context);
+            addAuthentication(proxy, credentials, context);
         }
         
         //set If-Modified-Since header
@@ -702,13 +692,11 @@ public class DownloadAction implements DownloadSpec {
      * Add authentication information for the given host
      * @param host the host
      * @param credentials the credentials
-     * @param authScheme the scheme for preemptive authentication (should be
-     * <code>null</code> if adding authentication for a proxy server)
      * @param context the context in which the authentication information
      * should be saved
      */
     private void addAuthentication(HttpHost host, Credentials credentials,
-            AuthScheme authScheme, HttpClientContext context) {
+            HttpClientContext context) {
         AuthCache authCache = context.getAuthCache();
         if (authCache == null) {
             authCache = new BasicAuthCache();
@@ -722,10 +710,6 @@ public class DownloadAction implements DownloadSpec {
         }
 
         ((CredentialsStore)credsProvider).setCredentials(new AuthScope(host), credentials);
-        
-        if (authScheme != null) {
-            authCache.put(host, authScheme);
-        }
     }
     
     /**
@@ -857,17 +841,6 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public void password(String password) {
         this.password = password;
-    }
-
-    @Override
-    public void authScheme(String authScheme) {
-        if (authScheme.equalsIgnoreCase("Basic") ||
-                authScheme.equalsIgnoreCase("Digest")) {
-            this.authScheme = authScheme;
-        } else {
-            throw new IllegalArgumentException("Invalid authentication scheme: "
-                    + "'" + authScheme + "'. Valid values are 'Basic' and 'Digest'.");
-        }
     }
 
     @Override
@@ -1108,11 +1081,6 @@ public class DownloadAction implements DownloadSpec {
         return password;
     }
 
-    @Override
-    public String getAuthScheme() {
-        return authScheme;
-    }
-    
     @Override
     public Map<String, String> getHeaders() {
         return headers;

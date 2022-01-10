@@ -166,11 +166,6 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
     
     @Override
-    public void authScheme(String authScheme) {
-        action.authScheme(authScheme);
-    }
-
-    @Override
     public void headers(Map<String, String> headers) {
         action.headers(headers);
     }
@@ -274,13 +269,6 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public String getPassword() {
         return action.getPassword();
-    }
-
-    @Input
-    @Optional
-    @Override
-    public String getAuthScheme() {
-        return action.getAuthScheme();
     }
 
     @Input

@@ -68,32 +68,18 @@ public interface DownloadSpec {
      * @param compress true if compression should be enabled
      */
     void compress(boolean compress);
-    
+
     /**
-     * Sets the username for <code>Basic</code> or <code>Digest</code>
-     * authentication
+     * Sets the username for authentication
      * @param username the username
      */
     void username(String username);
-    
+
     /**
-     * Sets the password for <code>Basic</code> or <code>Digest</code>
-     * authentication
+     * Sets the password for authentication
      * @param password the password
      */
     void password(String password);
-    
-    /**
-     * <p>Sets the authentication scheme to use. This method accepts
-     * either a <code>String</code> (valid values are <code>"Basic"</code>
-     * and <code>"Digest"</code>).</p>
-     * <p>If <code>username</code> and <code>password</code> are set this
-     * method will only accept <code>"Basic"</code> or <code>"Digest"</code>
-     * as valid values. The default value will be <code>"Basic"</code> in
-     * this case.</p>
-     * @param authScheme the authentication scheme
-     */
-    void authScheme(String authScheme);
 
     /**
      * Sets the HTTP request headers to use when downloading
@@ -219,25 +205,17 @@ public interface DownloadSpec {
      * @return true if compression is enabled
      */
     boolean isCompress();
-    
+
     /**
-     * @return the username for <code>Basic</code> or <code>Digest</code>
-     * authentication
+     * @return the username for authentication
      */
     String getUsername();
-    
+
     /**
-     * @return the password for <code>Basic</code> or <code>Digest</code>
-     * authentication
+     * @return the password for authentication
      */
     String getPassword();
-    
-    /**
-     * @return the authentication scheme used (or <code>null</code> if
-     * no authentication is performed)
-     */
-    String getAuthScheme();
-    
+
     /**
      * @return the HTTP request headers to use when downloading
      */
