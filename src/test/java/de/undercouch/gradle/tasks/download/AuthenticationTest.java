@@ -70,12 +70,17 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         String wrongUser = USERNAME + "!";
         String wrongPass = PASSWORD + "!";
         String ahdr = "Basic " + Base64.encodeBase64String(
-                (wrongUser + ":" + wrongPass).getBytes(StandardCharsets.UTF_8));
+                (USERNAME + ":" + PASSWORD).getBytes(StandardCharsets.UTF_8));
 
+        wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
+                .willReturn(aResponse()
+                        .withHeader("WWW-Authenticate",
+                                "Basic realm=\"" + REALM + "\"")
+                        .withStatus(HttpServletResponse.SC_UNAUTHORIZED)));
         wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
                 .withHeader("Authorization", equalTo(ahdr))
                 .willReturn(aResponse()
-                        .withStatus(HttpServletResponse.SC_UNAUTHORIZED)));
+                        .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
         t.src(wireMockRule.url(AUTHENTICATE));
@@ -95,6 +100,11 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         String ahdr = "Basic " + Base64.encodeBase64String(
                 (USERNAME + ":" + PASSWORD).getBytes(StandardCharsets.UTF_8));
 
+        wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
+                .willReturn(aResponse()
+                        .withHeader("WWW-Authenticate",
+                                "Basic realm=\"" + REALM + "\"")
+                        .withStatus(HttpServletResponse.SC_UNAUTHORIZED)));
         wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
                 .withHeader("Authorization", equalTo(ahdr))
                 .willReturn(aResponse()
@@ -132,7 +142,6 @@ public class AuthenticationTest extends TestBaseWithMockServer {
                 "algorithm=MD5";
 
         wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
-                .withHeader("Authorization", absent())
                 .willReturn(aResponse()
                         .withHeader("WWW-Authenticate",
                                 "Digest realm=\"" + REALM + "\"," +
