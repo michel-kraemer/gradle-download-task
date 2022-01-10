@@ -1,11 +1,12 @@
 plugins {
     id "com.gradle.plugin-publish" version "0.9.9"
-    id 'com.github.johnrengelman.shadow' version '6.1.0'
+    id "com.github.johnrengelman.shadow" version "6.1.0"
+    id "io.github.gradle-nexus.publish-plugin" version "1.1.0"
 }
 
 apply plugin: 'java-gradle-plugin'
 apply plugin: 'jacoco'
-apply plugin: 'maven'
+apply plugin: 'maven-publish'
 apply plugin: 'signing'
 apply from: "gradle/integrationTest.gradle"
 
@@ -15,6 +16,8 @@ group = 'de.undercouch'
 version = '5.0.0-SNAPSHOT'
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
+
+ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 
 repositories {
     mavenCentral()
@@ -28,6 +31,11 @@ dependencies {
     testCompile 'commons-io:commons-io:2.11.0'
     testCompile 'com.github.tomakehurst:wiremock:2.23.2'
     testCompile 'org.littleshoot:littleproxy:1.1.2'
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
 
 jacocoTestReport {
@@ -59,96 +67,70 @@ task relocateShadowJar(type: ConfigureShadowRelocation) {
 
 tasks.shadowJar.dependsOn tasks.relocateShadowJar
 
-// package javadoc into a jar file
-task packageJavadoc(type: Jar, dependsOn: 'javadoc') {
-    from javadoc.destinationDir
-    classifier = 'javadoc'
+gradlePlugin {
+    automatedPublishing = false
 }
 
-// package source into a jar file
-task packageSources(type: Jar) {
-    from sourceSets.main.allSource
-    classifier = 'sources'
+shadowJar {
+    archiveClassifier = ""
 }
 
-// define artifacts for upload
-artifacts {
-    archives jar
-    archives packageJavadoc
-    archives packageSources
-}
+publishing {
+    publications {
+        shadow(MavenPublication) { publication ->
+            project.shadow.component(publication)
 
-// remove all dependencies from configuration-to-scope mapping
-// this also removes them from the maven pom file
-conf2ScopeMappings.mappings.remove(configurations.compile)
-conf2ScopeMappings.mappings.remove(configurations.testCompile)
+            artifact sourcesJar
+            artifact javadocJar
 
-def configurePom(def pom) {
-    // ensure correct artifact ID
-    pom.artifactId = 'gradle-download-task'
+            pom {
+               artifactId = 'gradle-download-task'
+               name = 'gradle-download-task'
+               packaging = 'jar'
+               description = 'Adds a download task to Gradle that displays progress information'
+               url = 'https://github.com/michel-kraemer/gradle-download-task'
 
-    // pom file details
-    pom.project {
-        name 'gradle-download-task'
-        packaging 'jar'
-        description 'Adds a download task to Gradle that displays progress information'
-        url 'https://github.com/michel-kraemer/gradle-download-task'
+               scm {
+                   url = 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
+                   connection = 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
+                   developerConnection = 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
+               }
 
-        scm {
-            url 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
-            connection 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
-            developerConnection 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
+               licenses {
+                   license {
+                       name = 'The Apache Software License, Version 2.0'
+                       url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                       distribution = 'repo'
+                   }
+               }
+
+               developers {
+                   developer {
+                       id = 'michel-kraemer'
+                       name = 'Michel Kraemer'
+                       email = 'michel@undercouch.de'
+                       url = 'https://michelkraemer.com'
+                   }
+               }
+           }
         }
-
-        licenses {
-            license {
-                name 'The Apache Software License, Version 2.0'
-                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                distribution 'repo'
-            }
-        }
-
-        developers {
-            developer {
-                id 'michel-kraemer'
-                name 'Michel Kraemer'
-                email 'michel@undercouch.de'
-            }
-        }
-    }
-}
-
-install {
-    repositories.mavenInstaller {
-        // ensure correct artifact ID when installing locally
-        configurePom(pom)
     }
 }
 
 // sign all artifacts
 signing {
-    required { !version.endsWith('SNAPSHOT') && gradle.taskGraph.hasTask('uploadArchives') }
-    sign configurations.archives
+    useGpgCmd()
+    sign publishing.publications.shadow
 }
 
-uploadArchives {
+tasks.withType(Sign) {
+    // only sign release artifacts and not snapshots
+    onlyIf { isReleaseVersion }
+}
+
+nexusPublishing {
     repositories {
-        mavenDeployer {
-            // sign artifacts before upload
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-            // upload to sonatype OSS
-            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2") {
-                authentication(userName: this.hasProperty('sonatypeUsername') ? sonatypeUsername : '',
-                    password: this.hasProperty('sonatypePassword') ? sonatypePassword : '')
-            }
-            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots") {
-                authentication(userName: this.hasProperty('sonatypeUsername') ? sonatypeUsername : '',
-                    password: this.hasProperty('sonatypePassword') ? sonatypePassword : '')
-            }
-
-            configurePom(pom)
-        }
+        sonatype()
     }
 }
 
@@ -168,7 +150,7 @@ pluginBundle {
             id = 'de.undercouch.download'
             displayName = 'gradle-download-task'
             description = 'Adds a download task to Gradle that displays progress information'
-            tags = ['download', 'task', 'progress', 'url', 'server', 'file', 'http']
+            tags = ['download', 'task', 'progress', 'url', 'server', 'file', 'http', 'https']
         }
     }
 

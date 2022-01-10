@@ -21,7 +21,7 @@ jobs:
           java-version: 8
           distribution: zulu
       - name: Build and install
-        run: ./gradlew install
+        run: ./gradlew publishToMavenLocal
       - name: Run unit tests
         run: ./gradlew test --console=plain
         env:
@@ -47,6 +47,6 @@ jobs:
           java-version: 8
           distribution: zulu
       - name: Build and install
-        run: ./gradlew install
+        run: ./gradlew publishToMavenLocal
       - name: Run integration tests
         run: ./gradlew integrationTest -PintegrationTestIncludes="^${{ matrix.version }}\\."
