@@ -25,7 +25,7 @@ repositories {
 
 dependencies {
     shadow gradleApi()
-    implementation 'org.apache.httpcomponents:httpclient:4.5.3'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.1.2'
 
     testCompile 'junit:junit:4.13.2'
     testCompile 'commons-io:commons-io:2.11.0'

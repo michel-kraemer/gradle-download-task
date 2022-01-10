@@ -15,24 +15,23 @@
 package de.undercouch.gradle.tasks.download.internal;
 
 import org.apache.commons.logging.impl.NoOpLog;
-import org.apache.http.HttpHost;
-import org.apache.http.client.HttpRequestRetryHandler;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.conn.HttpClientConnectionManager;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
-import org.apache.http.impl.conn.SystemDefaultRoutePlanner;
-import org.apache.http.protocol.HttpContext;
+import org.apache.hc.client5.http.impl.DefaultHttpRequestRetryStrategy;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.BasicHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.routing.SystemDefaultRoutePlanner;
+import org.apache.hc.client5.http.io.HttpClientConnectionManager;
+import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
+import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.config.Registry;
+import org.apache.hc.core5.http.config.RegistryBuilder;
+import org.apache.hc.core5.util.TimeValue;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
-import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -57,6 +56,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
     @Override
     public CloseableHttpClient createHttpClient(HttpHost httpHost,
             boolean acceptAnyCertificate, final int retries) {
+        // TODO check if this is still necessary
         //disable logging by default to improve download performance
         //see issue 141 (https://github.com/michel-kraemer/gradle-download-task/issues/141)
         if (System.getProperty(LOG_PROPERTY) == null) {
@@ -69,12 +69,13 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         if (retries == 0) {
             builder.disableAutomaticRetries();
         } else {
-            builder.setRetryHandler(new HttpRequestRetryHandler() {
-                @Override
-                public boolean retryRequest(IOException e, int i, HttpContext httpContext) {
-                    return retries < 0 || i <= retries;
-                }
-            });
+            // TODO make interval configurable
+            int maxRetries = retries;
+            if (retries < 0) {
+                maxRetries = Integer.MAX_VALUE;
+            }
+            builder.setRetryStrategy(new DefaultHttpRequestRetryStrategy(
+                    maxRetries, TimeValue.ofSeconds(0L)));
         }
 
         //configure proxy from system environment
@@ -83,7 +84,6 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         //accept any certificate if necessary
         if ("https".equals(httpHost.getSchemeName()) && acceptAnyCertificate) {
             SSLConnectionSocketFactory icsf = getInsecureSSLSocketFactory();
-            builder.setSSLSocketFactory(icsf);
             Registry<ConnectionSocketFactory> registry =
                     RegistryBuilder.<ConnectionSocketFactory>create()
                         .register("https", icsf)

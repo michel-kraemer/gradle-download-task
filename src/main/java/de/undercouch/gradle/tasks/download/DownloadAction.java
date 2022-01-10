@@ -21,29 +21,30 @@ import de.undercouch.gradle.tasks.download.internal.ProjectApiHelper;
 import groovy.json.JsonOutput;
 import groovy.json.JsonSlurper;
 import groovy.lang.Closure;
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.auth.AuthScheme;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.Credentials;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.AuthCache;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.client.utils.DateUtils;
-import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.auth.DigestScheme;
-import org.apache.http.impl.client.BasicAuthCache;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.hc.client5.http.ClientProtocolException;
+import org.apache.hc.client5.http.auth.AuthCache;
+import org.apache.hc.client5.http.auth.AuthScheme;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.Credentials;
+import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.apache.hc.client5.http.auth.CredentialsStore;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.auth.BasicScheme;
+import org.apache.hc.client5.http.impl.auth.DigestScheme;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.client5.http.utils.DateUtils;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.util.Timeout;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -283,7 +284,7 @@ public class DownloadAction implements DownloadSpec {
     private void executeHttpProtocol(URL src, HttpClientFactory clientFactory,
             long timestamp, File destFile) throws IOException {
         //create HTTP host from URL
-        HttpHost httpHost = new HttpHost(src.getHost(), src.getPort(), src.getProtocol());
+        HttpHost httpHost = new HttpHost(src.getProtocol(), src.getHost(), src.getPort());
         
         //create HTTP client
         CloseableHttpClient client = clientFactory.createHttpClient(
@@ -302,7 +303,7 @@ public class DownloadAction implements DownloadSpec {
         try {
             //check if file on server was modified
             long lastModified = parseLastModified(response);
-            int code = response.getStatusLine().getStatusCode();
+            int code = response.getCode();
             if (code == HttpStatus.SC_NOT_MODIFIED ||
                     (lastModified != 0 && timestamp >= lastModified)) {
                 if (!quiet) {
@@ -336,7 +337,7 @@ public class DownloadAction implements DownloadSpec {
      * @param destFile the destination file
      * @throws IOException if the response could not be downloaded
      */
-    private void performDownload(HttpResponse response, File destFile)
+    private void performDownload(CloseableHttpResponse response, File destFile)
             throws IOException {
         HttpEntity entity = response.getEntity();
         if (entity == null) {
@@ -625,7 +626,7 @@ public class DownloadAction implements DownloadSpec {
             } else {
                 as = new BasicScheme();
             }
-            Credentials c = new UsernamePasswordCredentials(username, password);
+            Credentials c = new UsernamePasswordCredentials(username, password.toCharArray());
             addAuthentication(httpHost, c, as, context);
         }
         
@@ -634,10 +635,10 @@ public class DownloadAction implements DownloadSpec {
 
         //configure timeouts
         RequestConfig config = RequestConfig.custom()
-                .setConnectTimeout(connectTimeoutMs)
-                .setConnectionRequestTimeout(connectTimeoutMs)
-                .setSocketTimeout(readTimeoutMs)
-                .setCookieSpec(CookieSpecs.STANDARD)
+                .setConnectTimeout(Timeout.ofMilliseconds(connectTimeoutMs))
+                .setConnectionRequestTimeout(Timeout.ofMilliseconds(connectTimeoutMs))
+                .setResponseTimeout(Timeout.ofMilliseconds(readTimeoutMs))
+                .setCookieSpec("standard") // TODO check if this leads to a warning
                 .setContentCompressionEnabled(compress)
                 .build();
         get.setConfig(config);
@@ -654,9 +655,9 @@ public class DownloadAction implements DownloadSpec {
                 context = HttpClientContext.create();
             }
             int nProxyPort = Integer.parseInt(proxyPort);
-            HttpHost proxy = new HttpHost(proxyHost, nProxyPort, scheme);
+            HttpHost proxy = new HttpHost(scheme, proxyHost, nProxyPort);
             Credentials credentials = new UsernamePasswordCredentials(
-                    proxyUser, proxyPassword);
+                    proxyUser, proxyPassword.toCharArray());
             addAuthentication(proxy, credentials, null, context);
         }
         
@@ -681,9 +682,9 @@ public class DownloadAction implements DownloadSpec {
         CloseableHttpResponse response = client.execute(httpHost, get, context);
         
         //handle response
-        int code = response.getStatusLine().getStatusCode();
+        int code = response.getCode();
         if ((code < 200 || code > 299) && code != HttpStatus.SC_NOT_MODIFIED) {
-            String phrase = response.getStatusLine().getReasonPhrase();
+            String phrase = response.getReasonPhrase();
             String url = httpHost + file;
             if (phrase == null || phrase.isEmpty()) {
                 phrase = "HTTP status code: " + code + ", URL: " + url;
@@ -719,8 +720,8 @@ public class DownloadAction implements DownloadSpec {
             credsProvider = new BasicCredentialsProvider();
             context.setCredentialsProvider(credsProvider);
         }
-        
-        credsProvider.setCredentials(new AuthScope(host), credentials);
+
+        ((CredentialsStore)credsProvider).setCredentials(new AuthScope(host), credentials);
         
         if (authScheme != null) {
             authCache.put(host, authScheme);

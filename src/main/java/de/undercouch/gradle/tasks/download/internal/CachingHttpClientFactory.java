@@ -14,8 +14,8 @@
 
 package de.undercouch.gradle.tasks.download.internal;
 
-import org.apache.http.HttpHost;
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.core5.http.HttpHost;
 
 import java.io.IOException;
 import java.util.HashMap;
