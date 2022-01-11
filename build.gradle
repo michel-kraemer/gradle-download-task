@@ -27,6 +27,10 @@ dependencies {
     shadow gradleApi()
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.1.2'
 
+    // Disable logging. This avoids slf4j warning and might also improve download performance.
+    // See issue 141 (https://github.com/michel-kraemer/gradle-download-task/issues/141)
+    implementation 'org.slf4j:slf4j-nop:1.7.32'
+
     testCompile 'junit:junit:4.13.2'
     testCompile 'commons-io:commons-io:2.11.0'
     testCompile 'com.github.tomakehurst:wiremock:2.23.2'
