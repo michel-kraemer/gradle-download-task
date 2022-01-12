@@ -1,5 +1,20 @@
-Gradle Download Task [![Actions Status](https://github.com/michel-kraemer/gradle-download-task/workflows/Java%20CI/badge.svg)](https://github.com/michel-kraemer/gradle-download-task/actions) [![codecov](https://codecov.io/gh/michel-kraemer/gradle-download-task/branch/master/graph/badge.svg)](https://codecov.io/gh/michel-kraemer/gradle-download-task) [![Apache License, Version 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-====================
+<div align="center">
+	<img src="logo/logo.png" width="250" height="250">
+	<h1>gradle-download-task</h1>
+	<p>
+		<b>Download files in your Gradle build script with <strike>style</strike> progress</b>
+	</p>
+	<br>
+</div>
+
+<div align="center">
+
+[![Actions Status](https://github.com/michel-kraemer/gradle-download-task/workflows/Java%20CI/badge.svg)](https://github.com/michel-kraemer/gradle-download-task/actions) [![codecov](https://codecov.io/gh/michel-kraemer/gradle-download-task/branch/master/graph/badge.svg)](https://codecov.io/gh/michel-kraemer/gradle-download-task) [![Apache License, Version 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
+
+</div>
+
+<br>
+<br>
 
 This is a download task for [Gradle](http://www.gradle.org/).
 It displays progress information just as Gradle does when it retrieves
