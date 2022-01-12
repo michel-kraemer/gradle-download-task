@@ -1,0 +1,93 @@
+{% macro animate(name) %}
+{%- for a in animations[name] -%}
+<animate attributeName="{{ a.attributeName }}" values="{{ a.values | join(";") }}"
+  keyTimes="{{ a.keyTimes | join(";") }}" dur="{{ totalTime }}ms" repeatCount="indefinite"/>
+{%- endfor -%}
+{% endmacro %}
+
+<svg viewBox="0 0 950 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style type="text/css">
+      @font-face{
+        font-family: "DejaVu Sans Mono";
+        src: url("data:application/font-woff2;charset=utf-8;base64,{{ dejaVuMono400Subset }}");
+        font-weight: 400;
+      }
+
+      @font-face{
+        font-family: "DejaVu Sans Mono";
+        src: url("data:application/font-woff2;charset=utf-8;base64,{{ dejaVuMono700Subset }}");
+        font-weight: 700;
+      }
+
+      .all {
+        font-family: 'DejaVu Sans Mono', monospace;
+        font-weight: 400;
+        font-size: 16px;
+      }
+
+      text, tspan {
+        /*animation-duration: {{ totalTime }}ms;
+        animation-iteration-count: infinite;
+        animation-timing-function: steps(1,end);
+        animation-fill-mode: forwards;
+        opacity: 0;*/
+      }
+
+      .bold {
+        font-weight: 700;
+      }
+
+      .success {
+        fill: #a8bd91;
+      }
+    </style>
+  </defs>
+  <rect width="950" height="300" rx="15" fill="#343638" />
+  <g class="all" fill="#fff">
+    <text x="20" y="35">
+      $ {% for c in line1 %}<tspan>{{ c }}{{ animate("line1_" + loop.index0) }}</tspan>{% endfor %}<tspan>_{{ animate("line1cursor") }}</tspan>
+    </text>
+    <text x="20" y="55">_{{ animate("line2cursor") }}</text>
+
+    <text x="20" y="75" class="bold">
+      &gt; Task :downloadFile
+      {{ animate("line3") }}
+    </text>
+    <text x="20" y="95">
+      Download https://download.blender.org/peach/bigbuckbunny_movies/big_buck_bunny_720p_stereo.ogg
+      {{ animate("line4") }}
+    </text>
+
+    <text x="20" y="115" class="bold">
+      &lt;-------------&gt; 0% EXECUTING [{% for s in seconds %}<tspan>{{ s }}{{ animate("seconds_" + loop.index0) }}</tspan>{% endfor %}s]
+      {{ animate("line5") }}
+    </text>
+    <text x="20" y="135" class="bold">
+      &gt; :downloadFile &gt; {% for b in bytes %}<tspan>{{ b }}{{ animate("bytes_" + loop.index0) }}</tspan>{% endfor %}/187.78 MB downloaded
+      {{ animate("line6") }}
+    </text>
+    <text x="20" y="155">
+      _
+      {{ animate("downloadcursor") }}
+    </text>
+
+    <text x="20" y="135" class="bold success">
+      BUILD SUCCESSFUL in {{ seconds[seconds.length - 1] }}s
+      {{ animate("line7") }}
+    </text>
+    <text x="20" y="155">
+      1 actionable task: 1 executed
+      {{ animate("line8") }}
+    </text>
+
+    <text x="20" y="175">
+      _
+      {{ animate("prelastlinecursor") }}
+    </text>
+    <text x="20" y="175">
+      $ <tspan>_{{ animate("lastlinecursor") }}</tspan>
+      {{ animate("lastline") }}
+    </text>
+  </g>
+</svg>

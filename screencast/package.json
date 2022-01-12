@@ -1,0 +1,20 @@
+{
+  "name": "gradle-download-task-screencast",
+  "version": "1.0.0",
+  "description": "gradle-download-task screencast",
+  "private": true,
+  "main": "build.js",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fontsource/dejavu-mono": "^4.5.1",
+    "nunjucks": "^3.2.3",
+    "pretty-bytes": "^5.6.0",
+    "subset-font": "^1.4.0",
+    "svgo": "^2.8.0"
+  }
+}
