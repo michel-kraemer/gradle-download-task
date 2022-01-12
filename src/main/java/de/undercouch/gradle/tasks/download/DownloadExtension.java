@@ -27,7 +27,7 @@ import org.gradle.util.ConfigureUtil;
  * @author Michel Kraemer
  */
 public class DownloadExtension implements Configurable<DownloadExtension> {
-    private Project project;
+    private final Project project;
     
     /**
      * Creates a new extension

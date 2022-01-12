@@ -28,7 +28,7 @@ import org.gradle.util.ConfigureUtil;
  * @author Michel Kraemer
  */
 public class VerifyExtension implements Configurable<VerifyExtension> {
-    private Project project;
+    private final Project project;
     
     /**
      * Creates a new extension
@@ -37,9 +37,9 @@ public class VerifyExtension implements Configurable<VerifyExtension> {
     public VerifyExtension(Project project) {
         this.project = project;
     }
-    
+
     @Override
-    public VerifyExtension configure(@SuppressWarnings("rawtypes") Closure cl) {
+    public VerifyExtension configure(Closure cl) {
         VerifyAction va = ConfigureUtil.configure(cl, new VerifyAction(project));
         try {
             va.execute();

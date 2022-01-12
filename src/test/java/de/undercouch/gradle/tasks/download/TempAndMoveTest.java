@@ -22,7 +22,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -108,12 +107,8 @@ public class TempAndMoveTest extends TestBase {
     }
 
     private File getTempFile() {
-        File[] files = downloadTaskDir.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.startsWith(dst.getName()) && name.endsWith(".part");
-            }
-        });
+        File[] files = downloadTaskDir.listFiles((dir, name) ->
+                name.startsWith(dst.getName()) && name.endsWith(".part"));
 
         if (files == null) {
             // downloadTaskDir does not exist

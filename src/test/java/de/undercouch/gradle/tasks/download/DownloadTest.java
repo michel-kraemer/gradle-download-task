@@ -245,18 +245,14 @@ public class DownloadTest extends TestBaseWithMockServer {
         final File dst = folder.newFile();
 
         Download t = makeProjectAndTask();
-        t.src(new DefaultProvider<>(new Callable<Object>() {
-            public Object call() {
-                srcCalled[0] = true;
-                return wireMockRule.url(TEST_FILE_NAME);
-            }
+        t.src(new DefaultProvider<>((Callable<Object>)() -> {
+            srcCalled[0] = true;
+            return wireMockRule.url(TEST_FILE_NAME);
         }));
 
-        t.dest(new DefaultProvider<>(new Callable<Object>() {
-            public Object call() {
-                dstCalled[0] = true;
-                return dst;
-            }
+        t.dest(new DefaultProvider<>((Callable<Object>)() -> {
+            dstCalled[0] = true;
+            return dst;
         }));
 
         assertFalse(srcCalled[0]);

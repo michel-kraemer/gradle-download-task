@@ -14,19 +14,18 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.util.Arrays;
-
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
-import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Provider;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.Arrays;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests related to plugin outputs
@@ -75,7 +74,6 @@ public class OutputsTest extends TestBaseWithMockServer {
      * as a File
      */
     @Test
-    @SuppressWarnings("UnstableApiUsage")
     public void singleOutputFileWithDestinationAsBuildDir2() {
         Download t = makeProjectAndTask();
         t.src(wireMockRule.baseUrl());
@@ -89,7 +87,6 @@ public class OutputsTest extends TestBaseWithMockServer {
      * the destination is the build directory (using the ProjectLayout API)
      */
     @Test
-    @SuppressWarnings("UnstableApiUsage")
     public void singleOutputFileWithDestinationAsBuildDirProperty() {
         Download t = makeProjectAndTask();
         t.src(wireMockRule.baseUrl());
@@ -104,7 +101,6 @@ public class OutputsTest extends TestBaseWithMockServer {
      * the destination is a valid subdirectory (using the ProjectLayout API)
      */
     @Test
-    @SuppressWarnings("UnstableApiUsage")
     public void singleOutputFileWithDestinationAsProviderDirectory() {
         Download t = makeProjectAndTask();
         t.src(wireMockRule.baseUrl());

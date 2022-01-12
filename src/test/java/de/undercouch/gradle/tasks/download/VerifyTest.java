@@ -236,11 +236,9 @@ public class VerifyTest extends TestBaseWithMockServer {
         v.algorithm("MD5");
         String calculatedChecksum = calculateChecksum();
         v.checksum(calculatedChecksum);
-        v.src(new DefaultProvider<>(new Callable<Object>() {
-            public Object call() {
-                srcCalled[0] = true;
-                return t.getDest().getAbsolutePath();
-            }
+        v.src(new DefaultProvider<>((Callable<Object>)() -> {
+            srcCalled[0] = true;
+            return t.getDest().getAbsolutePath();
         }));
 
         execute(t);

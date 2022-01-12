@@ -15,8 +15,6 @@
 package de.undercouch.gradle.tasks.download;
 
 import org.gradle.api.DefaultTask;
-import org.gradle.api.Task;
-import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Console;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
@@ -52,34 +50,26 @@ public class Download extends DefaultTask implements DownloadSpec {
 
         action = new DownloadAction(getProject(), this);
 
-        getOutputs().upToDateWhen(new Spec<Task>() {
-            @Override
-            public boolean isSatisfiedBy(Task task) {
-                return !(isOnlyIfModified() || isOverwrite());
-            }
-        });
+        getOutputs().upToDateWhen(task -> !(isOnlyIfModified() || isOverwrite()));
         
-        onlyIf(new Spec<Task>() {
-            @Override
-            public boolean isSatisfiedBy(Task task) {
-                // in case offline mode is enabled don't try to download if
-                // destination already exists
-                if (isOffline) {
-                    for (File f : getOutputFiles()) {
-                        if (f.exists()) {
-                            if (!isQuiet()) {
-                                getProject().getLogger().info("Skipping existing file '" +
-                                        f.getName() + "' in offline mode.");
-                            }
-                        } else {
-                            throw new IllegalStateException("Unable to download file '" +
+        onlyIf(task -> {
+            // in case offline mode is enabled don't try to download if
+            // destination already exists
+            if (isOffline) {
+                for (File f : getOutputFiles()) {
+                    if (f.exists()) {
+                        if (!isQuiet()) {
+                            getProject().getLogger().info("Skipping existing file '" +
                                     f.getName() + "' in offline mode.");
                         }
+                    } else {
+                        throw new IllegalStateException("Unable to download file '" +
+                                f.getName() + "' in offline mode.");
                     }
-                    return false;
                 }
-                return true;
+                return false;
             }
+            return true;
         });
     }
     

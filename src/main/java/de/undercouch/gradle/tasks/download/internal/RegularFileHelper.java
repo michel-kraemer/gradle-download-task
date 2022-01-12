@@ -9,7 +9,6 @@ import java.io.File;
  * Helper methods to access {@link RegularFile}
  * @author Michel Kraemer
  */
-@SuppressWarnings("UnstableApiUsage")
 public class RegularFileHelper {
     /**
      * Check if the given object is a {@link RegularFile}

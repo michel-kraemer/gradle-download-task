@@ -28,7 +28,7 @@ import java.util.Objects;
  * @author Michel Kraemer
  */
 public class CachingHttpClientFactory extends DefaultHttpClientFactory {
-    private Map<CacheKey, CloseableHttpClient> cachedClients = new HashMap<>();
+    private final Map<CacheKey, CloseableHttpClient> cachedClients = new HashMap<>();
 
     @Override
     public CloseableHttpClient createHttpClient(HttpHost httpHost,

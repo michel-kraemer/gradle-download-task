@@ -48,8 +48,8 @@ import static org.junit.Assert.assertEquals;
  * @author Michel Kraemer
  */
 public class ProxyTest extends TestBaseWithMockServer {
-    private static String PROXY_USERNAME = "testuser123";
-    private static String PROXY_PASSWORD = "testpass456";
+    private static final String PROXY_USERNAME = "testuser123";
+    private static final String PROXY_PASSWORD = "testpass456";
     
     private HttpProxyServer proxy;
     private int proxyPort;

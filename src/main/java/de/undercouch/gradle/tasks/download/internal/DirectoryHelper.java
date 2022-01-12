@@ -9,7 +9,6 @@ import java.io.File;
  * Helper methods to access {@link Directory}
  * @author Michel Kraemer
  */
-@SuppressWarnings("UnstableApiUsage")
 public class DirectoryHelper {
     /**
      * Check if the given object is a {@link Directory}
