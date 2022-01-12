@@ -26,14 +26,6 @@
         font-size: 16px;
       }
 
-      text, tspan {
-        /*animation-duration: {{ totalTime }}ms;
-        animation-iteration-count: infinite;
-        animation-timing-function: steps(1,end);
-        animation-fill-mode: forwards;
-        opacity: 0;*/
-      }
-
       .bold {
         font-weight: 700;
       }
