@@ -14,11 +14,10 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.http.trafficlistener.DoNothingWiremockNetworkTrafficListener;
-import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Test;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,14 +28,11 @@ import java.nio.charset.StandardCharsets;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 /**
  * Tests if a file can be downloaded to a temporary location and then
@@ -53,23 +49,14 @@ public class TempAndMoveTest extends TestBase {
     /**
      * Run a mock HTTP server with a network listener
      */
-    public WireMockServer tempAndMoveWireMock;
-
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-
-        tempAndMoveWireMock = new WireMockServer(options()
-                .dynamicPort()
-                .networkTrafficListener(new TempAndMoveNetworkTrafficListener())
-                .jettyStopTimeout(10000L));
-        tempAndMoveWireMock.start();
-    }
-
-    @After
-    public void tearDown() {
-        tempAndMoveWireMock.stop();
-    }
+    @RegisterExtension
+    public WireMockExtension wireMock = WireMockExtension.newInstance()
+            .options(wireMockConfig()
+                    .dynamicPort()
+                    .networkTrafficListener(new TempAndMoveNetworkTrafficListener())
+                    .jettyStopTimeout(10000L))
+            .configureStaticDsl(true)
+            .build();
 
     private class TempAndMoveNetworkTrafficListener extends
             DoNothingWiremockNetworkTrafficListener {
@@ -77,9 +64,9 @@ public class TempAndMoveTest extends TestBase {
         public void opened(Socket socket) {
             // at the beginning there should be no dest file and no temp file
             if (checkDstDoesNotExist) {
-                assertFalse(dst.exists());
+                assertThat(dst).doesNotExist();
             }
-            assertNull(getTempFile());
+            assertThat(getTempFile()).isNull();
         }
 
         @Override
@@ -100,9 +87,9 @@ public class TempAndMoveTest extends TestBase {
 
             // temp file should now exist, but dest file not
             if (checkDstDoesNotExist) {
-                assertFalse(dst.exists());
+                assertThat(dst).doesNotExist();
             }
-            assertNotNull(tempFile);
+            assertThat(tempFile).isNotNull();
         }
     }
 
@@ -122,37 +109,35 @@ public class TempAndMoveTest extends TestBase {
     }
 
     private void testTempAndMove(boolean createDst) throws Exception {
-        tempAndMoveWireMock.stubFor(get(urlEqualTo("/" + TEMPANDMOVE))
+        stubFor(get(urlEqualTo("/" + TEMPANDMOVE))
                 .willReturn(aResponse()
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
         downloadTaskDir = t.getDownloadTaskDir();
-        String src = tempAndMoveWireMock.url(TEMPANDMOVE);
+        String src = wireMock.url(TEMPANDMOVE);
         t.src(src);
-        dst = folder.newFile();
+        dst = newTempFile();
 
         checkDstDoesNotExist = !createDst;
 
         if (createDst) {
-            dst = folder.newFile();
+            dst = newTempFile();
             OutputStream os = new FileOutputStream(dst);
             os.close();
         } else {
             // make sure dest does not exist, so we can verify correctly
-            assertTrue(dst.delete());
+            assertThat(dst.delete()).isTrue();
         }
 
         t.dest(dst);
         t.tempAndMove(true);
         execute(t);
 
-        assertTrue(dst.exists());
-        assertNull(getTempFile());
+        assertThat(dst).exists();
+        assertThat(getTempFile()).isNull();
 
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
 
     /**

@@ -14,39 +14,34 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
-import org.junit.ClassRule;
-import org.junit.Rule;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
 /**
  * Base class for unit tests that require a mock HTTP server
  * @author Michel Kraemer
  */
 public class TestBaseWithMockServer extends TestBase {
-    /**
-     * Run a mock HTTP server
-     */
-    @ClassRule
-    public static WireMockClassRule classWireMockRule = new WireMockClassRule(options()
-            .dynamicPort()
-            .jettyStopTimeout(10000L));
-
-    @Rule
-    public WireMockClassRule wireMockRule = classWireMockRule;
+    @RegisterExtension
+    static WireMockExtension wireMock = WireMockExtension.newInstance()
+            .options(wireMockConfig().dynamicPort())
+            .configureStaticDsl(true)
+            .build();
 
     protected void configureDefaultStub() {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .willReturn(aResponse()
                         .withBody(CONTENTS)));
     }
 
     protected void configureDefaultStub2() {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME2))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME2))
                 .willReturn(aResponse()
                         .withBody(CONTENTS2)));
     }

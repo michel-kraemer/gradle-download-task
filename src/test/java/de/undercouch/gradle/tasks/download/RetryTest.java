@@ -15,10 +15,9 @@
 package de.undercouch.gradle.tasks.download;
 
 import com.github.tomakehurst.wiremock.http.Fault;
-import org.apache.commons.io.FileUtils;
 import org.apache.hc.core5.http.NoHttpResponseException;
 import org.gradle.api.UncheckedIOException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -26,14 +25,15 @@ import java.nio.charset.StandardCharsets;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests if the a download can be retried
+ * Tests if a download can be retried
  * @author Michel Kraemer
  */
 public class RetryTest extends TestBaseWithMockServer {
@@ -48,29 +48,26 @@ public class RetryTest extends TestBaseWithMockServer {
      */
     @Test
     public void retryDefault() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(STARTED)
                 .willReturn(aResponse().withFault(Fault.EMPTY_RESPONSE))
                 .willSetStateTo(TWO));
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(TWO)
                 .willReturn(aResponse().withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        assertEquals(0, t.getRetries());
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        assertThat(t.getRetries()).isZero();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         t.dest(dst);
-        try {
-            execute(t);
-            fail("Request should have failed");
-        } catch (UncheckedIOException e) {
-            wireMockRule.verify(1, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
-            assertTrue(e.getCause() instanceof NoHttpResponseException);
-        }
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(UncheckedIOException.class)
+                .hasCauseInstanceOf(NoHttpResponseException.class);
+        verify(1, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
     }
 
     /**
@@ -79,29 +76,27 @@ public class RetryTest extends TestBaseWithMockServer {
      */
     @Test
     public void retryOnce() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(STARTED)
                 .willReturn(aResponse().withFault(Fault.EMPTY_RESPONSE))
                 .willSetStateTo(TWO));
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(TWO)
                 .willReturn(aResponse().withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
         t.retries(1);
-        assertEquals(1, t.getRetries());
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        assertThat(t.getRetries()).isOne();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         t.dest(dst);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
-
-        wireMockRule.verify(2, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
+        verify(2, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
     }
 
     /**
@@ -110,41 +105,39 @@ public class RetryTest extends TestBaseWithMockServer {
      */
     @Test
     public void retryThree() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(STARTED)
                 .willReturn(aResponse().withFault(Fault.EMPTY_RESPONSE))
                 .willSetStateTo(TWO));
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(TWO)
                 .willReturn(aResponse().withFault(Fault.EMPTY_RESPONSE))
                 .willSetStateTo(THREE));
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(THREE)
                 .willReturn(aResponse().withFault(Fault.EMPTY_RESPONSE))
                 .willSetStateTo(FOUR));
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(FOUR)
                 .willReturn(aResponse().withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
         t.retries(3);
-        assertEquals(3, t.getRetries());
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        assertThat(t.getRetries()).isEqualTo(3);
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         t.dest(dst);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
-
-        wireMockRule.verify(4, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
+        verify(4, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
     }
 
     /**
@@ -153,35 +146,33 @@ public class RetryTest extends TestBaseWithMockServer {
      */
     @Test
     public void retryUpToThree() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(STARTED)
                 .willReturn(aResponse().withFault(Fault.EMPTY_RESPONSE))
                 .willSetStateTo(TWO));
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(TWO)
                 .willReturn(aResponse().withFault(Fault.EMPTY_RESPONSE))
                 .willSetStateTo(THREE));
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(THREE)
                 .willReturn(aResponse().withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
         t.retries(3);
-        assertEquals(3, t.getRetries());
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        assertThat(t.getRetries()).isEqualTo(3);
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         t.dest(dst);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
-
-        wireMockRule.verify(3, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
+        verify(3, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
     }
 
     /**
@@ -190,42 +181,39 @@ public class RetryTest extends TestBaseWithMockServer {
      */
     @Test
     public void retryTwo() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(STARTED)
                 .willReturn(aResponse().withFault(Fault.EMPTY_RESPONSE))
                 .willSetStateTo(TWO));
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(TWO)
                 .willReturn(aResponse().withFault(Fault.EMPTY_RESPONSE))
                 .willSetStateTo(THREE));
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(THREE)
                 .willReturn(aResponse().withFault(Fault.EMPTY_RESPONSE))
                 .willSetStateTo(FOUR));
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(FOUR)
                 .willReturn(aResponse().withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
         t.retries(2);
-        assertEquals(2, t.getRetries());
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        assertThat(t.getRetries()).isEqualTo(2);
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         t.dest(dst);
-        try {
-            execute(t);
-            fail("Request should have failed");
-        } catch (UncheckedIOException e) {
-            wireMockRule.verify(3, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
-            assertTrue(e.getCause() instanceof NoHttpResponseException);
-        }
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(UncheckedIOException.class)
+                .hasCauseInstanceOf(NoHttpResponseException.class);
+        verify(3, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
     }
 
     /**
@@ -234,34 +222,32 @@ public class RetryTest extends TestBaseWithMockServer {
      */
     @Test
     public void inifinite() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(STARTED)
                 .willReturn(aResponse().withFault(Fault.EMPTY_RESPONSE))
                 .willSetStateTo(TWO));
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(TWO)
                 .willReturn(aResponse().withFault(Fault.EMPTY_RESPONSE))
                 .willSetStateTo(THREE));
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(THREE)
                 .willReturn(aResponse().withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
         t.retries(-1);
-        assertEquals(-1, t.getRetries());
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        assertThat(t.getRetries()).isEqualTo(-1);
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         t.dest(dst);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
-
-        wireMockRule.verify(3, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
+        verify(3, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
     }
 }

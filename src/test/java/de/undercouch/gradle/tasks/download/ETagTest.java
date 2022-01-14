@@ -17,7 +17,7 @@ package de.undercouch.gradle.tasks.download;
 import groovy.json.JsonOutput;
 import groovy.json.JsonSlurper;
 import org.apache.commons.io.FileUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,11 +29,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests if the plugin uses the ETag header correctly
@@ -46,28 +45,26 @@ public class ETagTest extends TestBaseWithMockServer {
      */
     @Test
     public void missingETag() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .withHeader("If-None-Match", absent())
                 .willReturn(aResponse()
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
-        assertTrue(dst.delete());
-        assertFalse(dst.exists());
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
+        assertThat(dst.delete()).isTrue();
+        assertThat(dst).doesNotExist();
         t.dest(dst);
         t.onlyIfModified(true);
         t.useETag(true);
         t.compress(false);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
-        assertFalse(t.getCachedETagsFile().exists());
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
+        assertThat(t.getCachedETagsFile()).doesNotExist();
     }
-    
+
     /**
      * Tests if the plugin can handle an incorrect (unquoted) ETag header and
      * still downloads the file
@@ -75,26 +72,24 @@ public class ETagTest extends TestBaseWithMockServer {
      */
     @Test
     public void incorrectETag() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .withHeader("If-None-Match", absent())
                 .willReturn(aResponse()
                         .withHeader("ETag", "abcd")
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
-        assertTrue(dst.delete());
-        assertFalse(dst.exists());
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
+        assertThat(dst.delete()).isTrue();
+        assertThat(dst).doesNotExist();
         t.dest(dst);
         t.onlyIfModified(true);
         t.useETag(true);
         t.compress(false);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
 
     /**
@@ -107,12 +102,12 @@ public class ETagTest extends TestBaseWithMockServer {
         String etag1 = "\"foobar1\"";
         String etag2 = "\"foobar2\"";
 
-        wireMockRule.stubFor(get(urlEqualTo("/file1"))
+        stubFor(get(urlEqualTo("/file1"))
                 .withHeader("If-None-Match", absent())
                 .willReturn(aResponse()
                         .withHeader("ETag", etag1)
                         .withBody(CONTENTS + "1")));
-        wireMockRule.stubFor(get(urlEqualTo("/file2"))
+        stubFor(get(urlEqualTo("/file2"))
                 .withHeader("If-None-Match", absent())
                 .willReturn(aResponse()
                         .withHeader("ETag", etag2)
@@ -120,10 +115,10 @@ public class ETagTest extends TestBaseWithMockServer {
 
         // download first file
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url("file1"));
-        File dst1 = folder.newFile();
-        assertTrue(dst1.delete());
-        assertFalse(dst1.exists());
+        t.src(wireMock.url("file1"));
+        File dst1 = newTempFile();
+        assertThat(dst1.delete()).isTrue();
+        assertThat(dst1).doesNotExist();
         t.dest(dst1);
         t.onlyIfModified(true);
         t.useETag(true);
@@ -132,10 +127,10 @@ public class ETagTest extends TestBaseWithMockServer {
 
         // download second file
         t = makeProjectAndTask();
-        t.src(wireMockRule.url("file2"));
-        File dst2 = folder.newFile();
-        assertTrue(dst2.delete());
-        assertFalse(dst2.exists());
+        t.src(wireMock.url("file2"));
+        File dst2 = newTempFile();
+        assertThat(dst2.delete()).isTrue();
+        assertThat(dst2).doesNotExist();
         t.dest(dst2);
         t.onlyIfModified(true);
         t.useETag(true);
@@ -143,12 +138,8 @@ public class ETagTest extends TestBaseWithMockServer {
         execute(t);
 
         // check server responses
-        String dst1Contents = FileUtils.readFileToString(dst1,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS + "1", dst1Contents);
-        String dst2Contents = FileUtils.readFileToString(dst2,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS + "2", dst2Contents);
+        assertThat(dst1).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS + "1");
+        assertThat(dst2).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS + "2");
 
         // read cached etags file
         JsonSlurper slurper = new JsonSlurper();
@@ -167,9 +158,9 @@ public class ETagTest extends TestBaseWithMockServer {
         expectedHost.put("/file2", expectedETag2);
 
         Map<String, Object> expectedCachedETags = new LinkedHashMap<>();
-        expectedCachedETags.put(wireMockRule.baseUrl(), expectedHost);
+        expectedCachedETags.put(wireMock.baseUrl(), expectedHost);
 
-        assertEquals(expectedCachedETags, cachedETags);
+        assertThat(cachedETags).isEqualTo(expectedCachedETags);
     }
 
     /**
@@ -181,33 +172,31 @@ public class ETagTest extends TestBaseWithMockServer {
     public void storeETag() throws Exception {
         String etag = "\"foobar\"";
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .withHeader("If-None-Match", absent())
                 .willReturn(aResponse()
                         .withHeader("ETag", etag)
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
-        assertTrue(dst.delete());
-        assertFalse(dst.exists());
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
+        assertThat(dst.delete()).isTrue();
+        assertThat(dst).doesNotExist();
         t.dest(dst);
         t.onlyIfModified(true);
         t.useETag(true);
-        assertTrue((Boolean)t.getUseETag());
+        assertThat((Boolean)t.getUseETag()).isTrue();
         t.compress(false);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
 
         File buildDir = new File(projectDir, "build");
         File downloadTaskDir = new File(buildDir, "download-task");
-        assertEquals(downloadTaskDir.getCanonicalFile(), t.getDownloadTaskDir());
+        assertThat(t.getDownloadTaskDir()).isEqualTo(downloadTaskDir.getCanonicalFile());
         File cachedETagsFile = new File(downloadTaskDir, "etags.json");
-        assertEquals(cachedETagsFile.getCanonicalFile(), t.getCachedETagsFile());
+        assertThat(t.getCachedETagsFile()).isEqualTo(cachedETagsFile.getCanonicalFile());
 
         JsonSlurper slurper = new JsonSlurper();
         @SuppressWarnings("unchecked")
@@ -221,9 +210,9 @@ public class ETagTest extends TestBaseWithMockServer {
         expectedHost.put("/" + TEST_FILE_NAME, expectedETag);
 
         Map<String, Object> expectedCachedETags = new LinkedHashMap<>();
-        expectedCachedETags.put(wireMockRule.baseUrl(), expectedHost);
+        expectedCachedETags.put(wireMock.baseUrl(), expectedHost);
 
-        assertEquals(expectedCachedETags, cachedETags);
+        assertThat(cachedETags).isEqualTo(expectedCachedETags);
     }
 
     /**
@@ -234,32 +223,30 @@ public class ETagTest extends TestBaseWithMockServer {
     public void configureDownloadTaskDir() throws Exception {
         String etag = "\"foobar\"";
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .withHeader("If-None-Match", absent())
                 .willReturn(aResponse()
                         .withHeader("ETag", etag)
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        File newDownloadTaskDir = folder.newFolder();
+        File newDownloadTaskDir = newTempDir();
         t.downloadTaskDir(newDownloadTaskDir);
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
-        assertTrue(dst.delete());
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
+        assertThat(dst.delete()).isTrue();
         t.dest(dst);
         t.onlyIfModified(true);
         t.useETag(true);
         t.compress(false);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
 
-        assertEquals(newDownloadTaskDir, t.getDownloadTaskDir());
+        assertThat(t.getDownloadTaskDir()).isEqualTo(newDownloadTaskDir);
         File cachedETagsFile = new File(newDownloadTaskDir, "etags.json");
-        assertTrue(cachedETagsFile.exists());
-        assertEquals(cachedETagsFile, t.getCachedETagsFile());
+        assertThat(cachedETagsFile).exists();
+        assertThat(t.getCachedETagsFile()).isEqualTo(cachedETagsFile);
     }
 
     /**
@@ -270,31 +257,29 @@ public class ETagTest extends TestBaseWithMockServer {
     public void configureCachedETagsFile() throws Exception {
         String etag = "\"foobar\"";
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .withHeader("If-None-Match", absent())
                 .willReturn(aResponse()
                         .withHeader("ETag", etag)
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        File newCachedETagsFile = folder.newFile();
-        assertTrue(newCachedETagsFile.delete());
+        File newCachedETagsFile = newTempFile();
+        assertThat(newCachedETagsFile.delete()).isTrue();
         t.cachedETagsFile(newCachedETagsFile);
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
-        assertTrue(dst.delete());
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
+        assertThat(dst.delete()).isTrue();
         t.dest(dst);
         t.onlyIfModified(true);
         t.useETag(true);
         t.compress(false);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
 
-        assertEquals(newCachedETagsFile, t.getCachedETagsFile());
-        assertTrue(newCachedETagsFile.exists());
+        assertThat(t.getCachedETagsFile()).isEqualTo(newCachedETagsFile);
+        assertThat(newCachedETagsFile).exists();
     }
 
     /**
@@ -308,7 +293,7 @@ public class ETagTest extends TestBaseWithMockServer {
         Map<String, Object> hostMap = new LinkedHashMap<>();
         hostMap.put("/" + TEST_FILE_NAME, etagMap);
         Map<String, Object> cachedETags = new LinkedHashMap<>();
-        cachedETags.put(wireMockRule.baseUrl(), hostMap);
+        cachedETags.put(wireMock.baseUrl(), hostMap);
         String cachedETagsContents = JsonOutput.toJson(cachedETags);
         FileUtils.writeStringToFile(cachedETagsFile, cachedETagsContents,
                 StandardCharsets.UTF_8);
@@ -323,14 +308,14 @@ public class ETagTest extends TestBaseWithMockServer {
     public void dontDownloadIfEqual() throws Exception {
         String etag = "\"foobar\"";
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .withHeader("If-None-Match", equalTo(etag))
                 .willReturn(aResponse()
                         .withStatus(304)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         FileUtils.writeStringToFile(dst, "Hello", StandardCharsets.UTF_8);
         t.dest(dst);
         t.onlyIfModified(true);
@@ -343,8 +328,8 @@ public class ETagTest extends TestBaseWithMockServer {
 
         String dstContents = FileUtils.readFileToString(dst,
                 StandardCharsets.UTF_8);
-        assertEquals("Hello", dstContents);
-        assertNotEquals(CONTENTS, dstContents);
+        assertThat(dstContents).isEqualTo("Hello");
+        assertThat(dstContents).isNotEqualTo(CONTENTS);
     }
 
     /**
@@ -356,16 +341,16 @@ public class ETagTest extends TestBaseWithMockServer {
     public void forceDownloadIfDestNotExists() throws Exception {
         String etag = "\"foobar\"";
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .withHeader("If-None-Match", absent())
                 .willReturn(aResponse()
                         .withHeader("ETag", etag)
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
-        assertTrue(dst.delete());
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
+        assertThat(dst.delete()).isTrue();
         t.dest(dst);
         t.onlyIfModified(true);
         t.useETag(true);
@@ -375,9 +360,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.compress(false);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
 
     /**
@@ -390,15 +373,15 @@ public class ETagTest extends TestBaseWithMockServer {
         String wrongEtag = "\"barfoo\"";
         String etag = "\"foobar\"";
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .withHeader("If-None-Match", equalTo(wrongEtag))
                 .willReturn(aResponse()
                         .withHeader("ETag", etag)
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         FileUtils.writeStringToFile(dst, "Hello", StandardCharsets.UTF_8);
         t.dest(dst);
         t.onlyIfModified(true);
@@ -409,9 +392,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.compress(false);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
 
     /**
@@ -422,28 +403,26 @@ public class ETagTest extends TestBaseWithMockServer {
     public void storeWeakETagIssueWarning() throws Exception {
         String etag = "W/\"foobar1\"";
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .withHeader("If-None-Match", absent())
                 .willReturn(aResponse()
                         .withHeader("ETag", etag)
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
-        assertTrue(dst.delete());
-        assertFalse(dst.exists());
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
+        assertThat(dst.delete()).isTrue();
+        assertThat(dst).doesNotExist();
         t.dest(dst);
         t.onlyIfModified(true);
         t.useETag(true);
-        assertEquals(Boolean.TRUE, t.getUseETag());
+        assertThat(t.getUseETag()).isEqualTo(true);
         t.compress(false);
         execute(t);
 
         // check server response
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
 
         // read cached etags file
         JsonSlurper slurper = new JsonSlurper();
@@ -457,8 +436,8 @@ public class ETagTest extends TestBaseWithMockServer {
         Map<String, Object> expectedHost = new LinkedHashMap<>();
         expectedHost.put("/" + TEST_FILE_NAME, expectedETag);
         Map<String, Object> expectedCachedETags = new LinkedHashMap<>();
-        expectedCachedETags.put(wireMockRule.baseUrl(), expectedHost);
-        assertEquals(expectedCachedETags, cachedETags);
+        expectedCachedETags.put(wireMock.baseUrl(), expectedHost);
+        assertThat(cachedETags).isEqualTo(expectedCachedETags);
     }
 
     /**
@@ -469,28 +448,26 @@ public class ETagTest extends TestBaseWithMockServer {
     public void storeAllETags() throws Exception {
         String etag = "W/\"foobar1\"";
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .withHeader("If-None-Match", absent())
                 .willReturn(aResponse()
                         .withHeader("ETag", etag)
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
-        assertTrue(dst.delete());
-        assertFalse(dst.exists());
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
+        assertThat(dst.delete()).isTrue();
+        assertThat(dst).doesNotExist();
         t.dest(dst);
         t.onlyIfModified(true);
         t.useETag("all");
-        assertEquals("all", t.getUseETag());
+        assertThat(t.getUseETag()).isEqualTo("all");
         t.compress(false);
         execute(t);
 
         // check server response
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
 
         // read cached etags file
         JsonSlurper slurper = new JsonSlurper();
@@ -504,8 +481,8 @@ public class ETagTest extends TestBaseWithMockServer {
         Map<String, Object> expectedHost = new LinkedHashMap<>();
         expectedHost.put("/" + TEST_FILE_NAME, expectedETag);
         Map<String, Object> expectedCachedETags = new LinkedHashMap<>();
-        expectedCachedETags.put(wireMockRule.baseUrl(), expectedHost);
-        assertEquals(expectedCachedETags, cachedETags);
+        expectedCachedETags.put(wireMock.baseUrl(), expectedHost);
+        assertThat(cachedETags).isEqualTo(expectedCachedETags);
     }
 
     /**
@@ -517,12 +494,12 @@ public class ETagTest extends TestBaseWithMockServer {
         String etag1 = "W/\"foobar1\"";
         String etag2 = "\"foobar2\"";
 
-        wireMockRule.stubFor(get(urlEqualTo("/file1"))
+        stubFor(get(urlEqualTo("/file1"))
                 .withHeader("If-None-Match", absent())
                 .willReturn(aResponse()
                         .withHeader("ETag", etag1)
                         .withBody(CONTENTS + "1")));
-        wireMockRule.stubFor(get(urlEqualTo("/file2"))
+        stubFor(get(urlEqualTo("/file2"))
                 .withHeader("If-None-Match", absent())
                 .willReturn(aResponse()
                         .withHeader("ETag", etag2)
@@ -530,37 +507,33 @@ public class ETagTest extends TestBaseWithMockServer {
 
         // download first file
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url("file1"));
-        File dst1 = folder.newFile();
-        assertTrue(dst1.delete());
-        assertFalse(dst1.exists());
+        t.src(wireMock.url("file1"));
+        File dst1 = newTempFile();
+        assertThat(dst1.delete()).isTrue();
+        assertThat(dst1).doesNotExist();
         t.dest(dst1);
         t.onlyIfModified(true);
         t.useETag("strongOnly");
-        assertEquals("strongOnly", t.getUseETag());
+        assertThat(t.getUseETag()).isEqualTo("strongOnly");
         t.compress(false);
         execute(t);
 
         // download second file
         t = makeProjectAndTask();
-        t.src(wireMockRule.url("file2"));
-        File dst2 = folder.newFile();
-        assertTrue(dst2.delete());
-        assertFalse(dst2.exists());
+        t.src(wireMock.url("file2"));
+        File dst2 = newTempFile();
+        assertThat(dst2.delete()).isTrue();
+        assertThat(dst2).doesNotExist();
         t.dest(dst2);
         t.onlyIfModified(true);
         t.useETag("strongOnly");
-        assertEquals("strongOnly", t.getUseETag());
+        assertThat(t.getUseETag()).isEqualTo("strongOnly");
         t.compress(false);
         execute(t);
 
         // check server responses
-        String dst1Contents = FileUtils.readFileToString(dst1,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS + "1", dst1Contents);
-        String dst2Contents = FileUtils.readFileToString(dst2,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS + "2", dst2Contents);
+        assertThat(dst1).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS + "1");
+        assertThat(dst2).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS + "2");
 
         // read cached etags file
         JsonSlurper slurper = new JsonSlurper();
@@ -576,17 +549,18 @@ public class ETagTest extends TestBaseWithMockServer {
         expectedHost.put("/file2", expectedETag2);
 
         Map<String, Object> expectedCachedETags = new LinkedHashMap<>();
-        expectedCachedETags.put(wireMockRule.baseUrl(), expectedHost);
+        expectedCachedETags.put(wireMock.baseUrl(), expectedHost);
 
-        assertEquals(expectedCachedETags, cachedETags);
+        assertThat(cachedETags).isEqualTo(expectedCachedETags);
     }
 
     /**
      * Make sure we cannot assign an invalid value to the "useETag" flag
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void invalidUseETagFlag() {
         Download t = makeProjectAndTask();
-        t.useETag("foobar");
+        assertThatThrownBy(() -> t.useETag("foobar"))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

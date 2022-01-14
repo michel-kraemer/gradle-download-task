@@ -16,9 +16,8 @@ package de.undercouch.gradle.tasks.download;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpRequest;
-import org.apache.commons.io.FileUtils;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.littleshoot.proxy.HttpFilters;
 import org.littleshoot.proxy.HttpFiltersAdapter;
 import org.littleshoot.proxy.HttpFiltersSourceAdapter;
@@ -40,8 +39,9 @@ import java.util.Enumeration;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests if the download task plugin can download files through a proxy
@@ -50,7 +50,7 @@ import static org.junit.Assert.assertEquals;
 public class ProxyTest extends TestBaseWithMockServer {
     private static final String PROXY_USERNAME = "testuser123";
     private static final String PROXY_PASSWORD = "testpass456";
-    
+
     private HttpProxyServer proxy;
     private int proxyPort;
     private int proxyCounter = 0;
@@ -77,7 +77,7 @@ public class ProxyTest extends TestBaseWithMockServer {
      * resolved into an address
      * @throws SocketException if an I/O error occurs
      */
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() throws UnknownHostException, SocketException {
         try {
             // noinspection ResultOfMethodCallIgnored
@@ -112,7 +112,7 @@ public class ProxyTest extends TestBaseWithMockServer {
         }
         return null;
     }
-    
+
     /**
      * Runs a proxy server counting requests
      * @param authenticating true if the proxy should require authentication
@@ -120,7 +120,7 @@ public class ProxyTest extends TestBaseWithMockServer {
      */
     private void startProxy(boolean authenticating) throws Exception {
         proxyPort = findPort();
-        
+
         HttpProxyServerBootstrap bootstrap = DefaultHttpProxyServer.bootstrap()
                 .withPort(proxyPort)
                 .withFiltersSource(new HttpFiltersSourceAdapter() {
@@ -134,7 +134,7 @@ public class ProxyTest extends TestBaseWithMockServer {
                        };
                     }
                 });
-        
+
         if (authenticating) {
             bootstrap = bootstrap.withProxyAuthenticator(new ProxyAuthenticator() {
                 @Override
@@ -149,17 +149,17 @@ public class ProxyTest extends TestBaseWithMockServer {
                 }
             });
         }
-        
+
         proxy = bootstrap.start();
     }
-    
+
     /**
      * Stops the proxy server
      */
     private void stopProxy() {
         proxy.stop();
     }
-    
+
     /**
      * Tests if a single file can be downloaded through a proxy server
      * @param authenticating true if the proxy should require authentication
@@ -168,7 +168,7 @@ public class ProxyTest extends TestBaseWithMockServer {
     private void testProxy(boolean authenticating) throws Exception {
         testProxy(authenticating, "", 1);
     }
-    
+
     /**
      * Tests if a single file can be downloaded through a proxy server
      * @param authenticating true if the proxy should require authentication
@@ -178,7 +178,7 @@ public class ProxyTest extends TestBaseWithMockServer {
      */
     private void testProxy(boolean authenticating, String newNonProxyHosts,
             int expectedProxyCounter) throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .willReturn(aResponse()
                         .withHeader("content-length", String.valueOf(CONTENTS.length()))
                         .withBody(CONTENTS)));
@@ -188,27 +188,26 @@ public class ProxyTest extends TestBaseWithMockServer {
         String nonProxyHosts = System.getProperty("http.nonProxyHosts");
         String proxyUser = System.getProperty("http.proxyUser");
         String proxyPassword = System.getProperty("http.proxyPassword");
-        
+
         startProxy(authenticating);
         try {
             System.setProperty("http.proxyHost", "127.0.0.1");
             System.setProperty("http.proxyPort", String.valueOf(this.proxyPort));
             System.setProperty("http.nonProxyHosts", newNonProxyHosts);
-            
+
             if (authenticating) {
                 System.setProperty("http.proxyUser", PROXY_USERNAME);
                 System.setProperty("http.proxyPassword", PROXY_PASSWORD);
             }
-            
+
             Download t = makeProjectAndTask();
-            t.src("http://" + localHostName + ":" + wireMockRule.port() + "/" + TEST_FILE_NAME);
-            File dst = folder.newFile();
+            t.src("http://" + localHostName + ":" + wireMock.getPort() + "/" + TEST_FILE_NAME);
+            File dst = newTempFile();
             t.dest(dst);
             execute(t);
-            
-            String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
-            assertEquals(CONTENTS, dstContents);
-            assertEquals(expectedProxyCounter, proxyCounter);
+
+            assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
+            assertThat(proxyCounter).isEqualTo(expectedProxyCounter);
         } finally {
             stopProxy();
             if (proxyHost == null) {
@@ -238,7 +237,7 @@ public class ProxyTest extends TestBaseWithMockServer {
             }
         }
     }
-    
+
     /**
      * Tests if a single file can be downloaded through a proxy server
      * @throws Exception if anything goes wrong
@@ -247,7 +246,7 @@ public class ProxyTest extends TestBaseWithMockServer {
     public void normalProxy() throws Exception {
         testProxy(false);
     }
-    
+
     /**
      * Tests if a single file can be downloaded through a proxy server
      * @throws Exception if anything goes wrong
@@ -256,9 +255,9 @@ public class ProxyTest extends TestBaseWithMockServer {
     public void authenticationProxy() throws Exception {
         testProxy(true);
     }
-    
+
     /**
-     * Tests if the "http.nonProxyHosts" system property is respected 
+     * Tests if the "http.nonProxyHosts" system property is respected
      * @throws Exception if anything goes wrong
      */
     @Test

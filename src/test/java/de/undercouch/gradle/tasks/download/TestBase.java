@@ -18,12 +18,14 @@ import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.testfixtures.ProjectBuilder;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.io.TempDir;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,18 +48,26 @@ public abstract class TestBase {
     /**
      * A folder for temporary files
      */
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
+    public Path folder;
 
     /**
      * Set up the unit tests
-     * @throws Exception if anything goes wrong
      */
-    @Before
-    public void setUp() throws Exception {
-        projectDir = folder.newFolder("project");
+    @BeforeEach
+    public void setUp(@TempDir Path tempDir) {
+        folder = tempDir;
+        projectDir = new File(folder.toFile(), "project");
     }
-    
+
+    protected File newTempFile() throws IOException {
+        return File.createTempFile("gradle-download-task", null, folder.toFile());
+    }
+
+    protected File newTempDir() throws IOException {
+        Path result = Files.createTempDirectory(folder, "gradle-download-task");
+        return result.toFile();
+    }
+
     /**
      * Makes a Gradle project and creates a download task
      * @return the unconfigured download task
@@ -72,11 +82,11 @@ public abstract class TestBase {
         if (projectConfiguration != null) {
             projectConfiguration.execute(project);
         }
-        
+
         Map<String, Object> applyParams = new HashMap<>();
         applyParams.put("plugin", "de.undercouch.download");
         project.apply(applyParams);
-        
+
         Map<String, Object> taskParams = new HashMap<>();
         taskParams.put("type", Download.class);
         return (Download)project.task(taskParams, "downloadFile");

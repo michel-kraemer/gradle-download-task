@@ -14,21 +14,21 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import static org.gradle.testkit.runner.TaskOutcome.SKIPPED;
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS;
-import static org.gradle.testkit.runner.TaskOutcome.UP_TO_DATE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import org.apache.commons.io.FileUtils;
+import org.gradle.testkit.runner.BuildTask;
+import org.gradle.testkit.runner.GradleRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
-import org.apache.commons.io.FileUtils;
-import org.gradle.testkit.runner.BuildTask;
-import org.gradle.testkit.runner.GradleRunner;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.gradle.testkit.runner.TaskOutcome.SKIPPED;
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS;
+import static org.gradle.testkit.runner.TaskOutcome.UP_TO_DATE;
 
 /**
  * Base class for functional tests
@@ -38,45 +38,38 @@ public abstract class FunctionalTestBase extends TestBaseWithMockServer {
     /**
      * A temporary folder for test files
      */
-    @Rule
-    public final TemporaryFolder testProjectDir = new TemporaryFolder();
-
-    /**
-     * The version of Gradle to run the test with, null for default.
-     */
-    protected String gradleVersion;
+    public Path testProjectDir;
 
     private File buildFile;
     private File propertiesFile;
 
     /**
      * Set up the functional tests
-     * @throws Exception if anything went wrong
      */
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        buildFile = testProjectDir.newFile("build.gradle");
-        propertiesFile = testProjectDir.newFile("gradle.properties");
+    @BeforeEach
+    public void setUpFunctionalTests(@TempDir Path testProjectDir) {
+        this.testProjectDir = testProjectDir;
+        buildFile = new File(testProjectDir.toFile(), "build.gradle");
+        propertiesFile = new File(testProjectDir.toFile(), "gradle.properties");
     }
 
     /**
      * Create a gradle runner using the given build file
      * @param buildFile the build file
+     * @param gradleVersion the Gradle version to test against
      * @return the gradle runner
      * @throws IOException if the build file could not written to disk
      */
-    protected GradleRunner createRunnerWithBuildFile(String buildFile) throws IOException {
+    protected GradleRunner createRunnerWithBuildFile(String buildFile,
+            String gradleVersion) throws IOException {
         FileUtils.writeStringToFile(this.buildFile, buildFile, StandardCharsets.UTF_8);
 
         writePropertiesFile();
-        GradleRunner runner = GradleRunner.create()
-            .withPluginClasspath()
-            .withProjectDir(testProjectDir.getRoot());
-        if (gradleVersion != null) {
-            runner = runner.withGradleVersion(gradleVersion);
-        }
-        return runner;
+
+        return GradleRunner.create()
+                .withPluginClasspath()
+                .withProjectDir(testProjectDir.toFile())
+                .withGradleVersion(gradleVersion);
     }
 
     /**
@@ -84,8 +77,8 @@ public abstract class FunctionalTestBase extends TestBaseWithMockServer {
      * @param task the task
      */
     protected void assertTaskSuccess(BuildTask task) {
-        assertNotNull("task is null", task);
-        assertEquals("task " + task + " state should be success", SUCCESS, task.getOutcome());
+        assertThat(task).isNotNull();
+        assertThat(task.getOutcome()).isSameAs(SUCCESS);
     }
 
     /**
@@ -93,8 +86,8 @@ public abstract class FunctionalTestBase extends TestBaseWithMockServer {
      * @param task the task
      */
     protected void assertTaskUpToDate(BuildTask task) {
-        assertNotNull("task is null", task);
-        assertEquals("task " + task + " state should be up-to-date", UP_TO_DATE, task.getOutcome());
+        assertThat(task).isNotNull();
+        assertThat(task.getOutcome()).isSameAs(UP_TO_DATE);
     }
 
     /**
@@ -102,10 +95,10 @@ public abstract class FunctionalTestBase extends TestBaseWithMockServer {
      * @param task the task
      */
     protected void assertTaskSkipped(BuildTask task) {
-        assertNotNull("task is null", task);
-        assertEquals("task " + task + " state should be skipped", SKIPPED, task.getOutcome());
+        assertThat(task).isNotNull();
+        assertThat(task.getOutcome()).isSameAs(SKIPPED);
     }
-    
+
     /**
      * Write a default 'gradle.properties' file to disk
      * @throws IOException if the file could not be written

@@ -14,15 +14,15 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import org.apache.commons.io.FileUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static org.junit.Assert.assertArrayEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests if the plugin can handle invalid or missing Content-Encoding header.
@@ -38,19 +38,18 @@ public class ContentEncodingTest extends TestBaseWithMockServer {
      */
     @Test
     public void contentEncodingNone() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .willReturn(aResponse()
                         .withHeader("Content-Encoding", "None")
                         .withHeader("Content-Length", String.valueOf(CONTENTS_BYTES.length))
                         .withBody(CONTENTS_BYTES)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         t.dest(dst);
         execute(t);
 
-        byte[] dstContents = FileUtils.readFileToByteArray(dst);
-        assertArrayEquals(CONTENTS_BYTES, dstContents);
+        assertThat(dst).hasBinaryContent(CONTENTS_BYTES);
     }
 }

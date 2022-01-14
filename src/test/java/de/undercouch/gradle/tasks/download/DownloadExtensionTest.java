@@ -15,10 +15,9 @@
 package de.undercouch.gradle.tasks.download;
 
 import groovy.lang.Closure;
-import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.net.URL;
@@ -26,10 +25,10 @@ import java.nio.charset.StandardCharsets;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests {@link DownloadExtension}
@@ -39,9 +38,9 @@ public class DownloadExtensionTest extends TestBaseWithMockServer {
     /**
      * Create a WireMock stub for {@link #TEST_FILE_NAME} with {@link #CONTENTS}
      */
-    @Before
+    @BeforeEach
     public void stubForTestFile() {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .willReturn(aResponse()
                         .withHeader("content-length", String.valueOf(CONTENTS.length()))
                         .withBody(CONTENTS)));
@@ -62,10 +61,10 @@ public class DownloadExtensionTest extends TestBaseWithMockServer {
             public void doCall() {
                 DownloadAction action = (DownloadAction)this.getDelegate();
                 action.src(src);
-                assertTrue(action.getSrc() instanceof URL);
-                assertEquals(src, action.getSrc().toString());
+                assertThat(action.getSrc()).isInstanceOf(URL.class);
+                assertThat(action.getSrc().toString()).isEqualTo(src);
                 action.dest(dst);
-                assertSame(dst, action.getDest());
+                assertThat(action.getDest()).isSameAs(dst);
             }
         });
     }
@@ -78,28 +77,27 @@ public class DownloadExtensionTest extends TestBaseWithMockServer {
     public void downloadSingleFile() throws Exception {
         Download t = makeProjectAndTask();
 
-        String src = wireMockRule.url(TEST_FILE_NAME);
-        File dst = folder.newFile();
+        String src = wireMock.url(TEST_FILE_NAME);
+        File dst = newTempFile();
 
         doDownload(t.getProject(), src, dst);
 
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
 
     /**
      * Tests if the download fails if the file does not exist
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void downloadSingleFileError() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/foobar.txt"))
+        stubFor(get(urlEqualTo("/foobar.txt"))
                 .willReturn(aResponse().withStatus(404)));
 
         Download t = makeProjectAndTask();
-        String src = wireMockRule.url("foobar.txt");
-        File dst = folder.newFile();
-        doDownload(t.getProject(), src, dst);
+        String src = wireMock.url("foobar.txt");
+        File dst = newTempFile();
+        assertThatThrownBy(() -> doDownload(t.getProject(), src, dst))
+                .isInstanceOf(IllegalStateException.class);
     }
 }

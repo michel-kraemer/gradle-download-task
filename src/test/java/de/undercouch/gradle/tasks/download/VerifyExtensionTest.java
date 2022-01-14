@@ -17,7 +17,7 @@ package de.undercouch.gradle.tasks.download;
 import groovy.lang.Closure;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -25,8 +25,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests {@link VerifyExtension}
@@ -53,19 +53,19 @@ public class VerifyExtensionTest extends TestBase {
                 VerifyAction action = (VerifyAction)this.getDelegate();
                 action.src(src);
                 action.checksum(checksum);
-                assertEquals(checksum, action.getChecksum());
-                assertEquals(src, action.getSrc().toString());
+                assertThat(action.getChecksum()).isEqualTo(checksum);
+                assertThat(action.getSrc().toString()).isEqualTo(src);
             }
         });
     }
-    
+
     /**
      * Create a test file to be verified
      * @return the test file
      * @throws IOException if the file could not be created
      */
     private File makeSourceFile() throws IOException {
-        File dst = folder.newFile();
+        File dst = newTempFile();
         try (OutputStream os = new FileOutputStream(dst);
               PrintWriter pw = new PrintWriter(os)) {
             pw.write("THIS IS A TEST");
@@ -88,22 +88,24 @@ public class VerifyExtensionTest extends TestBase {
      * Tests if the extension fails if the checksum is wrong
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = GradleException.class)
+    @Test
     public void verifyFileChecksumError() throws Exception {
         File src = makeSourceFile();
         Download t = makeProjectAndTask();
-        doVerify(t.getProject(), src.getAbsolutePath(), "wrong checksum");
+        assertThatThrownBy(() -> doVerify(t.getProject(), src.getAbsolutePath(),
+                "wrong checksum")).isInstanceOf(GradleException.class);
     }
 
     /**
      * Tests if the download fails if the file does not exist
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void verifyFileError() throws Exception {
         File src = makeSourceFile();
-        assertTrue(src.delete());
+        assertThat(src.delete()).isTrue();
         Download t = makeProjectAndTask();
-        doVerify(t.getProject(), src.getAbsolutePath(), EXPECTED_CHECKSUM);
+        assertThatThrownBy(() -> doVerify(t.getProject(), src.getAbsolutePath(),
+                EXPECTED_CHECKSUM)).isInstanceOf(IllegalStateException.class);
     }
 }

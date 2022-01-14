@@ -16,17 +16,18 @@ package de.undercouch.gradle.tasks.download;
 
 import org.apache.hc.client5.http.ConnectTimeoutException;
 import org.gradle.api.UncheckedIOException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.net.SocketTimeoutException;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.data.Offset.offset;
 
 /**
  * Tests if the task times out if the response takes too long
@@ -34,7 +35,7 @@ import static org.junit.Assert.fail;
  */
 public class TimeoutTest extends TestBaseWithMockServer {
     private static final int TIMEOUT_MS = 100;
-    private static final String TIMEOUT = "timeout";
+    private static final String TIMEOUT = "/timeout";
 
     /**
      * Tests that the task times out if the response takes too long
@@ -42,23 +43,20 @@ public class TimeoutTest extends TestBaseWithMockServer {
      */
     @Test
     public void readTimeout() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TIMEOUT))
+        stubFor(get(urlEqualTo(TIMEOUT))
                 .willReturn(aResponse()
                         .withFixedDelay(TIMEOUT_MS * 10)
                         .withBody("Whatever")));
 
         Download t = makeProjectAndTask();
         t.readTimeout(TIMEOUT_MS);
-        assertEquals(TIMEOUT_MS, t.getReadTimeout());
-        t.src(wireMockRule.url(TIMEOUT));
-        File dst = folder.newFile();
+        assertThat(t.getReadTimeout()).isEqualTo(TIMEOUT_MS);
+        t.src(wireMock.url(TIMEOUT));
+        File dst = newTempFile();
         t.dest(dst);
-        try {
-            execute(t);
-            fail("Connection should have timed out by now");
-        } catch (UncheckedIOException e) {
-            assertTrue(e.getCause() instanceof SocketTimeoutException);
-        }
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(UncheckedIOException.class)
+                .hasCauseInstanceOf(SocketTimeoutException.class);
     }
 
     /**
@@ -69,20 +67,15 @@ public class TimeoutTest extends TestBaseWithMockServer {
     public void connectTimeout() throws Exception {
         Download t = makeProjectAndTask();
         t.connectTimeout(TIMEOUT_MS);
-        assertEquals(TIMEOUT_MS, t.getConnectTimeout());
+        assertThat(t.getConnectTimeout()).isEqualTo(TIMEOUT_MS);
         t.src("http://10.255.255.1"); // try to connect to an invalid host
-        File dst = folder.newFile();
+        File dst = newTempFile();
         t.dest(dst);
         long start = System.currentTimeMillis();
-        try {
-            execute(t);
-            fail("Connection should have timed out by now");
-        } catch (UncheckedIOException e) {
-            assertTrue(e.getCause() instanceof ConnectTimeoutException);
-            long end = System.currentTimeMillis();
-            if (end - start > TIMEOUT_MS * 2) {
-                fail("Timeout took way too long");
-            }
-        }
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(UncheckedIOException.class)
+                .hasCauseInstanceOf(ConnectTimeoutException.class);
+        long end = System.currentTimeMillis();
+        assertThat(end).isCloseTo(start, offset(TIMEOUT_MS * 2L));
     }
 }

@@ -14,13 +14,13 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import org.apache.commons.io.FileUtils;
 import org.gradle.api.UncheckedIOException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Test the offline capabilities of the download task plugin
@@ -34,31 +34,30 @@ public class OfflineTest extends TestBaseWithMockServer {
     @Test
     public void offlineSkip() throws Exception {
         Download t = makeOfflineProjectAndTask();
-        t.src(wireMockRule.baseUrl());
-        
+        t.src(wireMock.baseUrl());
+
         // create empty destination file
-        File dst = folder.newFile();
+        File dst = newTempFile();
         t.dest(dst);
-        
+
         execute(t);
-        
+
         // file should still be empty
-        byte[] dstContents = FileUtils.readFileToByteArray(dst);
-        assertArrayEquals(new byte[0], dstContents);
+        assertThat(dst).isEmpty();
     }
-    
+
     /**
-     * Test if the task fails we're in offline mode and the file does
+     * Test if the task fails if we're in offline mode and the file does
      * not exist already
      */
-    @Test(expected = UncheckedIOException.class)
+    @Test
     public void offlineFail() {
         Download t = makeProjectAndTask();
         t.getProject().getGradle().getStartParameter().setOffline(true);
-        t.src(wireMockRule.baseUrl());
-        File dst = new File(folder.getRoot(), "offlineFail");
+        t.src(wireMock.baseUrl());
+        File dst = new File(folder.toFile(), "offlineFail");
         t.dest(dst);
-        execute(t); // should fail
+        assertThatThrownBy(() -> execute(t)).isInstanceOf(UncheckedIOException.class);
     }
 
     /**

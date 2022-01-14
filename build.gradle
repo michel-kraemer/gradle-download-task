@@ -17,7 +17,10 @@ version = '5.0.0-SNAPSHOT'
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
-ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
+ext {
+    isReleaseVersion = !version.endsWith("SNAPSHOT")
+    junitVersion = '5.8.2'
+}
 
 repositories {
     mavenCentral()
@@ -31,10 +34,13 @@ dependencies {
     // See issue 141 (https://github.com/michel-kraemer/gradle-download-task/issues/141)
     implementation 'org.slf4j:slf4j-nop:1.7.33'
 
-    testCompile 'junit:junit:4.13.2'
-    testCompile 'commons-io:commons-io:2.11.0'
-    testCompile 'com.github.tomakehurst:wiremock:2.23.2'
-    testCompile 'org.littleshoot:littleproxy:1.1.2'
+    testImplementation "commons-io:commons-io:2.11.0"
+    testImplementation "com.github.tomakehurst:wiremock-jre8:2.32.0"
+    testImplementation "org.assertj:assertj-core:3.22.0"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:$junitVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+    testImplementation "xyz.rogfam:littleproxy:2.0.7"
 }
 
 java {
@@ -49,9 +55,11 @@ jacocoTestReport {
     }
 }
 
-// improve test output when we're using a plain console (e.g. on the CI server)
 test {
-    jvmArgs += ['-Xmx512M']
+    // use junit5 for tests
+    useJUnitPlatform()
+
+    // improve test output on plain console (e.g. on CI server)
     if (gradle.startParameter.consoleOutput == ConsoleOutput.Plain) {
         testLogging {
             events "standard_out", "passed", "skipped", "failed"

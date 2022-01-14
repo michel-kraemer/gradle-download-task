@@ -14,8 +14,7 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import org.apache.commons.io.FileUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -24,8 +23,9 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests if the plugin can handle compressed content
@@ -38,40 +38,38 @@ public class CompressionTest extends TestBaseWithMockServer {
      */
     @Test
     public void compressed() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .withHeader("accept-encoding", containing("gzip"))
                 .willReturn(aResponse()
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         t.dest(dst);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
-    
+
     /**
      * Tests if the plugin can request uncompressed content
      * @throws Exception if anything goes wrong
      */
     @Test
     public void uncompressed() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .withHeader("accept-encoding", absent())
                 .willReturn(aResponse()
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         t.dest(dst);
         t.compress(false);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
 }

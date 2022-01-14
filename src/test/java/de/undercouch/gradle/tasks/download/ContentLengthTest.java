@@ -14,17 +14,18 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import org.apache.commons.io.FileUtils;
 import org.gradle.api.UncheckedIOException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests if the plugin can handle invalid or missing Content-Length header
@@ -40,20 +41,19 @@ public class ContentLengthTest extends TestBaseWithMockServer {
         String testFileName = "/test.txt";
         String contents = "Hello";
 
-        wireMockRule.stubFor(get(urlEqualTo(testFileName))
+        stubFor(get(urlEqualTo(testFileName))
                 .willReturn(aResponse()
                         .withBody(contents)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(testFileName));
-        File dst = folder.newFile();
+        t.src(wireMock.url(testFileName));
+        File dst = newTempFile();
         t.dest(dst);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
-        assertEquals(contents, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(contents);
     }
-    
+
     /**
      * Tests if the plugin can handle an incorrect Content-Length header
      * @throws Exception if anything goes wrong
@@ -63,40 +63,39 @@ public class ContentLengthTest extends TestBaseWithMockServer {
         String testFileName = "/test.txt";
         String contents = "Hello";
 
-        wireMockRule.stubFor(get(urlEqualTo(testFileName))
+        stubFor(get(urlEqualTo(testFileName))
                 .willReturn(aResponse()
                         .withHeader("content-length", "5")
                         .withBody(contents)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(testFileName));
-        File dst = folder.newFile();
+        t.src(wireMock.url(testFileName));
+        File dst = newTempFile();
         t.dest(dst);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
-        assertEquals(contents, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(contents);
     }
-    
+
     /**
      * Tests if the plugin can handle an incorrect Content-Length header
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = UncheckedIOException.class)
+    @Test
     public void tooLargeContentLength() throws Exception {
         String testFileName = "/test.txt";
         String contents = "Hello";
 
-        wireMockRule.stubFor(get(urlEqualTo(testFileName))
+        stubFor(get(urlEqualTo(testFileName))
                 .willReturn(aResponse()
                         .withHeader("content-length", "10000")
                         .withBody(contents)));
 
         Download t = makeProjectAndTask();
         t.compress(false); // do not use GZIP or the response will be chunked
-        t.src(wireMockRule.url(testFileName));
-        File dst = folder.newFile();
+        t.src(wireMock.url(testFileName));
+        File dst = newTempFile();
         t.dest(dst);
-        execute(t);
+        assertThatThrownBy(() -> execute(t)).isInstanceOf(UncheckedIOException.class);
     }
 }

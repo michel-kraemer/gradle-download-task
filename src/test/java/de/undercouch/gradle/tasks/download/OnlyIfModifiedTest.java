@@ -15,7 +15,7 @@
 package de.undercouch.gradle.tasks.download;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -24,18 +24,16 @@ import java.util.Locale;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests if the plugin handles the last-modified header correctly
  * @author Michel Kraemer
  */
 public class OnlyIfModifiedTest extends TestBaseWithMockServer {
-    private static final String LAST_MODIFIED = "last-modified";
+    private static final String LAST_MODIFIED = "/last-modified";
 
     /**
      * Tests if the plugin can handle a missing Last-Modified header and still
@@ -44,24 +42,22 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
      */
     @Test
     public void missingLastModified() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + LAST_MODIFIED))
+        stubFor(get(urlEqualTo(LAST_MODIFIED))
                 .willReturn(aResponse()
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(LAST_MODIFIED));
-        File dst = folder.newFile();
-        assertTrue(dst.delete());
-        assertFalse(dst.exists());
+        t.src(wireMock.url(LAST_MODIFIED));
+        File dst = newTempFile();
+        assertThat(dst.delete()).isTrue();
+        assertThat(dst.exists()).isFalse();
         t.dest(dst);
         t.onlyIfModified(true);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
-    
+
     /**
      * Tests if the plugin can handle an incorrect Last-Modified header and
      * still downloads the file
@@ -69,25 +65,23 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
      */
     @Test
     public void incorrectLastModified() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + LAST_MODIFIED))
+        stubFor(get(urlEqualTo(LAST_MODIFIED))
                 .willReturn(aResponse()
                         .withHeader("Last-Modified", "abcd")
                         .withBody(CONTENTS)));
-        
+
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(LAST_MODIFIED));
-        File dst = folder.newFile();
-        assertTrue(dst.delete());
-        assertFalse(dst.exists());
+        t.src(wireMock.url(LAST_MODIFIED));
+        File dst = newTempFile();
+        assertThat(dst.delete()).isTrue();
+        assertThat(dst.exists()).isFalse();
         t.dest(dst);
         t.onlyIfModified(true);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
-    
+
     /**
      * Tests if the plugin downloads a file and sets the timestamp correctly
      * @throws Exception if anything goes wrong
@@ -99,26 +93,24 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
                 .parse(lm)
                 .getTime();
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + LAST_MODIFIED))
+        stubFor(get(urlEqualTo(LAST_MODIFIED))
                 .willReturn(aResponse()
                         .withHeader("Last-Modified", lm)
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(LAST_MODIFIED));
-        File dst = folder.newFile();
-        assertTrue(dst.delete());
-        assertFalse(dst.exists());
+        t.src(wireMock.url(LAST_MODIFIED));
+        File dst = newTempFile();
+        assertThat(dst.delete()).isTrue();
+        assertThat(dst.exists()).isFalse();
         t.dest(dst);
         t.onlyIfModified(true);
         execute(t);
 
-        assertTrue(dst.exists());
+        assertThat(dst.exists()).isTrue();
         long lmlong = dst.lastModified();
-        assertEquals(expectedlmlong, lmlong);
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(lmlong).isEqualTo(expectedlmlong);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
 
     /**
@@ -133,26 +125,26 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
                 .parse(lm)
                 .getTime();
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + LAST_MODIFIED))
+        stubFor(get(urlEqualTo(LAST_MODIFIED))
                 .willReturn(aResponse()
                         .withHeader("Last-Modified", lm)
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(LAST_MODIFIED));
-        File dst = folder.newFile();
+        t.src(wireMock.url(LAST_MODIFIED));
+        File dst = newTempFile();
         FileUtils.writeStringToFile(dst, "Hello", StandardCharsets.UTF_8);
-        assertTrue(dst.setLastModified(expectedlmlong));
+        assertThat(dst.setLastModified(expectedlmlong)).isTrue();
         t.dest(dst);
         t.onlyIfModified(true);
         execute(t);
 
         long lmlong = dst.lastModified();
-        assertEquals(expectedlmlong, lmlong);
+        assertThat(lmlong).isEqualTo(expectedlmlong);
         String dstContents = FileUtils.readFileToString(dst,
                 StandardCharsets.UTF_8);
-        assertEquals("Hello", dstContents);
-        assertNotEquals(CONTENTS, dstContents);
+        assertThat(dstContents).isEqualTo("Hello");
+        assertThat(dstContents).isNotEqualTo(CONTENTS);
     }
 
     /**
@@ -167,26 +159,26 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
                 .parse(lm)
                 .getTime();
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + LAST_MODIFIED))
+        stubFor(get(urlEqualTo(LAST_MODIFIED))
                 .willReturn(aResponse()
                         .withHeader("Last-Modified", lm)
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(LAST_MODIFIED));
-        File dst = folder.newFile();
+        t.src(wireMock.url(LAST_MODIFIED));
+        File dst = newTempFile();
         FileUtils.writeStringToFile(dst, "Hello", StandardCharsets.UTF_8);
-        assertTrue(dst.setLastModified(expectedlmlong + 1000));
+        assertThat(dst.setLastModified(expectedlmlong + 1000)).isTrue();
         t.dest(dst);
         t.onlyIfModified(true);
         execute(t);
 
         long lmlong = dst.lastModified();
-        assertEquals(expectedlmlong + 1000, lmlong);
+        assertThat(lmlong).isEqualTo(expectedlmlong + 1000);
         String dstContents = FileUtils.readFileToString(dst,
                 StandardCharsets.UTF_8);
-        assertEquals("Hello", dstContents);
-        assertNotEquals(CONTENTS, dstContents);
+        assertThat(dstContents).isEqualTo("Hello");
+        assertThat(dstContents).isNotEqualTo(CONTENTS);
     }
 
     /**
@@ -201,26 +193,24 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
                 .parse(lm)
                 .getTime();
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + LAST_MODIFIED))
+        stubFor(get(urlEqualTo(LAST_MODIFIED))
                 .willReturn(aResponse()
                         .withHeader("Last-Modified", lm)
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(LAST_MODIFIED));
-        File dst = folder.newFile();
+        t.src(wireMock.url(LAST_MODIFIED));
+        File dst = newTempFile();
         FileUtils.writeStringToFile(dst, "Hello", StandardCharsets.UTF_8);
-        assertNotEquals("Hello", CONTENTS);
-        assertTrue(dst.setLastModified(expectedlmlong - 1000));
+        assertThat(CONTENTS).isNotEqualTo("Hello");
+        assertThat(dst.setLastModified(expectedlmlong - 1000)).isTrue();
         t.dest(dst);
         t.onlyIfModified(true);
         execute(t);
 
         long lmlong = dst.lastModified();
-        assertEquals(expectedlmlong, lmlong);
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(lmlong).isEqualTo(expectedlmlong);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
 
     /**
@@ -229,13 +219,13 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
     @Test
     public void alias() {
         Download t = makeProjectAndTask();
-        assertFalse(t.isOnlyIfModified());
-        assertFalse(t.isOnlyIfNewer());
+        assertThat(t.isOnlyIfModified()).isFalse();
+        assertThat(t.isOnlyIfNewer()).isFalse();
         t.onlyIfModified(true);
-        assertTrue(t.isOnlyIfModified());
-        assertTrue(t.isOnlyIfNewer());
+        assertThat(t.isOnlyIfModified()).isTrue();
+        assertThat(t.isOnlyIfNewer()).isTrue();
         t.onlyIfNewer(false);
-        assertFalse(t.isOnlyIfModified());
-        assertFalse(t.isOnlyIfNewer());
+        assertThat(t.isOnlyIfModified()).isFalse();
+        assertThat(t.isOnlyIfNewer()).isFalse();
     }
 }

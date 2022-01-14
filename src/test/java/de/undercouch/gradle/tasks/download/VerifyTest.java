@@ -18,7 +18,7 @@ import groovy.lang.Closure;
 import org.apache.commons.codec.binary.Hex;
 import org.gradle.api.GradleException;
 import org.gradle.api.internal.provider.DefaultProvider;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -28,8 +28,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Test the {@link VerifyAction}
@@ -63,7 +63,7 @@ public class VerifyTest extends TestBaseWithMockServer {
         v.dependsOn(downloadTask);
         return v;
     }
-    
+
     /**
      * Tests if the Verify task can verify a file using its MD5 checksum
      * @throws Exception if anything goes wrong
@@ -73,18 +73,18 @@ public class VerifyTest extends TestBaseWithMockServer {
         configureDefaultStub();
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         t.dest(dst);
 
         Verify v = makeVerifyTask(t);
         v.algorithm("MD5");
-        assertEquals("MD5", v.getAlgorithm());
+        assertThat(v.getAlgorithm()).isEqualTo("MD5");
         String calculatedChecksum = calculateChecksum();
         v.checksum(calculatedChecksum);
-        assertEquals(calculatedChecksum, v.getChecksum());
+        assertThat(v.getChecksum()).isEqualTo(calculatedChecksum);
         v.src(t.getDest());
-        assertEquals(t.getDest(), v.getSrc());
+        assertThat(v.getSrc()).isEqualTo(t.getDest());
 
         execute(t);
         execute(v); // will throw if the checksum is not OK
@@ -94,13 +94,13 @@ public class VerifyTest extends TestBaseWithMockServer {
      * Tests if the Verify task fails if the checksum is wrong
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = GradleException.class)
+    @Test
     public void verifyWrongMD5() throws Exception {
         configureDefaultStub();
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         t.dest(dst);
 
         Verify v = makeVerifyTask(t);
@@ -109,13 +109,13 @@ public class VerifyTest extends TestBaseWithMockServer {
         v.src(t.getDest());
 
         execute(t);
-        execute(v); // should throw
+        assertThatThrownBy(() -> execute(v)).isInstanceOf(GradleException.class);
     }
 
     /**
      * Test if the plugin throws an exception if the 'src' property is empty
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testExecuteEmptySrc() {
         Download t = makeProjectAndTask();
 
@@ -124,17 +124,17 @@ public class VerifyTest extends TestBaseWithMockServer {
         String calculatedChecksum = calculateChecksum();
         v.checksum(calculatedChecksum);
 
-        execute(v); // should throw
+        assertThatThrownBy(() -> execute(v)).isInstanceOf(IllegalArgumentException.class);
     }
 
     /**
      * Test if the plugin throws an exception if the 'algorithm' property is empty
      * @throws Exception if the test succeeds
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testExecuteEmptyAlgorithm() throws Exception {
         Download t = makeProjectAndTask();
-        File dst = folder.newFile();
+        File dst = newTempFile();
         t.dest(dst);
 
         Verify v = makeVerifyTask(t);
@@ -143,43 +143,43 @@ public class VerifyTest extends TestBaseWithMockServer {
         v.algorithm(null);
         v.src(t.getDest());
 
-        execute(v); // should throw
+        assertThatThrownBy(() -> execute(v)).isInstanceOf(IllegalArgumentException.class);
     }
 
     /**
      * Test if the plugin throws an exception if the 'checksum' property is empty
      * @throws Exception if the test succeeds
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testExecuteEmptyChecksum() throws Exception {
         Download t = makeProjectAndTask();
-        File dst = folder.newFile();
+        File dst = newTempFile();
         t.dest(dst);
 
         Verify v = makeVerifyTask(t);
         v.algorithm("MD5");
         v.src(t.getDest());
 
-        execute(v); // should throw
+        assertThatThrownBy(() -> execute(v)).isInstanceOf(IllegalArgumentException.class);
     }
 
     /**
      * Test if the plugin throws an exception if the 'src' property is invalid
      * @throws Exception if the test succeeds
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testInvalidSrc() throws Exception {
         Download t = makeProjectAndTask();
-        File dst = folder.newFile();
+        File dst = newTempFile();
         t.dest(dst);
 
         Verify v = makeVerifyTask(t);
         String calculatedChecksum = calculateChecksum();
         v.checksum(calculatedChecksum);
         v.algorithm("MD5");
-        v.src(new Object());
 
-        execute(v); // should throw
+        assertThatThrownBy(() -> v.src(new Object()))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     /**
@@ -193,8 +193,8 @@ public class VerifyTest extends TestBaseWithMockServer {
         final boolean[] srcCalled = new boolean[] { false };
 
         final Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         t.dest(dst);
 
         Verify v = makeVerifyTask(t);
@@ -214,7 +214,7 @@ public class VerifyTest extends TestBaseWithMockServer {
         execute(t);
         execute(v); // will throw if the checksum is not OK
 
-        assertTrue(srcCalled[0]);
+        assertThat(srcCalled[0]).isTrue();
     }
 
     /**
@@ -228,8 +228,8 @@ public class VerifyTest extends TestBaseWithMockServer {
         final boolean[] srcCalled = new boolean[] { false };
 
         final Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         t.dest(dst);
 
         Verify v = makeVerifyTask(t);
@@ -244,6 +244,6 @@ public class VerifyTest extends TestBaseWithMockServer {
         execute(t);
         execute(v); // will throw if the checksum is not OK
 
-        assertTrue(srcCalled[0]);
+        assertThat(srcCalled[0]).isTrue();
     }
 }

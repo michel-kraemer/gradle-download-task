@@ -19,13 +19,12 @@ import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.provider.Provider;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests related to plugin outputs
@@ -38,7 +37,7 @@ public class OutputsTest extends TestBaseWithMockServer {
     @Test
     public void emptyOutputs() {
         Download t = makeProjectAndTask();
-        assertTrue(t.getOutputs().getFiles().isEmpty());
+        assertThat(t.getOutputs().getFiles()).isEmpty();
     }
 
     /**
@@ -47,12 +46,13 @@ public class OutputsTest extends TestBaseWithMockServer {
      * @throws Exception if anything went wrong
      */
     @Test
-    public void singleOutputFileWithDestinationFile() throws Exception {
+    public void singleOutputFileWithDestinationFile()
+            throws Exception {
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.baseUrl());
-        File dst = folder.newFile();
+        t.src(wireMock.baseUrl());
+        File dst = newTempFile();
         t.dest(dst);
-        assertEquals(dst, t.getOutputs().getFiles().getSingleFile());
+        assertThat(t.getOutputs().getFiles().getSingleFile()).isEqualTo(dst);
     }
 
     /**
@@ -62,10 +62,10 @@ public class OutputsTest extends TestBaseWithMockServer {
     @Test
     public void singleOutputFileWithDestinationAsBuildDir1() {
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.baseUrl());
+        t.src(wireMock.baseUrl());
         File buildDir = t.getProject().getBuildDir();
         t.dest(buildDir);
-        assertEquals(buildDir, t.getOutputs().getFiles().getSingleFile());
+        assertThat(t.getOutputs().getFiles().getSingleFile()).isEqualTo(buildDir);
     }
 
     /**
@@ -76,10 +76,10 @@ public class OutputsTest extends TestBaseWithMockServer {
     @Test
     public void singleOutputFileWithDestinationAsBuildDir2() {
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.baseUrl());
+        t.src(wireMock.baseUrl());
         File buildDir = t.getProject().getLayout().getBuildDirectory().getAsFile().get();
         t.dest(buildDir);
-        assertEquals(buildDir, t.getOutputs().getFiles().getSingleFile());
+        assertThat(t.getOutputs().getFiles().getSingleFile()).isEqualTo(buildDir);
     }
 
     /**
@@ -89,11 +89,11 @@ public class OutputsTest extends TestBaseWithMockServer {
     @Test
     public void singleOutputFileWithDestinationAsBuildDirProperty() {
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.baseUrl());
+        t.src(wireMock.baseUrl());
         DirectoryProperty buildDir = t.getProject().getLayout().getBuildDirectory();
         t.dest(buildDir);
-        assertEquals(buildDir.getAsFile().get(), t.getOutputs().getFiles()
-                .getSingleFile().getParentFile());
+        assertThat(t.getOutputs().getFiles().getSingleFile().getParentFile())
+                .isEqualTo(buildDir.getAsFile().get());
     }
 
     /**
@@ -103,13 +103,13 @@ public class OutputsTest extends TestBaseWithMockServer {
     @Test
     public void singleOutputFileWithDestinationAsProviderDirectory() {
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.baseUrl());
+        t.src(wireMock.baseUrl());
         Provider<Directory> dir = t.getProject().getLayout().getBuildDirectory()
                 .dir("download");
         t.dest(dir);
         // check the output files parent is our dir
-        assertEquals(dir.get().getAsFile(), t.getOutputs().getFiles()
-                .getSingleFile().getParentFile());
+        assertThat(t.getOutputs().getFiles().getSingleFile().getParentFile())
+                .isEqualTo(dir.get().getAsFile());
     }
 
     /**
@@ -119,12 +119,12 @@ public class OutputsTest extends TestBaseWithMockServer {
     @Test
     public void singleOutputFileWithDestinationAsProviderRegularFile() {
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.baseUrl());
+        t.src(wireMock.baseUrl());
         Provider<RegularFile> file = t.getProject().getLayout()
                 .getBuildDirectory().file("exampledownload");
         t.dest(file); // test if dest is build dir
-        assertEquals(file.get().getAsFile(), t.getOutputs().getFiles()
-                .getSingleFile());
+        assertThat(t.getOutputs().getFiles().getSingleFile())
+                .isEqualTo(file.get().getAsFile());
     }
 
     /**
@@ -134,10 +134,10 @@ public class OutputsTest extends TestBaseWithMockServer {
     @Test
     public void singleOutputFileWithDestinationDirectory() {
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url("test1.txt"));
-        t.dest(folder.getRoot());
-        assertEquals(new File(folder.getRoot(), "test1.txt"),
-                t.getOutputs().getFiles().getSingleFile());
+        t.src(wireMock.url("test1.txt"));
+        t.dest(folder.toFile());
+        assertThat(t.getOutputs().getFiles().getSingleFile())
+                .isEqualTo(new File(folder.toFile(), "test1.txt"));
     }
 
     /**
@@ -147,11 +147,11 @@ public class OutputsTest extends TestBaseWithMockServer {
     @Test
     public void multipleOutputFiles() {
         Download t = makeProjectAndTask();
-        t.src(Arrays.asList(wireMockRule.url("test1.txt"), wireMockRule.url("test2.txt")));
-        t.dest(folder.getRoot());
+        t.src(Arrays.asList(wireMock.url("test1.txt"), wireMock.url("test2.txt")));
+        t.dest(folder.toFile());
         final FileCollection fileCollection = t.getOutputs().getFiles();
-        assertEquals(2, fileCollection.getFiles().size());
-        assertTrue(fileCollection.contains(new File(folder.getRoot(), "test1.txt")));
-        assertTrue(fileCollection.contains(new File(folder.getRoot(), "test2.txt")));
+        assertThat(fileCollection.getFiles()).containsExactly(
+                new File(folder.toFile(), "test1.txt"),
+                new File(folder.toFile(), "test2.txt"));
     }
 }

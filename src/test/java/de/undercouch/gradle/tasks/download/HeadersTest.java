@@ -14,8 +14,7 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import org.apache.commons.io.FileUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -26,9 +25,9 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests if HTTP headers can be sent
@@ -46,21 +45,19 @@ public class HeadersTest extends TestBaseWithMockServer {
      */
     @Test
     public void downloadWithNoHeaders() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .withHeader(X_HEADER_TEST_A, absent())
                 .withHeader(X_HEADER_TEST_B, absent())
                 .willReturn(aResponse()
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         t.dest(dst);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
 
     /**
@@ -69,29 +66,27 @@ public class HeadersTest extends TestBaseWithMockServer {
      */
     @Test
     public void downloadWithHeaders() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .withHeader(X_HEADER_TEST_A, equalTo(VALUE_A))
                 .withHeader(X_HEADER_TEST_B, equalTo(VALUE_B))
                 .willReturn(aResponse()
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFile();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
         t.dest(dst);
         t.header(X_HEADER_TEST_A, VALUE_A);
         t.header(X_HEADER_TEST_B, VALUE_B);
         execute(t);
 
-        assertEquals(2, t.getHeaders().size());
-        assertEquals(VALUE_A, t.getHeader(X_HEADER_TEST_A));
-        assertEquals(VALUE_B, t.getHeader(X_HEADER_TEST_B));
+        assertThat(t.getHeaders()).hasSize(2);
+        assertThat(t.getHeader(X_HEADER_TEST_A)).isEqualTo(VALUE_A);
+        assertThat(t.getHeader(X_HEADER_TEST_B)).isEqualTo(VALUE_B);
 
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
-    
+
     /**
      * Tests that request headers can be set
      */
@@ -99,18 +94,18 @@ public class HeadersTest extends TestBaseWithMockServer {
     public void downloadWithHeadersMap() {
         Download t = makeProjectAndTask();
 
-        assertNull(t.getHeader(X_HEADER_TEST_A));
+        assertThat(t.getHeader(X_HEADER_TEST_A)).isNull();
 
         Map<String, String> headers = new HashMap<>();
         headers.put(X_HEADER_TEST_A, VALUE_A);
         headers.put(X_HEADER_TEST_B, VALUE_B);
         t.headers(headers);
 
-        assertEquals(2, t.getHeaders().size());
-        assertEquals(VALUE_A, t.getHeader(X_HEADER_TEST_A));
-        assertEquals(VALUE_B, t.getHeader(X_HEADER_TEST_B));
+        assertThat(t.getHeaders()).hasSize(2);
+        assertThat(t.getHeader(X_HEADER_TEST_A)).isEqualTo(VALUE_A);
+        assertThat(t.getHeader(X_HEADER_TEST_B)).isEqualTo(VALUE_B);
 
         t.headers(null);
-        assertEquals(0, t.getHeaders().size());
+        assertThat(t.getHeaders()).isEmpty();
     }
 }

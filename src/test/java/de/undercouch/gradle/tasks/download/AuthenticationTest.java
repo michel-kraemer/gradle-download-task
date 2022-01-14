@@ -16,9 +16,8 @@ package de.undercouch.gradle.tasks.download;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.FileUtils;
 import org.gradle.api.UncheckedIOException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
@@ -28,8 +27,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests if the plugin can access a resource that requires authentication
@@ -38,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 public class AuthenticationTest extends TestBaseWithMockServer {
     private static final String PASSWORD = "testpass456";
     private static final String USERNAME = "testuser123";
-    private static final String AUTHENTICATE = "authenticate";
+    private static final String AUTHENTICATE = "/authenticate";
     private static final String REALM = "Gradle";
     private static final String NONCE = "ABCDEF0123456789";
 
@@ -46,48 +47,50 @@ public class AuthenticationTest extends TestBaseWithMockServer {
      * Tests if the plugin can handle failed authentication
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = UncheckedIOException.class)
+    @Test
     public void noAuthorization() throws Exception {
-        wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
+        stubFor(get(urlEqualTo(AUTHENTICATE))
                 .withHeader("Authorization", absent())
                 .willReturn(aResponse()
                         .withStatus(HttpServletResponse.SC_UNAUTHORIZED)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(AUTHENTICATE));
-        File dst = folder.newFile();
+        t.src(wireMock.url(AUTHENTICATE));
+        File dst = newTempFile();
         t.dest(dst);
-        execute(t);
+
+        assertThatThrownBy(() -> execute(t)).isInstanceOf(UncheckedIOException.class);
     }
     
     /**
      * Tests if the plugin can handle failed authentication
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = UncheckedIOException.class)
+    @Test
     public void invalidCredentials() throws Exception {
         String wrongUser = USERNAME + "!";
         String wrongPass = PASSWORD + "!";
         String ahdr = "Basic " + Base64.encodeBase64String(
                 (USERNAME + ":" + PASSWORD).getBytes(StandardCharsets.UTF_8));
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
+        stubFor(get(urlEqualTo(AUTHENTICATE))
                 .willReturn(aResponse()
                         .withHeader("WWW-Authenticate",
                                 "Basic realm=\"" + REALM + "\"")
                         .withStatus(HttpServletResponse.SC_UNAUTHORIZED)));
-        wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
+        stubFor(get(urlEqualTo(AUTHENTICATE))
                 .withHeader("Authorization", equalTo(ahdr))
                 .willReturn(aResponse()
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(AUTHENTICATE));
-        File dst = folder.newFile();
+        t.src(wireMock.url(AUTHENTICATE));
+        File dst = newTempFile();
         t.dest(dst);
         t.username(wrongUser);
         t.password(wrongPass);
-        execute(t);
+
+        assertThatThrownBy(() -> execute(t)).isInstanceOf(UncheckedIOException.class);
     }
 
     /**
@@ -99,26 +102,25 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         String ahdr = "Basic " + Base64.encodeBase64String(
                 (USERNAME + ":" + PASSWORD).getBytes(StandardCharsets.UTF_8));
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
+        stubFor(get(urlEqualTo(AUTHENTICATE))
                 .willReturn(aResponse()
                         .withHeader("WWW-Authenticate",
                                 "Basic realm=\"" + REALM + "\"")
                         .withStatus(HttpServletResponse.SC_UNAUTHORIZED)));
-        wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
+        stubFor(get(urlEqualTo(AUTHENTICATE))
                 .withHeader("Authorization", equalTo(ahdr))
                 .willReturn(aResponse()
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(AUTHENTICATE));
-        File dst = folder.newFile();
+        t.src(wireMock.url(AUTHENTICATE));
+        File dst = newTempFile();
         t.dest(dst);
         t.username(USERNAME);
         t.password(PASSWORD);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(dst, StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
 
     /**
@@ -130,30 +132,30 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         String ha1 = DigestUtils.md5Hex(
                 USERNAME + ":" + REALM + ":" + PASSWORD);
         String ha2 = DigestUtils.md5Hex(
-                "GET:/" + AUTHENTICATE);
+                "GET:" + AUTHENTICATE);
         String expectedResponse = DigestUtils.md5Hex(
                 ha1 + ":" + NONCE + ":" + ha2);
         String ahdr = "Digest username=\"" + USERNAME + "\", " +
                 "realm=\"" + REALM + "\", " +
                 "nonce=\"" + NONCE + "\", " +
-                "uri=\"/" + AUTHENTICATE + "\", " +
+                "uri=\"" + AUTHENTICATE + "\", " +
                 "response=\"" + expectedResponse + "\", " +
                 "algorithm=MD5";
 
-        wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
+        stubFor(get(urlEqualTo(AUTHENTICATE))
                 .willReturn(aResponse()
                         .withHeader("WWW-Authenticate",
                                 "Digest realm=\"" + REALM + "\"," +
                                         "nonce=\"" + NONCE + "\"")
                         .withStatus(HttpServletResponse.SC_UNAUTHORIZED)));
-        wireMockRule.stubFor(get(urlEqualTo("/" + AUTHENTICATE))
+        stubFor(get(urlEqualTo(AUTHENTICATE))
                 .withHeader("Authorization", equalTo(ahdr))
                 .willReturn(aResponse()
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(AUTHENTICATE));
-        File dst = folder.newFile();
+        t.src(wireMock.url(AUTHENTICATE));
+        File dst = newTempFile();
         t.dest(dst);
         t.username(USERNAME);
         t.password(PASSWORD);

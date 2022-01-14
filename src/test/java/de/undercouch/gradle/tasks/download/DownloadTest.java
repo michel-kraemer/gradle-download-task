@@ -17,8 +17,8 @@ package de.undercouch.gradle.tasks.download;
 import groovy.lang.Closure;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.internal.provider.DefaultProvider;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.net.URL;
@@ -28,11 +28,10 @@ import java.util.concurrent.Callable;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests the gradle-download-task plugin
@@ -43,13 +42,13 @@ public class DownloadTest extends TestBaseWithMockServer {
      * Create a WireMock stub for {@link #TEST_FILE_NAME} with {@link #CONTENTS}
      * and {@link #TEST_FILE_NAME2} with {@link #CONTENTS2}
      */
-    @Before
+    @BeforeEach
     public void stubForTestFile() {
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .willReturn(aResponse()
                         .withHeader("content-length", String.valueOf(CONTENTS.length()))
                         .withBody(CONTENTS)));
-        wireMockRule.stubFor(get(urlEqualTo("/" + TEST_FILE_NAME2))
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME2))
                 .willReturn(aResponse()
                         .withHeader("content-length", String.valueOf(CONTENTS2.length()))
                         .withBody(CONTENTS2)));
@@ -62,21 +61,19 @@ public class DownloadTest extends TestBaseWithMockServer {
     @Test
     public void downloadSingleFile() throws Exception {
         Download t = makeProjectAndTask();
-        String src = wireMockRule.url(TEST_FILE_NAME);
+        String src = wireMock.url(TEST_FILE_NAME);
         t.src(src);
-        File dst = folder.newFile();
+        File dst = newTempFile();
         t.dest(dst);
         execute(t);
-        
-        assertTrue(t.getSrc() instanceof URL);
-        assertEquals(src, t.getSrc().toString());
-        assertSame(dst, t.getDest());
-        
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+
+        assertThat(t.getSrc()).isInstanceOf(URL.class);
+        assertThat(t.getSrc().toString()).isEqualTo(src);
+        assertThat(t.getDest()).isSameAs(dst);
+
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
-    
+
     /**
      * Tests if a single file can be downloaded from a URL
      * @throws Exception if anything goes wrong
@@ -84,20 +81,18 @@ public class DownloadTest extends TestBaseWithMockServer {
     @Test
     public void downloadSingleURL() throws Exception {
         Download t = makeProjectAndTask();
-        URL src = new URL(wireMockRule.url(TEST_FILE_NAME));
+        URL src = new URL(wireMock.url(TEST_FILE_NAME));
         t.src(src);
-        File dst = folder.newFile();
+        File dst = newTempFile();
         t.dest(dst);
         execute(t);
 
-        assertSame(src, t.getSrc());
-        assertSame(dst, t.getDest());
+        assertThat(t.getSrc()).isSameAs(src);
+        assertThat(t.getDest()).isSameAs(dst);
 
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
-    
+
     /**
      * Tests if a single file can be downloaded to a directory
      * @throws Exception if anything goes wrong
@@ -105,33 +100,32 @@ public class DownloadTest extends TestBaseWithMockServer {
     @Test
     public void downloadSingleFileToDir() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
-        File dst = folder.newFolder();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempDir();
         t.dest(dst);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(
-                new File(dst, TEST_FILE_NAME), StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(new File(dst, TEST_FILE_NAME))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS);
     }
 
     /**
      * Tests if a file is downloaded to the project directory when specifying
      * a relative path
-     * @throws Exception if anything goes wrong
      */
     @Test
-    public void downloadSingleFileToRelativePath() throws Exception {
+    public void downloadSingleFileToRelativePath() {
         Download t = makeProjectAndTask();
-        t.src(wireMockRule.url(TEST_FILE_NAME));
+        t.src(wireMock.url(TEST_FILE_NAME));
         t.dest(TEST_FILE_NAME);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(
-                new File(projectDir, TEST_FILE_NAME), StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(new File(projectDir, TEST_FILE_NAME))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS);
     }
-    
+
     /**
      * Tests if multiple files can be downloaded to a directory
      * @throws Exception if anything goes wrong
@@ -139,19 +133,19 @@ public class DownloadTest extends TestBaseWithMockServer {
     @Test
     public void downloadMultipleFiles() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(Arrays.asList(wireMockRule.url(TEST_FILE_NAME),
-                wireMockRule.url(TEST_FILE_NAME2)));
+        t.src(Arrays.asList(wireMock.url(TEST_FILE_NAME),
+                wireMock.url(TEST_FILE_NAME2)));
 
-        File dst = folder.newFolder();
+        File dst = newTempDir();
         t.dest(dst);
         execute(t);
 
-        String dstContents = FileUtils.readFileToString(
-                new File(dst, TEST_FILE_NAME), StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
-        String dstContents2 = FileUtils.readFileToString(
-                new File(dst, TEST_FILE_NAME2), StandardCharsets.UTF_8);
-        assertEquals(CONTENTS2, dstContents2);
+        assertThat(new File(dst, TEST_FILE_NAME))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS);
+        assertThat(new File(dst, TEST_FILE_NAME2))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS2);
     }
 
     /**
@@ -162,29 +156,29 @@ public class DownloadTest extends TestBaseWithMockServer {
     @Test
     public void downloadMultipleFilesCreatesDestDirAutomatically() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(Arrays.asList(wireMockRule.url(TEST_FILE_NAME),
-                wireMockRule.url(TEST_FILE_NAME2)));
+        t.src(Arrays.asList(wireMock.url(TEST_FILE_NAME),
+                wireMock.url(TEST_FILE_NAME2)));
 
-        File dst = folder.newFolder();
-        assertTrue(dst.delete());
+        File dst = newTempDir();
+        assertThat(dst.delete()).isTrue();
         t.dest(dst);
         execute(t);
-        assertTrue(dst.isDirectory());
+        assertThat(dst).isDirectory();
     }
-    
+
     /**
      * Tests if the task throws an exception if you try to download
      * multiple files to a single destination file
      * @throws Exception if anything goes wrong
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void downloadMultipleFilesToFile() throws Exception {
         Download t = makeProjectAndTask();
-        t.src(Arrays.asList(wireMockRule.url(TEST_FILE_NAME),
-                wireMockRule.url(TEST_FILE_NAME2)));
-        File dst = folder.newFile();
+        t.src(Arrays.asList(wireMock.url(TEST_FILE_NAME),
+                wireMock.url(TEST_FILE_NAME2)));
+        File dst = newTempFile();
         t.dest(dst);
-        execute(t);
+        assertThatThrownBy(() -> execute(t)).isInstanceOf(IllegalArgumentException.class);
     }
 
     /**
@@ -196,7 +190,7 @@ public class DownloadTest extends TestBaseWithMockServer {
         final boolean[] srcCalled = new boolean[] { false };
         final boolean[] dstCalled = new boolean[] { false };
 
-        final File dst = folder.newFile();
+        final File dst = newTempFile();
 
         Download t = makeProjectAndTask();
         t.src(new Closure<Object>(this, this) {
@@ -205,7 +199,7 @@ public class DownloadTest extends TestBaseWithMockServer {
             @SuppressWarnings("unused")
             public Object doCall() {
                 srcCalled[0] = true;
-                return wireMockRule.url(TEST_FILE_NAME);
+                return wireMock.url(TEST_FILE_NAME);
             }
         });
 
@@ -219,17 +213,15 @@ public class DownloadTest extends TestBaseWithMockServer {
             }
         });
 
-        assertFalse(srcCalled[0]);
-        assertFalse(dstCalled[0]);
+        assertThat(srcCalled[0]).isFalse();
+        assertThat(dstCalled[0]).isFalse();
 
         execute(t);
 
-        assertTrue(srcCalled[0]);
-        assertTrue(dstCalled[0]);
+        assertThat(srcCalled[0]).isTrue();
+        assertThat(dstCalled[0]).isTrue();
 
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
 
     /**
@@ -242,12 +234,12 @@ public class DownloadTest extends TestBaseWithMockServer {
         final boolean[] srcCalled = new boolean[] { false };
         final boolean[] dstCalled = new boolean[] { false };
 
-        final File dst = folder.newFile();
+        final File dst = newTempFile();
 
         Download t = makeProjectAndTask();
         t.src(new DefaultProvider<>((Callable<Object>)() -> {
             srcCalled[0] = true;
-            return wireMockRule.url(TEST_FILE_NAME);
+            return wireMock.url(TEST_FILE_NAME);
         }));
 
         t.dest(new DefaultProvider<>((Callable<Object>)() -> {
@@ -255,19 +247,17 @@ public class DownloadTest extends TestBaseWithMockServer {
             return dst;
         }));
 
-        assertFalse(srcCalled[0]);
-        assertFalse(dstCalled[0]);
+        assertThat(srcCalled[0]).isFalse();
+        assertThat(dstCalled[0]).isFalse();
 
         execute(t);
 
-        assertTrue(srcCalled[0]);
-        assertTrue(dstCalled[0]);
+        assertThat(srcCalled[0]).isTrue();
+        assertThat(dstCalled[0]).isTrue();
 
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals(CONTENTS, dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
-    
+
     /**
      * Do not overwrite an existing file
      * @throws Exception if anything goes wrong
@@ -275,64 +265,62 @@ public class DownloadTest extends TestBaseWithMockServer {
     @Test
     public void skipExisting() throws Exception {
         // write contents to destination file
-        File dst = folder.newFile();
+        File dst = newTempFile();
         FileUtils.writeStringToFile(dst, "Hello", StandardCharsets.UTF_8);
 
         Download t = makeProjectAndTask();
-        String src = wireMockRule.url(TEST_FILE_NAME);
+        String src = wireMock.url(TEST_FILE_NAME);
         t.src(src);
         t.dest(dst);
         t.overwrite(false); // do not overwrite the file
         execute(t);
 
         // contents must not be changed
-        String dstContents = FileUtils.readFileToString(dst,
-                StandardCharsets.UTF_8);
-        assertEquals("Hello", dstContents);
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent("Hello");
     }
 
     /**
      * Test if the plugin throws an exception if the 'src' property is invalid
      * @throws Exception if the test succeeds
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testInvalidSrc() throws Exception {
         Download t = makeProjectAndTask();
         t.src(new Object());
-        t.dest(folder.newFile());
-        execute(t);
+        t.dest(newTempFile());
+        assertThatThrownBy(() -> execute(t)).isInstanceOf(IllegalArgumentException.class);
     }
 
     /**
      * Test if the plugin throws an exception if the 'src' property is empty
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testExecuteEmptySrc() {
         Download t = makeProjectAndTask();
-        execute(t);
+        assertThatThrownBy(() -> execute(t)).isInstanceOf(IllegalArgumentException.class);
     }
 
     /**
      * Test if the plugin throws an exception if the 'dest' property is invalid
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testInvalidDest() {
         Download t = makeProjectAndTask();
-        String src = wireMockRule.url(TEST_FILE_NAME);
+        String src = wireMock.url(TEST_FILE_NAME);
         t.src(src);
         t.dest(new Object());
-        execute(t);
+        assertThatThrownBy(() -> execute(t)).isInstanceOf(IllegalArgumentException.class);
     }
 
     /**
      * Test if the plugin throws an exception if the 'dest' property is empty
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testExecuteEmptyDest() {
         Download t = makeProjectAndTask();
-        String src = wireMockRule.url(TEST_FILE_NAME);
+        String src = wireMock.url(TEST_FILE_NAME);
         t.src(src);
-        execute(t);
+        assertThatThrownBy(() -> execute(t)).isInstanceOf(IllegalArgumentException.class);
     }
 
     /**
@@ -341,9 +329,9 @@ public class DownloadTest extends TestBaseWithMockServer {
     @Test
     public void testArraySrc() {
         Download t = makeProjectAndTask();
-        String src = wireMockRule.url(TEST_FILE_NAME);
+        String src = wireMock.url(TEST_FILE_NAME);
         t.src(new Object[] { src });
-        assertTrue(t.getSrc() instanceof URL);
+        assertThat(t.getSrc()).isInstanceOf(URL.class);
     }
 
     /**
@@ -355,20 +343,20 @@ public class DownloadTest extends TestBaseWithMockServer {
         Download t = makeProjectAndTask();
 
         String testContent = "file content";
-        File src = folder.newFile();
+        File src = newTempFile();
         FileUtils.writeStringToFile(src, testContent, "UTF-8");
 
         URL url = src.toURI().toURL();
 
-        File dst = folder.newFile();
-        assertTrue(dst.delete());
+        File dst = newTempFile();
+        assertThat(dst.delete()).isTrue();
 
         t.src(new Object[] { url.toExternalForm() });
         t.dest(dst);
         execute(t);
 
         String content = FileUtils.readFileToString(dst, "UTF-8");
-        assertEquals(testContent, content);
+        assertThat(content).isEqualTo(testContent);
     }
 
     /**
@@ -381,13 +369,13 @@ public class DownloadTest extends TestBaseWithMockServer {
         Download t = makeProjectAndTask();
 
         String testContent = "file content";
-        File src = folder.newFile();
+        File src = newTempFile();
         FileUtils.writeStringToFile(src, testContent, "UTF-8");
 
         URL url = src.toURI().toURL();
 
-        File dst = folder.newFile();
-        assertTrue(dst.exists());
+        File dst = newTempFile();
+        assertThat(dst).exists();
 
         t.src(new Object[] { url.toExternalForm() });
         t.dest(dst);
@@ -395,6 +383,6 @@ public class DownloadTest extends TestBaseWithMockServer {
         execute(t);
 
         String content = FileUtils.readFileToString(dst, "UTF-8");
-        assertEquals(testContent, content);
+        assertThat(content).isEqualTo(testContent);
     }
 }
