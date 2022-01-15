@@ -73,25 +73,32 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Downloads a file and displays progress
  * @author Michel Kraemer
  */
+@SuppressWarnings({"ResultOfMethodCallIgnored", "CommentedOutCode"})
 public class DownloadAction implements DownloadSpec {
     private static final GradleVersion HARD_MIN_GRADLE_VERSION =
             GradleVersion.version("5.0");
     // private static final GradleVersion SOFT_MIN_GRADLE_VERSION =
     //         GradleVersion.version("5.0");
 
+    // HEADS UP: FIELDS ARE POTENTIALLY ACCESSED BY MULTIPLE THREADS!
     private final ProjectLayout projectLayout;
     private final Logger logger;
     private final Object servicesOwner;
     private final boolean isOffline;
     private final List<Object> sourceObjects = new ArrayList<>(1);
     private List<URL> cachedSources;
+    private final Lock cachedSourcesLock = new ReentrantLock();
     private Object destObject;
     private File cachedDest;
+    private final Lock cachedDestLock = new ReentrantLock();
     private boolean quiet = false;
     private boolean overwrite = true;
     private boolean onlyIfModified = false;
@@ -107,13 +114,8 @@ public class DownloadAction implements DownloadSpec {
     private boolean tempAndMove = false;
     private UseETag useETag = UseETag.FALSE;
     private File cachedETagsFile;
-
-    private ProgressLoggerWrapper progressLogger;
-    private String size;
-    private long processedBytes = 0;
-    private long loggedKb = 0;
-
-    private int upToDate = 0;
+    private final Lock cachedETagsFileLock = new ReentrantLock();
+    private final AtomicInteger upToDate = new AtomicInteger(0);
 
     /**
      * Creates a new download action
@@ -207,7 +209,7 @@ public class DownloadAction implements DownloadSpec {
                 logger.info("Destination file already exists. "
                         + "Skipping '" + destFile.getName() + "'");
             }
-            ++upToDate;
+            upToDate.incrementAndGet();
             return;
         }
         
@@ -227,30 +229,31 @@ public class DownloadAction implements DownloadSpec {
 
         final long timestamp = onlyIfModified && destFile.exists() ? destFile.lastModified() : 0;
         
-        //create progress logger
+        // create progress logger
+        ProgressLoggerWrapper progressLogger = new ProgressLoggerWrapper(logger);
         if (!quiet) {
             try {
-                progressLogger = new ProgressLoggerWrapper(logger, servicesOwner, src.toString());
+                progressLogger.init(servicesOwner, src.toString());
             } catch (Exception e) {
-                //unable to get progress logger
+                // unable to get progress logger
                 logger.error("Unable to get progress logger. Download "
                         + "progress will not be displayed.");
             }
         }
 
         if ("file".equals(src.getProtocol())) {
-            executeFileProtocol(src, timestamp, destFile);
+            executeFileProtocol(src, timestamp, destFile, progressLogger);
         } else {
-            executeHttpProtocol(src, clientFactory, timestamp, destFile);
+            executeHttpProtocol(src, clientFactory, timestamp, destFile, progressLogger);
         }
     }
 
-    private void executeFileProtocol(URL src, long timestamp, File destFile)
-            throws IOException {
+    private void executeFileProtocol(URL src, long timestamp, File destFile,
+            ProgressLoggerWrapper progressLogger) throws IOException {
         File srcFile = null;
         try {
             srcFile = new File(src.toURI());
-            size = toLengthText(srcFile.length());
+            progressLogger.setSize(srcFile.length());
         } catch (URISyntaxException e) {
             logger.warn("Unable to determine file length.");
         }
@@ -263,13 +266,13 @@ public class DownloadAction implements DownloadSpec {
                 if (!quiet) {
                     logger.info("Not modified. Skipping '" + src + "'");
                 }
-                ++upToDate;
+                upToDate.incrementAndGet();
                 return;
             }
         }
 
         BufferedInputStream fileStream = new BufferedInputStream(src.openStream());
-        streamAndMove(fileStream, destFile);
+        streamAndMove(fileStream, destFile, progressLogger);
         
         //set last-modified time of destination file
         if (onlyIfModified && lastModified > 0) {
@@ -278,7 +281,8 @@ public class DownloadAction implements DownloadSpec {
     }
 
     private void executeHttpProtocol(URL src, HttpClientFactory clientFactory,
-            long timestamp, File destFile) throws IOException {
+            long timestamp, File destFile, ProgressLoggerWrapper progressLogger)
+            throws IOException {
         //create HTTP host from URL
         HttpHost httpHost = new HttpHost(src.getProtocol(), src.getHost(), src.getPort());
         
@@ -305,12 +309,12 @@ public class DownloadAction implements DownloadSpec {
                 if (!quiet) {
                     logger.info("Not modified. Skipping '" + src + "'");
                 }
-                ++upToDate;
+                upToDate.incrementAndGet();
                 return;
             }
         
             //perform the download
-            performDownload(response, destFile);
+            performDownload(response, destFile, progressLogger);
         } finally {
             response.close();
         }
@@ -331,27 +335,25 @@ public class DownloadAction implements DownloadSpec {
      * Save an HTTP response to a file
      * @param response the response to save
      * @param destFile the destination file
+     * @param progressLogger progress logger
      * @throws IOException if the response could not be downloaded
      */
-    private void performDownload(CloseableHttpResponse response, File destFile)
-            throws IOException {
+    private void performDownload(CloseableHttpResponse response, File destFile,
+            ProgressLoggerWrapper progressLogger) throws IOException {
         HttpEntity entity = response.getEntity();
         if (entity == null) {
             return;
         }
-        
-        //get content length
+
+        // get content length
         long contentLength = entity.getContentLength();
         if (contentLength >= 0) {
-            size = toLengthText(contentLength);
-
+            progressLogger.setSize(contentLength);
         }
-        processedBytes = 0;
-        loggedKb = 0;
-        
-        //open stream and start downloading
+
+        // open stream and start downloading
         InputStream is = entity.getContent();
-        streamAndMove(is, destFile);
+        streamAndMove(is, destFile, progressLogger);
     }
 
     /**
@@ -359,9 +361,11 @@ public class DownloadAction implements DownloadSpec {
      * fails, by copying and deleting it.
      * @param src the file to move
      * @param dest the destination
+     * @param progressLogger progress logger
      * @throws IOException if the file could not be moved
      */
-    private void moveFile(File src, File dest) throws IOException {
+    private void moveFile(File src, File dest,
+            ProgressLoggerWrapper progressLogger) throws IOException {
         if (src.renameTo(dest)) {
             return;
         }
@@ -369,7 +373,7 @@ public class DownloadAction implements DownloadSpec {
         // renameTo() failed. Try to copy the file and delete it afterwards.
         // see issue #146
         try (InputStream is = new FileInputStream(src)) {
-            stream(is, dest);
+            stream(is, dest, progressLogger);
         }
         if (!src.delete()) {
             throw new IOException("Could not delete temporary file '" +
@@ -383,24 +387,26 @@ public class DownloadAction implements DownloadSpec {
      * stream to a temporary file and log progress. Upon successful
      * completion, move the temporary file to the given destination. If
      * {@link #tempAndMove} is <code>false</code>, just forward to
-     * {@link #stream(InputStream, File)}.
+     * {@link #stream(InputStream, File, ProgressLoggerWrapper)}.
      * @param is the input stream to read
      * @param destFile the destination file
+     * @param progressLogger progress logger
      * @throws IOException if an I/O error occurs
      */
-    private void streamAndMove(InputStream is, File destFile) throws IOException {
+    private void streamAndMove(InputStream is, File destFile,
+            ProgressLoggerWrapper progressLogger) throws IOException {
         if (!tempAndMove) {
-            stream(is, destFile);
+            stream(is, destFile, progressLogger);
         } else {
             //create parent directory
             downloadTaskDir.mkdirs();
 
             //create name of temporary file
             File tempFile = File.createTempFile(destFile.getName(), ".part",
-                    this.downloadTaskDir);
+                    downloadTaskDir);
 
             //stream and move
-            stream(is, tempFile);
+            stream(is, tempFile, progressLogger);
             if (destFile.exists()) {
                 //Delete destFile if it exists before renaming tempFile.
                 //Otherwise renaming might fail.
@@ -410,7 +416,7 @@ public class DownloadAction implements DownloadSpec {
                 }
             }
             try {
-                moveFile(tempFile, destFile);
+                moveFile(tempFile, destFile, progressLogger);
             } catch (IOException e) {
                 throw new IOException("Failed to move temporary file '" +
                         tempFile.getAbsolutePath() + "' to destination file '" +
@@ -423,11 +429,13 @@ public class DownloadAction implements DownloadSpec {
      * Copy bytes from an input stream to a file and log progress
      * @param is the input stream to read
      * @param destFile the file to write to
+     * @param progressLogger progress logger
      * @throws IOException if an I/O error occurs
      */
-    private void stream(InputStream is, File destFile) throws IOException {
+    private void stream(InputStream is, File destFile,
+            ProgressLoggerWrapper progressLogger) throws IOException {
         try {
-            startProgress();
+            progressLogger.started();
 
             boolean finished = false;
             try (AsynchronousFileChannel channel = AsynchronousFileChannel.open(
@@ -451,8 +459,7 @@ public class DownloadAction implements DownloadSpec {
                     bb1.limit(read);
                     writeFuture = channel.write(bb1, pos);
                     pos += read;
-                    processedBytes += read;
-                    logProgress();
+                    progressLogger.incrementProgress(read);
 
                     // swap buffers for next asynchronous operation
                     byte[] tmpBuf = buf1;
@@ -481,7 +488,7 @@ public class DownloadAction implements DownloadSpec {
             }
         } finally {
             is.close();
-            completeProgress();
+            progressLogger.completed();
         }
     }
 
@@ -492,15 +499,20 @@ public class DownloadAction implements DownloadSpec {
      */
     @SuppressWarnings("unchecked")
     private Map<String, Object> readCachedETags() {
-        File cachedETagsFile = getCachedETagsFile();
-        Map<String, Object> cachedETags;
-        if (cachedETagsFile.exists()) {
-            JsonSlurper slurper = new JsonSlurper();
-            cachedETags = (Map<String, Object>)slurper.parse(cachedETagsFile, "UTF-8");
-        } else {
-            cachedETags = new LinkedHashMap<>();
+        cachedETagsFileLock.lock();
+        try {
+            File cachedETagsFile = getCachedETagsFile();
+            Map<String, Object> cachedETags;
+            if (cachedETagsFile.exists()) {
+                JsonSlurper slurper = new JsonSlurper();
+                cachedETags = (Map<String, Object>)slurper.parse(cachedETagsFile, "UTF-8");
+            } else {
+                cachedETags = new LinkedHashMap<>();
+            }
+            return cachedETags;
+        } finally {
+            cachedETagsFileLock.unlock();
         }
-        return cachedETags;
     }
 
     /**
@@ -563,32 +575,37 @@ public class DownloadAction implements DownloadSpec {
             }
         }
 
-        //create directory for cached etags file
-        File parent = getCachedETagsFile().getParentFile();
-        if (parent != null) {
-            parent.mkdirs();
-        }
+        cachedETagsFileLock.lock();
+        try {
+            // create directory for cached etags file
+            File parent = getCachedETagsFile().getParentFile();
+            if (parent != null) {
+                parent.mkdirs();
+            }
 
-        //read existing cached etags file
-        Map<String, Object> cachedETags = readCachedETags();
+            // read existing cached etags file
+            Map<String, Object> cachedETags = readCachedETags();
 
-        //create new entry in cached ETags file
-        Map<String, String> etagMap = new LinkedHashMap<>();
-        etagMap.put("ETag", etag);
+            // create new entry in cached ETags file
+            Map<String, String> etagMap = new LinkedHashMap<>();
+            etagMap.put("ETag", etag);
 
-        String uri = host.toURI();
-        Map<String, Object> hostMap = (Map<String, Object>)cachedETags.get(uri);
-        if (hostMap == null) {
-            hostMap = new LinkedHashMap<>();
-            cachedETags.put(uri, hostMap);
-        }
-        hostMap.put(file, etagMap);
+            String uri = host.toURI();
+            Map<String, Object> hostMap = (Map<String, Object>)cachedETags.get(uri);
+            if (hostMap == null) {
+                hostMap = new LinkedHashMap<>();
+                cachedETags.put(uri, hostMap);
+            }
+            hostMap.put(file, etagMap);
 
-        //write cached ETags file
-        String cachedETagsContents = JsonOutput.toJson(cachedETags);
-        try (PrintWriter writer = new PrintWriter(getCachedETagsFile(), "UTF-8")) {
-            writer.write(cachedETagsContents);
-            writer.flush();
+            // write cached ETags file
+            String cachedETagsContents = JsonOutput.toJson(cachedETags);
+            try (PrintWriter writer = new PrintWriter(getCachedETagsFile(), "UTF-8")) {
+                writer.write(cachedETagsContents);
+                writer.flush();
+            }
+        } finally {
+            cachedETagsFileLock.unlock();
         }
     }
 
@@ -745,23 +762,6 @@ public class DownloadAction implements DownloadSpec {
     }
     
     /**
-     * Converts a number of bytes to a human-readable string
-     * @param bytes the bytes
-     * @return the human-readable string
-     */
-    private String toLengthText(long bytes) {
-        if (bytes < 1024) {
-            return bytes + " B";
-        } else if (bytes < 1024 * 1024) {
-            return (bytes / 1024) + " KB";
-        } else if (bytes < 1024 * 1024 * 1024) {
-            return String.format("%.2f MB", bytes / (1024.0 * 1024.0));
-        } else {
-            return String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0));
-        }
-    }
-    
-    /**
      * Parse the Last-Modified header of a {@link HttpResponse}
      * @param response the {@link HttpResponse}
      * @return the last-modified value or 0 if it is unknown
@@ -782,40 +782,11 @@ public class DownloadAction implements DownloadSpec {
         return date.getTime();
     }
     
-    private void startProgress() {
-        if (progressLogger != null) {
-            progressLogger.started();
-        }
-    }
-    
-    private void completeProgress() {
-        if (progressLogger != null) {
-            progressLogger.completed();
-        }
-    }
-    
-    private void logProgress() {
-        if (progressLogger == null) {
-            return;
-        }
-        
-        long processedKb = processedBytes / 1024;
-        if (processedKb > loggedKb) {
-            String msg = toLengthText(processedBytes);
-            if (size != null) {
-                msg += "/" + size;
-            }
-            msg += " downloaded";
-            progressLogger.progress(msg);
-            loggedKb = processedKb;
-        }
-    }
-    
     /**
      * @return true if the download destination is up to date
      */
     public boolean isUpToDate() {
-        return upToDate == getSources().size();
+        return upToDate.get() == getSources().size();
     }
 
     /**
@@ -1042,16 +1013,21 @@ public class DownloadAction implements DownloadSpec {
      * @return the list of URLs
      */
     private List<URL> getSources() {
-        if (cachedSources != null) {
+        cachedSourcesLock.lock();
+        try {
+            if (cachedSources != null) {
+                return cachedSources;
+            }
+
+            cachedSources = new ArrayList<>(sourceObjects.size());
+            for (Object src : sourceObjects) {
+                cachedSources.addAll(convertSource(src));
+            }
+
             return cachedSources;
+        } finally {
+            cachedSourcesLock.unlock();
         }
-
-        cachedSources = new ArrayList<>(sourceObjects.size());
-        for (Object src : sourceObjects) {
-            cachedSources.addAll(convertSource(src));
-        }
-
-        return cachedSources;
     }
 
     @Override
@@ -1065,17 +1041,22 @@ public class DownloadAction implements DownloadSpec {
 
     @Override
     public File getDest() {
-        if (cachedDest != null) {
+        cachedDestLock.lock();
+        try {
+            if (cachedDest != null) {
+                return cachedDest;
+            }
+
+            cachedDest = getDestinationFromDirProperty(destObject);
+            if (cachedDest == null) {
+                throw new IllegalArgumentException("Download destination must " +
+                        "be one of a File, Directory, RegularFile, or a CharSequence");
+            }
+
             return cachedDest;
+        } finally {
+            cachedDestLock.unlock();
         }
-
-        cachedDest = getDestinationFromDirProperty(destObject);
-        if (cachedDest == null) {
-            throw new IllegalArgumentException("Download destination must " +
-                    "be one of a File, Directory, RegularFile, or a CharSequence");
-        }
-
-        return cachedDest;
     }
     
     @Override
@@ -1163,10 +1144,15 @@ public class DownloadAction implements DownloadSpec {
 
     @Override
     public File getCachedETagsFile() {
-        if (cachedETagsFile == null) {
-            return new File(this.downloadTaskDir, "etags.json");
+        cachedETagsFileLock.lock();
+        try {
+            if (cachedETagsFile == null) {
+                return new File(this.downloadTaskDir, "etags.json");
+            }
+            return cachedETagsFile;
+        } finally {
+            cachedETagsFileLock.unlock();
         }
-        return cachedETagsFile;
     }
 
     /**

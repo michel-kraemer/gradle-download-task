@@ -29,11 +29,22 @@ import org.gradle.api.logging.Logger;
  */
 public class ProgressLoggerWrapper {
     private final Logger logger;
-    private final Object progressLogger;
-    
+    private Object progressLogger;
+
+    private String size;
+    private long processedBytes = 0;
+    private long loggedKb = 0;
+
     /**
      * Create a progress logger wrapper
      * @param logger the Gradle logger
+     */
+    public ProgressLoggerWrapper(Logger logger) {
+        this.logger = logger;
+    }
+    
+    /**
+     * Initialize the progress logger wrapper
      * @param servicesOwner the Gradle services owner
      * @param src the URL to the file to be downloaded
      * @throws ClassNotFoundException if one of Gradle's internal classes
@@ -45,11 +56,8 @@ public class ProgressLoggerWrapper {
      * @throws IllegalAccessException if a method from one of Gradle's
      * internal classes is not accessible
      */
-    public ProgressLoggerWrapper(Logger logger, Object servicesOwner, String src)
-            throws ClassNotFoundException, NoSuchMethodException,
-                InvocationTargetException, IllegalAccessException {
-        this.logger = logger;
-
+    public void init(Object servicesOwner, String src) throws ClassNotFoundException,
+            NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         // we are about to access an internal class. Use reflection here to provide
         // as much compatibility to different Gradle versions as possible
         
@@ -144,21 +152,77 @@ public class ProgressLoggerWrapper {
      * Start on operation
      */
     public void started() {
-        invokeIgnoreExceptions(progressLogger, "started");
+        if (progressLogger != null) {
+            invokeIgnoreExceptions(progressLogger, "started");
+        }
     }
     
     /**
      * Complete an operation
      */
     public void completed() {
-        invokeIgnoreExceptions(progressLogger, "completed");
+        if (progressLogger != null) {
+            invokeIgnoreExceptions(progressLogger, "completed");
+        }
     }
     
     /**
      * Set the current operation's progress
      * @param msg the progress message
      */
-    public void progress(String msg) {
-        invokeIgnoreExceptions(progressLogger, "progress", msg);
+    private void progress(String msg) {
+        if (progressLogger != null) {
+            invokeIgnoreExceptions(progressLogger, "progress", msg);
+        }
+    }
+
+    /**
+     * The total number of bytes to process and reset progress
+     * @param size the total size
+     */
+    public void setSize(long size) {
+        this.size = toLengthText(size);
+        processedBytes = 0;
+        loggedKb = 0;
+    }
+
+    /**
+     * Increment the number of bytes processed
+     * @param increment the increment
+     */
+    public void incrementProgress(long increment) {
+        processedBytes += increment;
+
+        if (progressLogger == null) {
+            return;
+        }
+
+        long processedKb = processedBytes / 1024;
+        if (processedKb > loggedKb) {
+            String msg = toLengthText(processedBytes);
+            if (size != null) {
+                msg += "/" + size;
+            }
+            msg += " downloaded";
+            progress(msg);
+            loggedKb = processedKb;
+        }
+    }
+
+    /**
+     * Converts a number of bytes to a human-readable string
+     * @param bytes the bytes
+     * @return the human-readable string
+     */
+    private static String toLengthText(long bytes) {
+        if (bytes < 1024) {
+            return bytes + " B";
+        } else if (bytes < 1024 * 1024) {
+            return (bytes / 1024) + " KB";
+        } else if (bytes < 1024 * 1024 * 1024) {
+            return String.format("%.2f MB", bytes / (1024.0 * 1024.0));
+        } else {
+            return String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0));
+        }
     }
 }
