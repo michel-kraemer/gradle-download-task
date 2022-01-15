@@ -185,7 +185,7 @@ public class DownloadAction implements DownloadSpec {
                 // create directory automatically
                 dest.mkdirs();
             } else {
-                throw new IllegalArgumentException("If multiple sources are provided "
+                throw new IllegalArgumentException("If multiple sources are provided, "
                         + "the destination has to be a directory.");
             }
         }
