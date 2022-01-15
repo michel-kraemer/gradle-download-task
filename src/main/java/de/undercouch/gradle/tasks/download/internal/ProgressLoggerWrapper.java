@@ -50,21 +50,13 @@ public class ProgressLoggerWrapper {
                 InvocationTargetException, IllegalAccessException {
         this.logger = logger;
 
-        //we are about to access an internal class. Use reflection here to provide
-        //as much compatibility to different Gradle versions as possible
+        // we are about to access an internal class. Use reflection here to provide
+        // as much compatibility to different Gradle versions as possible
         
-        //get ProgressLoggerFactory class
-        Class<?> progressLoggerFactoryClass;
-        try {
-            //Gradle 2.14 and higher
-            progressLoggerFactoryClass = Class.forName(
-                    "org.gradle.internal.logging.progress.ProgressLoggerFactory");
-        } catch (ClassNotFoundException e) {
-            //prior to Gradle 2.14
-            progressLoggerFactoryClass = Class.forName(
-                    "org.gradle.logging.ProgressLoggerFactory");
-        }
-        
+        // get ProgressLoggerFactory class
+        Class<?> progressLoggerFactoryClass = Class.forName(
+                "org.gradle.internal.logging.progress.ProgressLoggerFactory");
+
         //get ProgressLoggerFactory service
         Object serviceFactory = invoke(servicesOwner, "getServices");
         Object progressLoggerFactory = invoke(serviceFactory, "get",

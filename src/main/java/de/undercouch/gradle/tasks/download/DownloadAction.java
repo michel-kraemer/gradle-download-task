@@ -17,7 +17,6 @@ package de.undercouch.gradle.tasks.download;
 import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
-import de.undercouch.gradle.tasks.download.internal.ProjectApiHelper;
 import groovy.json.JsonOutput;
 import groovy.json.JsonSlurper;
 import groovy.lang.Closure;
@@ -45,7 +44,11 @@ import org.apache.hc.core5.util.Timeout;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.file.Directory;
+import org.gradle.api.file.ProjectLayout;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.logging.Logger;
+import org.gradle.api.provider.Provider;
 import org.gradle.util.GradleVersion;
 
 import javax.annotation.Nullable;
@@ -71,12 +74,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import static de.undercouch.gradle.tasks.download.internal.DirectoryHelper.getFileFromDirectory;
-import static de.undercouch.gradle.tasks.download.internal.DirectoryHelper.isDirectory;
-import static de.undercouch.gradle.tasks.download.internal.ProviderHelper.tryGetProvider;
-import static de.undercouch.gradle.tasks.download.internal.RegularFileHelper.getFileFromRegularFile;
-import static de.undercouch.gradle.tasks.download.internal.RegularFileHelper.isRegularFile;
-
 /**
  * Downloads a file and displays progress
  * @author Michel Kraemer
@@ -87,7 +84,7 @@ public class DownloadAction implements DownloadSpec {
     // private static final GradleVersion SOFT_MIN_GRADLE_VERSION =
     //         GradleVersion.version("5.0");
 
-    private final ProjectApiHelper projectApi;
+    private final ProjectLayout projectLayout;
     private final Logger logger;
     private final Object servicesOwner;
     private final boolean isOffline;
@@ -133,7 +130,7 @@ public class DownloadAction implements DownloadSpec {
      */
     public DownloadAction(Project project, @Nullable Task task) {
         // get required project properties now to enable configuration cache
-        this.projectApi = ProjectApiHelper.newInstance(project);
+        this.projectLayout = project.getLayout();
         this.logger = project.getLogger();
         if (task != null) {
             this.servicesOwner = task;
@@ -178,7 +175,7 @@ public class DownloadAction implements DownloadSpec {
         List<URL> sources = getSources();
         File dest = getDest();
 
-        if (dest.equals(projectApi.getBuildDirectory())) {
+        if (dest.equals(projectLayout.getBuildDirectory().get().getAsFile())) {
             //make sure build dir exists
             dest.mkdirs();
         }
@@ -932,14 +929,13 @@ public class DownloadAction implements DownloadSpec {
             Closure<?> closure = (Closure<?>)dir;
             dir = closure.call();
         }
-
-        // lazily evaluate Provider
-        dir = tryGetProvider(dir);
-
+        if (dir instanceof Provider) {
+            dir = ((Provider<?>)dir).getOrNull();
+        }
         if (dir instanceof CharSequence) {
-            return projectApi.file(dir.toString());
-        } else if (isDirectory(dir)) {
-            File f = getFileFromDirectory(dir);
+            return projectLayout.getProjectDirectory().file(dir.toString()).getAsFile();
+        } else if (dir instanceof Directory) {
+            File f = ((Directory)dir).getAsFile();
 
             // Make sure the directory exists so we actually download to a file
             // inside this directory. Otherwise, we will just create a file
@@ -947,8 +943,8 @@ public class DownloadAction implements DownloadSpec {
             f.mkdirs();
 
             return f;
-        } else if (isRegularFile(dir)) {
-            return getFileFromRegularFile(dir);
+        } else if (dir instanceof RegularFile) {
+            return ((RegularFile)dir).getAsFile();
         } else if (dir instanceof File) {
             return (File)dir;
         }
@@ -978,17 +974,18 @@ public class DownloadAction implements DownloadSpec {
     @Override
     public void cachedETagsFile(Object location) {
         if (location instanceof Closure) {
-            //lazily evaluate closure
+            // lazily evaluate closure
             Closure<?> closure = (Closure<?>)location;
             location = closure.call();
         }
-
-        location = tryGetProvider(location);
-
+        if (location instanceof Provider) {
+            location = ((Provider<?>)location).getOrNull();
+        }
         if (location instanceof CharSequence) {
-            this.cachedETagsFile = projectApi.file(location.toString());
-        } else if (isRegularFile(location)) {
-            this.cachedETagsFile = getFileFromRegularFile(location);
+            this.cachedETagsFile = projectLayout.getProjectDirectory()
+                    .file(location.toString()).getAsFile();
+        } else if (location instanceof RegularFile) {
+            this.cachedETagsFile = ((RegularFile)location).getAsFile();
         } else if (location instanceof File) {
             this.cachedETagsFile = (File)location;
         } else {
@@ -1010,9 +1007,9 @@ public class DownloadAction implements DownloadSpec {
             Closure<?> closure = (Closure<?>)src;
             src = closure.call();
         }
-
-        src = tryGetProvider(src);
-
+        if (src instanceof Provider) {
+            src = ((Provider<?>)src).getOrNull();
+        }
         if (src instanceof CharSequence) {
             try {
                 result.add(new URL(src.toString()));

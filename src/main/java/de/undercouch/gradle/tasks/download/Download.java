@@ -24,7 +24,6 @@ import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 
@@ -82,26 +81,11 @@ public class Download extends DefaultTask implements DownloadSpec {
         action.execute();
         
         // handle 'upToDate'
-        try {
-            if (action.isUpToDate()) {
-                Method getState = this.getClass().getMethod("getState");
-                Object state = getState.invoke(this);
-                try {
-                    // prior to Gradle 3.2 we needed to do this
-                    Method upToDate = state.getClass().getMethod("upToDate");
-                    upToDate.invoke(state);
-                } catch (NoSuchMethodException e) {
-                    // since Gradle 3.2 we need to do this
-                    Method setDidWork = state.getClass().getMethod(
-                            "setDidWork", boolean.class);
-                    setDidWork.invoke(state, false);
-                }
-            }
-        } catch (Exception e) {
-            //just ignore
+        if (action.isUpToDate()) {
+            getState().setDidWork(false);
         }
     }
-    
+
     /**
      * @return a list of files created by this task (i.e. the destination files)
      */

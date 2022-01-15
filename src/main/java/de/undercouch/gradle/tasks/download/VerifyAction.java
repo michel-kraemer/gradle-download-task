@@ -14,7 +14,6 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import de.undercouch.gradle.tasks.download.internal.ProjectApiHelper;
 import groovy.lang.Closure;
 
 import java.io.File;
@@ -25,15 +24,15 @@ import java.security.NoSuchAlgorithmException;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
-
-import static de.undercouch.gradle.tasks.download.internal.ProviderHelper.tryGetProvider;
+import org.gradle.api.file.ProjectLayout;
+import org.gradle.api.provider.Provider;
 
 /**
  * Verifies a file's integrity by calculating its checksum.
  * @author Michel Kraemer
  */
 public class VerifyAction implements VerifySpec {
-    private final ProjectApiHelper projectApi;
+    private final ProjectLayout projectLayout;
     private File src;
     private String algorithm = "MD5";
     private String checksum;
@@ -43,7 +42,7 @@ public class VerifyAction implements VerifySpec {
      * @param project the project to be built
      */
     public VerifyAction(Project project) {
-        this.projectApi = ProjectApiHelper.newInstance(project);
+        this.projectLayout = project.getLayout();
     }
 
     private String toHex(byte[] barr) {
@@ -98,11 +97,11 @@ public class VerifyAction implements VerifySpec {
             Closure<?> closure = (Closure<?>)src;
             src = closure.call();
         }
-
-        src = tryGetProvider(src);
-        
+        if (src instanceof Provider) {
+            src = ((Provider<?>)src).getOrNull();
+        }
         if (src instanceof CharSequence) {
-            src = projectApi.file(src.toString());
+            src = projectLayout.getProjectDirectory().file(src.toString()).getAsFile();
         }
         if (src instanceof File) {
             this.src = (File)src;
