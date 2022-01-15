@@ -661,7 +661,6 @@ public class DownloadAction implements DownloadSpec {
                 .setConnectTimeout(Timeout.ofMilliseconds(connectTimeoutMs))
                 .setConnectionRequestTimeout(Timeout.ofMilliseconds(connectTimeoutMs))
                 .setResponseTimeout(Timeout.ofMilliseconds(readTimeoutMs))
-                .setCookieSpec("standard") // TODO check if this leads to a warning
                 .setContentCompressionEnabled(compress)
                 .build();
         get.setConfig(config);
