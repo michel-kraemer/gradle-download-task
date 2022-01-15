@@ -52,21 +52,24 @@ import javax.annotation.Nullable;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import static de.undercouch.gradle.tasks.download.internal.DirectoryHelper.getFileFromDirectory;
 import static de.undercouch.gradle.tasks.download.internal.DirectoryHelper.isDirectory;
@@ -430,17 +433,50 @@ public class DownloadAction implements DownloadSpec {
             startProgress();
 
             boolean finished = false;
-            try (OutputStream os = new FileOutputStream(destFile)) {
-                byte[] buf = new byte[1024 * 10];
+            try (AsynchronousFileChannel channel = AsynchronousFileChannel.open(
+                    destFile.toPath(), StandardOpenOption.WRITE,
+                    StandardOpenOption.TRUNCATE_EXISTING,
+                    StandardOpenOption.CREATE)) {
+                long pos = 0;
+                Future<Integer> writeFuture = null;
+
+                byte[] buf1 = new byte[1024 * 10];
+                byte[] buf2 = new byte[1024 * 10];
+                ByteBuffer bb1 = ByteBuffer.wrap(buf1);
+                ByteBuffer bb2 = ByteBuffer.wrap(buf2);
+
                 int read;
-                while ((read = is.read(buf)) >= 0) {
-                    os.write(buf, 0, read);
+                while ((read = is.read(buf1)) >= 0) {
+                    if (writeFuture != null) {
+                        writeFuture.get();
+                    }
+                    bb1.position(0);
+                    bb1.limit(read);
+                    writeFuture = channel.write(bb1, pos);
+                    pos += read;
                     processedBytes += read;
                     logProgress();
+
+                    // swap buffers for next asynchronous operation
+                    byte[] tmpBuf = buf1;
+                    buf1 = buf2;
+                    buf2 = tmpBuf;
+                    ByteBuffer tmpBB = bb1;
+                    bb1 = bb2;
+                    bb2 = tmpBB;
+                }
+                if (writeFuture != null) {
+                    writeFuture.get();
                 }
 
-                os.flush();
                 finished = true;
+            } catch (InterruptedException e) {
+                throw new IOException("Writing to destination file was interrupted", e);
+            } catch (ExecutionException e) {
+                if (e.getCause() instanceof IOException) {
+                    throw (IOException)e.getCause();
+                }
+                throw new IOException("Could not write to destination file", e);
             } finally {
                 if (!finished) {
                     destFile.delete();
