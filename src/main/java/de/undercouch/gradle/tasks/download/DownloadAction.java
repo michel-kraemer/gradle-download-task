@@ -260,7 +260,9 @@ public class DownloadAction implements DownloadSpec {
             upToDate.incrementAndGet();
             return;
         }
-        
+
+        progressLogger.setDestFileName(destFile.getName());
+
         // in case offline mode is enabled don't try to download if
         // destination already exists
         if (isOffline) {

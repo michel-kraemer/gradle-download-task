@@ -14,11 +14,11 @@
 
 package de.undercouch.gradle.tasks.download.internal;
 
+import org.gradle.api.logging.Logger;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-
-import org.gradle.api.logging.Logger;
 
 /**
  * Wraps around Gradle's internal progress logger. Uses reflection
@@ -32,6 +32,7 @@ public class ProgressLoggerWrapper {
     private Object progressLogger;
 
     private String size;
+    private String destFileName;
     private long processedBytes = 0;
     private long loggedKb = 0;
 
@@ -187,6 +188,14 @@ public class ProgressLoggerWrapper {
     }
 
     /**
+     * Set the name of the destination file
+     * @param destFileName the file name
+     */
+    public void setDestFileName(String destFileName) {
+        this.destFileName = destFileName;
+    }
+
+    /**
      * Increment the number of bytes processed
      * @param increment the increment
      */
@@ -199,12 +208,18 @@ public class ProgressLoggerWrapper {
 
         long processedKb = processedBytes / 1024;
         if (processedKb > loggedKb) {
-            String msg = toLengthText(processedBytes);
-            if (size != null) {
-                msg += "/" + size;
+            StringBuilder sb = new StringBuilder();
+            if (destFileName != null) {
+                sb.append(destFileName);
+                sb.append(" > ");
             }
-            msg += " downloaded";
-            progress(msg);
+            sb.append(toLengthText(processedBytes));
+            if (size != null) {
+                sb.append("/");
+                sb.append(size);
+            }
+            sb.append(" downloaded");
+            progress(sb.toString());
             loggedKb = processedKb;
         }
     }
