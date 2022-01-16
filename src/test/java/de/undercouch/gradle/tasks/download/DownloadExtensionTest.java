@@ -15,6 +15,7 @@
 package de.undercouch.gradle.tasks.download;
 
 import groovy.lang.Closure;
+import org.apache.hc.client5.http.ClientProtocolException;
 import org.gradle.api.Project;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -98,6 +99,7 @@ public class DownloadExtensionTest extends TestBaseWithMockServer {
         String src = wireMock.url("foobar.txt");
         File dst = newTempFile();
         assertThatThrownBy(() -> doDownload(t.getProject(), src, dst))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(IllegalStateException.class)
+                .hasRootCauseInstanceOf(ClientProtocolException.class);
     }
 }

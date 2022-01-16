@@ -15,12 +15,13 @@
 package de.undercouch.gradle.tasks.download;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import org.gradle.api.UncheckedIOException;
+import org.gradle.workers.WorkerExecutionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.CertPathBuilderException;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -79,6 +80,8 @@ public class SslTest extends TestBase {
         File dst = newTempFile();
         t.dest(dst);
         assertThat(t.isAcceptAnyCertificate()).isFalse();
-        assertThatThrownBy(() -> execute(t)).isInstanceOf(UncheckedIOException.class);
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(WorkerExecutionException.class)
+                .hasRootCauseInstanceOf(CertPathBuilderException.class);
     }
 }

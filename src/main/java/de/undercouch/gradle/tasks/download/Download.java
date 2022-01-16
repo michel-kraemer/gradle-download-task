@@ -78,12 +78,12 @@ public class Download extends DefaultTask implements DownloadSpec {
      */
     @TaskAction
     public void download() throws IOException {
-        action.execute();
-        
-        // handle 'upToDate'
-        if (action.isUpToDate()) {
-            getState().setDidWork(false);
-        }
+        action.execute().thenRun(() -> {
+            // handle 'upToDate'
+            if (action.isUpToDate()) {
+                getState().setDidWork(false);
+            }
+        });
     }
 
     /**

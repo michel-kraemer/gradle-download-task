@@ -14,7 +14,8 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import org.gradle.api.UncheckedIOException;
+import org.apache.hc.core5.http.ConnectionClosedException;
+import org.gradle.workers.WorkerExecutionException;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -96,6 +97,8 @@ public class ContentLengthTest extends TestBaseWithMockServer {
         t.src(wireMock.url(testFileName));
         File dst = newTempFile();
         t.dest(dst);
-        assertThatThrownBy(() -> execute(t)).isInstanceOf(UncheckedIOException.class);
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(WorkerExecutionException.class)
+                .hasRootCauseInstanceOf(ConnectionClosedException.class);
     }
 }

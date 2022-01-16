@@ -22,7 +22,9 @@ import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.Response;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.matching.UrlPattern;
-import org.gradle.api.UncheckedIOException;
+import org.apache.hc.client5.http.CircularRedirectException;
+import org.apache.hc.client5.http.RedirectException;
+import org.gradle.workers.WorkerExecutionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -162,7 +164,9 @@ public class RedirectTest extends TestBaseWithMockServer {
        t.src(wireMock.url(REDIRECT));
        File dst = newTempFile();
        t.dest(dst);
-       assertThatThrownBy(() -> execute(t)).isInstanceOf(UncheckedIOException.class);
+       assertThatThrownBy(() -> execute(t))
+               .isInstanceOf(WorkerExecutionException.class)
+               .hasRootCauseInstanceOf(CircularRedirectException.class);
    }
 
     /**
@@ -182,6 +186,8 @@ public class RedirectTest extends TestBaseWithMockServer {
         t.src(redirectWireMock.url(REDIRECT) + "?r=52");
         File dst = newTempFile();
         t.dest(dst);
-        assertThatThrownBy(() -> execute(t)).isInstanceOf(UncheckedIOException.class);
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(WorkerExecutionException.class)
+                .hasRootCauseInstanceOf(RedirectException.class);
     }
 }

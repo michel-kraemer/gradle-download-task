@@ -14,9 +14,14 @@
 
 package de.undercouch.gradle.tasks.download;
 
+import de.undercouch.gradle.tasks.download.internal.WorkerExecutorHelper;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.internal.operations.BuildOperationCategory;
+import org.gradle.internal.operations.BuildOperationDescriptor;
+import org.gradle.internal.operations.BuildOperationState;
+import org.gradle.internal.operations.CurrentBuildOperationRef;
 import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
@@ -89,6 +94,15 @@ public abstract class TestBase {
 
         Map<String, Object> taskParams = new HashMap<>();
         taskParams.put("type", Download.class);
+
+        // start parent build operation
+        BuildOperationState op = new BuildOperationState(
+                BuildOperationDescriptor.displayName("")
+                        .metadata(BuildOperationCategory.TASK)
+                        .build(), 0);
+        op.setRunning(true);
+        CurrentBuildOperationRef.instance().set(op);
+
         return (Download)project.task(taskParams, "downloadFile");
     }
 
@@ -97,5 +111,6 @@ public abstract class TestBase {
         for (Action<? super Task> a : actions) {
             a.execute(t);
         }
+        WorkerExecutorHelper.newInstance(t.getProject().getObjects()).await();
     }
 }

@@ -41,8 +41,8 @@ public class DownloadExtension implements Configurable<DownloadExtension> {
     public DownloadExtension configure(Closure cl) {
         DownloadAction da = ConfigureUtil.configure(cl, new DownloadAction(project));
         try {
-            da.execute();
-        } catch (IOException e) {
+            da.execute().get();
+        } catch (Exception e) {
             String message = e.getMessage();
             if (message == null) {
                 message = "Could not download file";

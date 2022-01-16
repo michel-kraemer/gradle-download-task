@@ -17,6 +17,7 @@ package de.undercouch.gradle.tasks.download;
 import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
+import de.undercouch.gradle.tasks.download.internal.WorkerExecutorHelper;
 import groovy.json.JsonOutput;
 import groovy.json.JsonSlurper;
 import groovy.lang.Closure;
@@ -44,10 +45,12 @@ import org.apache.hc.core5.util.Timeout;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.logging.Logger;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Provider;
 import org.gradle.util.GradleVersion;
 
@@ -71,6 +74,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -92,6 +96,7 @@ public class DownloadAction implements DownloadSpec {
     private final ProjectLayout projectLayout;
     private final Logger logger;
     private final Object servicesOwner;
+    private final ObjectFactory objectFactory;
     private final boolean isOffline;
     private final List<Object> sourceObjects = new ArrayList<>(1);
     private List<URL> cachedSources;
@@ -139,15 +144,18 @@ public class DownloadAction implements DownloadSpec {
         } else {
             this.servicesOwner = project;
         }
+        this.objectFactory = project.getObjects();
         this.isOffline = project.getGradle().getStartParameter().isOffline();
         this.downloadTaskDir = new File(project.getBuildDir(), "download-task");
     }
 
     /**
      * Starts downloading
+     * @return a {@link CompletableFuture} that completes once the download
+     * has finished
      * @throws IOException if the file could not downloaded
      */
-    public void execute() throws IOException {
+    public CompletableFuture<Void> execute() throws IOException {
         if (GradleVersion.current().compareTo(HARD_MIN_GRADLE_VERSION) < 0 && !quiet) {
             throw new IllegalStateException("gradle-download-task requires " +
                     "Gradle 5.x or higher");
@@ -181,7 +189,7 @@ public class DownloadAction implements DownloadSpec {
             //make sure build dir exists
             dest.mkdirs();
         }
-        
+
         if (sources.size() > 1 && !dest.isDirectory()) {
             if (!dest.exists()) {
                 // create directory automatically
@@ -191,18 +199,58 @@ public class DownloadAction implements DownloadSpec {
                         + "the destination has to be a directory.");
             }
         }
-        
+
+        WorkerExecutorHelper workerExecutor = WorkerExecutorHelper.newInstance(objectFactory);
+
         CachingHttpClientFactory clientFactory = new CachingHttpClientFactory();
-        try {
-            for (URL src : sources) {
-                execute(src, clientFactory);
+        CompletableFuture<?>[] futures = new CompletableFuture[sources.size()];
+        for (int i = 0; i < sources.size(); i++) {
+            URL src = sources.get(i);
+
+            // create progress logger
+            ProgressLoggerWrapper progressLogger = new ProgressLoggerWrapper(logger);
+            if (!quiet) {
+                try {
+                    progressLogger.init(servicesOwner, src.toString());
+                } catch (Exception e) {
+                    // unable to get progress logger
+                    logger.error("Unable to get progress logger. Download "
+                            + "progress will not be displayed.");
+                }
             }
-        } finally {
-            clientFactory.close();
+
+            // submit download job for asynchronous execution
+            CompletableFuture<Void> f = new CompletableFuture<>();
+            futures[i] = f;
+            workerExecutor.submit(() -> {
+                try {
+                    execute(src, clientFactory, progressLogger);
+                    f.complete(null);
+                } catch (Throwable t) {
+                    f.completeExceptionally(t);
+                    throw t;
+                }
+            });
         }
+
+        // wait for all downloads to finish (necessary if we're on an old
+        // Gradle version (< 5.6) without Worker API)
+        if (workerExecutor.needsAwait()) {
+            workerExecutor.await();
+        }
+
+        return CompletableFuture.allOf(futures).whenComplete((v, t) -> {
+            // always close HTTP client factory
+            try {
+                clientFactory.close();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
     }
 
-    private void execute(URL src, HttpClientFactory clientFactory) throws IOException {
+    private void execute(URL src, HttpClientFactory clientFactory,
+            ProgressLoggerWrapper progressLogger) throws IOException {
         final File destFile = makeDestFile(src);
         if (!overwrite && destFile.exists()) {
             if (!quiet) {
@@ -229,18 +277,6 @@ public class DownloadAction implements DownloadSpec {
 
         final long timestamp = onlyIfModified && destFile.exists() ? destFile.lastModified() : 0;
         
-        // create progress logger
-        ProgressLoggerWrapper progressLogger = new ProgressLoggerWrapper(logger);
-        if (!quiet) {
-            try {
-                progressLogger.init(servicesOwner, src.toString());
-            } catch (Exception e) {
-                // unable to get progress logger
-                logger.error("Unable to get progress logger. Download "
-                        + "progress will not be displayed.");
-            }
-        }
-
         if ("file".equals(src.getProtocol())) {
             executeFileProtocol(src, timestamp, destFile, progressLogger);
         } else {

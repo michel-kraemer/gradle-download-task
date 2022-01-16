@@ -15,7 +15,7 @@
 package de.undercouch.gradle.tasks.download;
 
 import org.apache.hc.client5.http.ConnectTimeoutException;
-import org.gradle.api.UncheckedIOException;
+import org.gradle.workers.WorkerExecutionException;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -55,8 +55,8 @@ public class TimeoutTest extends TestBaseWithMockServer {
         File dst = newTempFile();
         t.dest(dst);
         assertThatThrownBy(() -> execute(t))
-                .isInstanceOf(UncheckedIOException.class)
-                .hasCauseInstanceOf(SocketTimeoutException.class);
+                .isInstanceOf(WorkerExecutionException.class)
+                .hasRootCauseInstanceOf(SocketTimeoutException.class);
     }
 
     /**
@@ -73,8 +73,8 @@ public class TimeoutTest extends TestBaseWithMockServer {
         t.dest(dst);
         long start = System.currentTimeMillis();
         assertThatThrownBy(() -> execute(t))
-                .isInstanceOf(UncheckedIOException.class)
-                .hasCauseInstanceOf(ConnectTimeoutException.class);
+                .isInstanceOf(WorkerExecutionException.class)
+                .hasRootCauseInstanceOf(ConnectTimeoutException.class);
         long end = System.currentTimeMillis();
         assertThat(end).isCloseTo(start, offset(TIMEOUT_MS * 2L));
     }

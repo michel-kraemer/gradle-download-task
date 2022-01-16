@@ -14,7 +14,8 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import org.gradle.api.UncheckedIOException;
+import org.apache.hc.client5.http.ClientProtocolException;
+import org.gradle.workers.WorkerExecutionException;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -57,7 +58,9 @@ public class OfflineTest extends TestBaseWithMockServer {
         t.src(wireMock.baseUrl());
         File dst = new File(folder.toFile(), "offlineFail");
         t.dest(dst);
-        assertThatThrownBy(() -> execute(t)).isInstanceOf(UncheckedIOException.class);
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(WorkerExecutionException.class)
+                .hasRootCauseInstanceOf(ClientProtocolException.class);
     }
 
     /**

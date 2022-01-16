@@ -16,7 +16,9 @@ package de.undercouch.gradle.tasks.download;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.gradle.api.UncheckedIOException;
+import org.apache.hc.client5.http.ClientProtocolException;
+import org.assertj.core.api.Assertions;
+import org.gradle.workers.WorkerExecutionException;
 import org.junit.jupiter.api.Test;
 
 import javax.servlet.http.HttpServletResponse;
@@ -59,7 +61,10 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         File dst = newTempFile();
         t.dest(dst);
 
-        assertThatThrownBy(() -> execute(t)).isInstanceOf(UncheckedIOException.class);
+        Assertions.setMaxStackTraceElementsDisplayed(1000);
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(WorkerExecutionException.class)
+                .hasRootCauseInstanceOf(ClientProtocolException.class);
     }
     
     /**
@@ -90,7 +95,9 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         t.username(wrongUser);
         t.password(wrongPass);
 
-        assertThatThrownBy(() -> execute(t)).isInstanceOf(UncheckedIOException.class);
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(WorkerExecutionException.class)
+                .hasRootCauseInstanceOf(ClientProtocolException.class);
     }
 
     /**

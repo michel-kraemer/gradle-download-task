@@ -16,7 +16,7 @@ package de.undercouch.gradle.tasks.download;
 
 import com.github.tomakehurst.wiremock.http.Fault;
 import org.apache.hc.core5.http.NoHttpResponseException;
-import org.gradle.api.UncheckedIOException;
+import org.gradle.workers.WorkerExecutionException;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -65,8 +65,8 @@ public class RetryTest extends TestBaseWithMockServer {
         File dst = newTempFile();
         t.dest(dst);
         assertThatThrownBy(() -> execute(t))
-                .isInstanceOf(UncheckedIOException.class)
-                .hasCauseInstanceOf(NoHttpResponseException.class);
+                .isInstanceOf(WorkerExecutionException.class)
+                .hasRootCauseInstanceOf(NoHttpResponseException.class);
         verify(1, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
     }
 
@@ -211,8 +211,8 @@ public class RetryTest extends TestBaseWithMockServer {
         File dst = newTempFile();
         t.dest(dst);
         assertThatThrownBy(() -> execute(t))
-                .isInstanceOf(UncheckedIOException.class)
-                .hasCauseInstanceOf(NoHttpResponseException.class);
+                .isInstanceOf(WorkerExecutionException.class)
+                .hasRootCauseInstanceOf(NoHttpResponseException.class);
         verify(3, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
     }
 
