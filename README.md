@@ -23,7 +23,7 @@ This is a download task for [Gradle](http://www.gradle.org/).
 It displays progress information just as Gradle does when it retrieves
 an artifact from a repository.
 
-The plugin has been successfully tested with Gradle 5.0 up to 7.3.
+The plugin has been successfully tested with Gradle 5.0 up to 7.3.3.
 It should work with newer versions as well.
 
 Usage
