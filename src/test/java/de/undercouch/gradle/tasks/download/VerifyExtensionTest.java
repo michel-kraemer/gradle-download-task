@@ -93,7 +93,8 @@ public class VerifyExtensionTest extends TestBase {
         File src = makeSourceFile();
         Download t = makeProjectAndTask();
         assertThatThrownBy(() -> doVerify(t.getProject(), src.getAbsolutePath(),
-                "wrong checksum")).isInstanceOf(GradleException.class);
+                "wrong checksum")).isInstanceOf(GradleException.class)
+                .hasMessageContaining("Invalid checksum for file");
     }
 
     /**
@@ -106,6 +107,7 @@ public class VerifyExtensionTest extends TestBase {
         assertThat(src.delete()).isTrue();
         Download t = makeProjectAndTask();
         assertThatThrownBy(() -> doVerify(t.getProject(), src.getAbsolutePath(),
-                EXPECTED_CHECKSUM)).isInstanceOf(IllegalStateException.class);
+                EXPECTED_CHECKSUM)).isInstanceOf(IllegalStateException.class)
+                .hasMessage("Could not verify file checksum");
     }
 }

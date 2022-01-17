@@ -561,6 +561,7 @@ public class ETagTest extends TestBaseWithMockServer {
     public void invalidUseETagFlag() {
         Download t = makeProjectAndTask();
         assertThatThrownBy(() -> t.useETag("foobar"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Illegal value for 'useETag' flag");
     }
 }

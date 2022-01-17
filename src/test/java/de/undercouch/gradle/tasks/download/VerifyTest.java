@@ -109,7 +109,9 @@ public class VerifyTest extends TestBaseWithMockServer {
         v.src(t.getDest());
 
         execute(t);
-        assertThatThrownBy(() -> execute(v)).isInstanceOf(GradleException.class);
+        assertThatThrownBy(() -> execute(v))
+                .isInstanceOf(GradleException.class)
+                .hasMessageContaining("Invalid checksum for file");
     }
 
     /**
@@ -124,7 +126,9 @@ public class VerifyTest extends TestBaseWithMockServer {
         String calculatedChecksum = calculateChecksum();
         v.checksum(calculatedChecksum);
 
-        assertThatThrownBy(() -> execute(v)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> execute(v))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Please provide a file to verify");
     }
 
     /**
@@ -143,7 +147,9 @@ public class VerifyTest extends TestBaseWithMockServer {
         v.algorithm(null);
         v.src(t.getDest());
 
-        assertThatThrownBy(() -> execute(v)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> execute(v))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Please provide the algorithm");
     }
 
     /**
@@ -160,7 +166,9 @@ public class VerifyTest extends TestBaseWithMockServer {
         v.algorithm("MD5");
         v.src(t.getDest());
 
-        assertThatThrownBy(() -> execute(v)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> execute(v))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Please provide a checksum");
     }
 
     /**
@@ -179,7 +187,8 @@ public class VerifyTest extends TestBaseWithMockServer {
         v.algorithm("MD5");
 
         assertThatThrownBy(() -> v.src(new Object()))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Verification source must either be");
     }
 
     /**

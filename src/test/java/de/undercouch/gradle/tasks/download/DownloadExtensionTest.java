@@ -100,6 +100,8 @@ public class DownloadExtensionTest extends TestBaseWithMockServer {
         File dst = newTempFile();
         assertThatThrownBy(() -> doDownload(t.getProject(), src, dst))
                 .isInstanceOf(IllegalStateException.class)
-                .hasRootCauseInstanceOf(ClientProtocolException.class);
+                .getRootCause()
+                .isInstanceOf(ClientProtocolException.class)
+                .hasMessageContaining("HTTP status code: 404");
     }
 }

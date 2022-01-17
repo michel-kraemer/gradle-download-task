@@ -64,7 +64,9 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         Assertions.setMaxStackTraceElementsDisplayed(1000);
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
-                .hasRootCauseInstanceOf(ClientProtocolException.class);
+                .getRootCause()
+                .isInstanceOf(ClientProtocolException.class)
+                .hasMessageContaining("HTTP status code: 401");
     }
     
     /**
@@ -97,7 +99,9 @@ public class AuthenticationTest extends TestBaseWithMockServer {
 
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
-                .hasRootCauseInstanceOf(ClientProtocolException.class);
+                .getRootCause()
+                .isInstanceOf(ClientProtocolException.class)
+                .hasMessageContaining("HTTP status code: 401");
     }
 
     /**

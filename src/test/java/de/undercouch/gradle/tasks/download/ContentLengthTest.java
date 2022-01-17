@@ -99,6 +99,9 @@ public class ContentLengthTest extends TestBaseWithMockServer {
         t.dest(dst);
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
-                .hasRootCauseInstanceOf(ConnectionClosedException.class);
+                .getRootCause()
+                .isInstanceOf(ConnectionClosedException.class)
+                .hasMessageContaining("Premature end of Content-Length " +
+                        "delimited message body (expected: 10000; received: 5)");
     }
 }

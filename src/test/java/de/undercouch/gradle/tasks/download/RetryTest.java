@@ -66,7 +66,9 @@ public class RetryTest extends TestBaseWithMockServer {
         t.dest(dst);
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
-                .hasRootCauseInstanceOf(NoHttpResponseException.class);
+                .getRootCause()
+                .isInstanceOf(NoHttpResponseException.class)
+                .hasMessageContaining("failed to respond");
         verify(1, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
     }
 
@@ -176,7 +178,7 @@ public class RetryTest extends TestBaseWithMockServer {
     }
 
     /**
-     * Test if the download task can retry two times and the fails
+     * Test if the download task can retry two times and then fails
      * @throws Exception if anything else goes wrong
      */
     @Test
@@ -212,7 +214,9 @@ public class RetryTest extends TestBaseWithMockServer {
         t.dest(dst);
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
-                .hasRootCauseInstanceOf(NoHttpResponseException.class);
+                .getRootCause()
+                .isInstanceOf(NoHttpResponseException.class)
+                .hasMessageContaining("failed to respond");
         verify(3, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
     }
 

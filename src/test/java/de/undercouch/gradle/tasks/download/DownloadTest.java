@@ -178,7 +178,9 @@ public class DownloadTest extends TestBaseWithMockServer {
                 wireMock.url(TEST_FILE_NAME2)));
         File dst = newTempFile();
         t.dest(dst);
-        assertThatThrownBy(() -> execute(t)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("the destination has to be a directory");
     }
 
     /**
@@ -288,7 +290,9 @@ public class DownloadTest extends TestBaseWithMockServer {
         Download t = makeProjectAndTask();
         t.src(new Object());
         t.dest(newTempFile());
-        assertThatThrownBy(() -> execute(t)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Download source must either be");
     }
 
     /**
@@ -297,7 +301,9 @@ public class DownloadTest extends TestBaseWithMockServer {
     @Test
     public void testExecuteEmptySrc() {
         Download t = makeProjectAndTask();
-        assertThatThrownBy(() -> execute(t)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Please provide a download source");
     }
 
     /**
@@ -309,7 +315,9 @@ public class DownloadTest extends TestBaseWithMockServer {
         String src = wireMock.url(TEST_FILE_NAME);
         t.src(src);
         t.dest(new Object());
-        assertThatThrownBy(() -> execute(t)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Download destination must be one of");
     }
 
     /**
@@ -320,7 +328,9 @@ public class DownloadTest extends TestBaseWithMockServer {
         Download t = makeProjectAndTask();
         String src = wireMock.url(TEST_FILE_NAME);
         t.src(src);
-        assertThatThrownBy(() -> execute(t)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Please provide a download destination");
     }
 
     /**
