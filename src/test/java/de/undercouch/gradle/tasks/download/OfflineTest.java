@@ -14,7 +14,6 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import org.apache.hc.client5.http.ClientProtocolException;
 import org.gradle.workers.WorkerExecutionException;
 import org.junit.jupiter.api.Test;
 
@@ -53,14 +52,15 @@ public class OfflineTest extends TestBaseWithMockServer {
      */
     @Test
     public void offlineFail() {
-        Download t = makeProjectAndTask();
-        t.getProject().getGradle().getStartParameter().setOffline(true);
+        Download t = makeOfflineProjectAndTask();
         t.src(wireMock.baseUrl());
         File dst = new File(folder.toFile(), "offlineFail");
         t.dest(dst);
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
-                .hasRootCauseInstanceOf(ClientProtocolException.class);
+                .getRootCause()
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContainingAll("Unable to download file", "in offline mode");
     }
 
     /**
