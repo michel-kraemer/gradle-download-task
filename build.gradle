@@ -1,5 +1,5 @@
 plugins {
-    id "com.gradle.plugin-publish" version "0.19.0"
+    id "com.gradle.plugin-publish" version "0.20.0"
     id "com.github.johnrengelman.shadow" version "6.1.0"
     id "io.github.gradle-nexus.publish-plugin" version "1.1.0"
 }
