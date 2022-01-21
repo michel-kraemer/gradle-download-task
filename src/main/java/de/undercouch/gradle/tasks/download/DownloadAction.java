@@ -326,7 +326,7 @@ public class DownloadAction implements DownloadSpec {
         
         //create HTTP client
         CloseableHttpClient client = clientFactory.createHttpClient(
-                httpHost, acceptAnyCertificate, retries);
+                httpHost, acceptAnyCertificate, retries, logger, quiet);
 
         //open URL connection
         String etag = null;

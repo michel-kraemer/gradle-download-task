@@ -82,16 +82,11 @@ public abstract class TestBase {
     }
 
     protected Download makeProjectAndTask(@Nullable Action<Project> projectConfiguration) {
-        Project project = ProjectBuilder.builder().withProjectDir(projectDir).build();
+        Project project = makeProject(projectConfiguration);
+        return makeTask(project);
+    }
 
-        if (projectConfiguration != null) {
-            projectConfiguration.execute(project);
-        }
-
-        Map<String, Object> applyParams = new HashMap<>();
-        applyParams.put("plugin", "de.undercouch.download");
-        project.apply(applyParams);
-
+    protected Download makeTask(Project project) {
         Map<String, Object> taskParams = new HashMap<>();
         taskParams.put("type", Download.class);
 
@@ -104,6 +99,24 @@ public abstract class TestBase {
         CurrentBuildOperationRef.instance().set(op);
 
         return (Download)project.task(taskParams, "downloadFile");
+    }
+
+    protected Project makeProject() {
+        return makeProject(null);
+    }
+
+    protected Project makeProject(@Nullable Action<Project> projectConfiguration) {
+        Project project = ProjectBuilder.builder().withProjectDir(projectDir).build();
+
+        if (projectConfiguration != null) {
+            projectConfiguration.execute(project);
+        }
+
+        Map<String, Object> applyParams = new HashMap<>();
+        applyParams.put("plugin", "de.undercouch.download");
+        project.apply(applyParams);
+
+        return project;
     }
 
     protected void execute(Task t) {

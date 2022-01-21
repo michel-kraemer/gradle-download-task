@@ -14,7 +14,6 @@
 
 package de.undercouch.gradle.tasks.download.internal;
 
-import org.apache.hc.client5.http.impl.DefaultHttpRequestRetryStrategy;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.BasicHttpClientConnectionManager;
@@ -27,6 +26,7 @@ import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.config.Registry;
 import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.util.TimeValue;
+import org.gradle.api.logging.Logger;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -37,7 +37,7 @@ import java.security.SecureRandom;
 
 /**
  * Default implementation of {@link HttpClientFactory}. Creates a new client
- * every time {@link #createHttpClient(HttpHost, boolean, int)}
+ * every time {@link #createHttpClient(HttpHost, boolean, int, Logger, boolean)}
  * is called. The caller is responsible for closing this client.
  * @author Michel Kraemer
  */
@@ -51,7 +51,8 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
 
     @Override
     public CloseableHttpClient createHttpClient(HttpHost httpHost,
-            boolean acceptAnyCertificate, final int retries) {
+            boolean acceptAnyCertificate, final int retries, Logger logger,
+            boolean quiet) {
         HttpClientBuilder builder = HttpClientBuilder.create();
 
         //configure retries
@@ -63,8 +64,8 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
             if (retries < 0) {
                 maxRetries = Integer.MAX_VALUE;
             }
-            builder.setRetryStrategy(new DefaultHttpRequestRetryStrategy(
-                    maxRetries, TimeValue.ofSeconds(0L)));
+            builder.setRetryStrategy(new CustomHttpRequestRetryStrategy(
+                    maxRetries, TimeValue.ofSeconds(0L), logger, quiet));
         }
 
         //configure proxy from system environment
