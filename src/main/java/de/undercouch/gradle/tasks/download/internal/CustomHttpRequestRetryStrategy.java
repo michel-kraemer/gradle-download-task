@@ -3,15 +3,19 @@ package de.undercouch.gradle.tasks.download.internal;
 import org.apache.hc.client5.http.impl.DefaultHttpRequestRetryStrategy;
 import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.util.TimeValue;
 import org.gradle.api.logging.Logger;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
+import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.Collections;
 
 /**
- * A custom strategy that logs retries
+ * A custom strategy that logs every retry attempt and retries requests on any
+ * exception but {@link UnknownHostException}
  * @author Michel Kraemer
  */
 public class CustomHttpRequestRetryStrategy extends DefaultHttpRequestRetryStrategy {
@@ -21,7 +25,10 @@ public class CustomHttpRequestRetryStrategy extends DefaultHttpRequestRetryStrat
 
     public CustomHttpRequestRetryStrategy(final int maxRetries,
             final TimeValue defaultRetryInterval, Logger logger, boolean quiet) {
-        super(maxRetries, defaultRetryInterval);
+        super(maxRetries, defaultRetryInterval,
+                Collections.singletonList(UnknownHostException.class),
+                Arrays.asList(HttpStatus.SC_TOO_MANY_REQUESTS,
+                        HttpStatus.SC_SERVICE_UNAVAILABLE));
         this.logger = logger;
         this.quiet = quiet;
         this.maxRetries = maxRetries;

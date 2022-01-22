@@ -15,6 +15,8 @@
 package de.undercouch.gradle.tasks.download;
 
 import com.github.tomakehurst.wiremock.http.Fault;
+import org.apache.hc.client5.http.ConnectTimeoutException;
+import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.NoHttpResponseException;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
@@ -24,6 +26,7 @@ import org.mockito.Mockito;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -281,7 +284,7 @@ public class RetryTest extends TestBaseWithMockServer {
         stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .inScenario(SCENARIO)
                 .whenScenarioStateIs(TWO)
-                .willReturn(aResponse().withFault(Fault.EMPTY_RESPONSE))
+                .willReturn(aResponse().withStatus(HttpStatus.SC_SERVICE_UNAVAILABLE))
                 .willSetStateTo(THREE));
 
         stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
@@ -304,10 +307,15 @@ public class RetryTest extends TestBaseWithMockServer {
         }).when(logger).warn(anyString());
         doAnswer(msg -> {
             recordedDebug.add(msg.getArgument(0));
-            realLogger.info(msg.getArgument(0));
+            realLogger.debug(msg.getArgument(0));
             recordedExceptions.add(msg.getArgument(1));
             return null;
         }).when(logger).debug(anyString(), (Throwable)any());
+        doAnswer(msg -> {
+            recordedDebug.add(msg.getArgument(0));
+            realLogger.debug(msg.getArgument(0));
+            return null;
+        }).when(logger).debug(anyString());
         Download t = makeTask(project);
 
         // replace logger in DownloadAction
@@ -331,11 +339,9 @@ public class RetryTest extends TestBaseWithMockServer {
                 .containsExactly("Request attempt 1/2 failed. Retrying ...",
                         "Request attempt 2/2 failed. Retrying ...");
         assertThat(recordedDebug).containsExactly("Request attempt failed",
-                "Request attempt failed");
-        assertThat(recordedExceptions).hasSize(2);
+                "Status code: 503", "Status message: Service Unavailable");
+        assertThat(recordedExceptions).hasSize(1);
         assertThat(recordedExceptions.get(0))
-                .isInstanceOf(NoHttpResponseException.class);
-        assertThat(recordedExceptions.get(1))
                 .isInstanceOf(NoHttpResponseException.class);
     }
 
@@ -382,5 +388,111 @@ public class RetryTest extends TestBaseWithMockServer {
         verify(2, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
 
         Mockito.verify(logger, never()).warn(anyString());
+    }
+
+    /**
+     * Test if the download task retries on connection timeout
+     * @throws Exception if anything else goes wrong
+     */
+    @Test
+    public void retryOnTimeout() throws Exception {
+        Project project = makeProject();
+
+        // spy on the logger and record all messages
+        List<String> recordedWarn = new ArrayList<>();
+        List<String> recordedDebug = new ArrayList<>();
+        List<Throwable> recordedExceptions = new ArrayList<>();
+        Logger realLogger = project.getLogger();
+        Logger logger = spy(realLogger);
+        doAnswer(msg -> {
+            recordedWarn.add(msg.getArgument(0));
+            realLogger.info(msg.getArgument(0));
+            return null;
+        }).when(logger).warn(anyString());
+        doAnswer(msg -> {
+            recordedDebug.add(msg.getArgument(0));
+            realLogger.debug(msg.getArgument(0));
+            recordedExceptions.add(msg.getArgument(1));
+            return null;
+        }).when(logger).debug(anyString(), (Throwable)any());
+        Download t = makeTask(project);
+
+        // replace logger in DownloadAction
+        Field actionField = Download.class.getDeclaredField("action");
+        actionField.setAccessible(true);
+        DownloadAction action = (DownloadAction)actionField.get(t);
+        Field loggerField = DownloadAction.class.getDeclaredField("logger");
+        loggerField.setAccessible(true);
+        loggerField.set(action, logger);
+
+        t.retries(1);
+        t.connectTimeout(1);
+        t.src("http://10.255.255.1"); // try to connect to an invalid host
+        File dst = newTempFile();
+        t.dest(dst);
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(WorkerExecutionException.class)
+                .getRootCause()
+                .isInstanceOf(ConnectTimeoutException.class);
+
+        assertThat(dst).isEmpty();
+
+        assertThat(recordedWarn)
+                .containsExactly("Request attempt 1/1 failed. Retrying ...");
+        assertThat(recordedDebug).containsExactly("Request attempt failed");
+        assertThat(recordedExceptions).hasSize(1);
+        assertThat(recordedExceptions.get(0))
+                .isInstanceOf(ConnectTimeoutException.class);
+    }
+
+    /**
+     * Test if the download task does not retry on unknown host
+     * @throws Exception if anything else goes wrong
+     */
+    @Test
+    public void retryOnUnknownHost() throws Exception {
+        Project project = makeProject();
+
+        // spy on the logger and record all messages
+        List<String> recordedWarn = new ArrayList<>();
+        List<String> recordedDebug = new ArrayList<>();
+        List<Throwable> recordedExceptions = new ArrayList<>();
+        Logger realLogger = project.getLogger();
+        Logger logger = spy(realLogger);
+        doAnswer(msg -> {
+            recordedWarn.add(msg.getArgument(0));
+            realLogger.info(msg.getArgument(0));
+            return null;
+        }).when(logger).warn(anyString());
+        doAnswer(msg -> {
+            recordedDebug.add(msg.getArgument(0));
+            realLogger.debug(msg.getArgument(0));
+            recordedExceptions.add(msg.getArgument(1));
+            return null;
+        }).when(logger).debug(anyString(), (Throwable)any());
+        Download t = makeTask(project);
+
+        // replace logger in DownloadAction
+        Field actionField = Download.class.getDeclaredField("action");
+        actionField.setAccessible(true);
+        DownloadAction action = (DownloadAction)actionField.get(t);
+        Field loggerField = DownloadAction.class.getDeclaredField("logger");
+        loggerField.setAccessible(true);
+        loggerField.set(action, logger);
+
+        t.retries(1);
+        t.src("http://thisserverdoesnotreallyexistgradledownloadtask"); // try to connect to an invalid host
+        File dst = newTempFile();
+        t.dest(dst);
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(WorkerExecutionException.class)
+                .getRootCause()
+                .isInstanceOf(UnknownHostException.class);
+
+        assertThat(dst).isEmpty();
+
+        // request should not have been retried
+        assertThat(recordedWarn).isEmpty();
+        assertThat(recordedDebug).isEmpty();
     }
 }
