@@ -26,6 +26,10 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    jacocoRuntime
+}
+
 dependencies {
     shadow gradleApi()
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.1.2'
@@ -42,6 +46,8 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
     testImplementation "org.mockito:mockito-core:4.2.0"
     testImplementation "xyz.rogfam:littleproxy:2.0.7"
+
+    jacocoRuntime "org.jacoco:org.jacoco.agent:${jacoco.toolVersion}:runtime"
 }
 
 java {
@@ -66,6 +72,9 @@ test {
             events "standard_out", "passed", "skipped", "failed"
         }
     }
+
+    systemProperty 'jacocoRuntimePath', configurations.jacocoRuntime.asPath
+    systemProperty 'jacocoDestFile', jacoco.destinationFile
 }
 
 jar {

@@ -104,10 +104,19 @@ public abstract class FunctionalTestBase extends TestBaseWithMockServer {
      * @throws IOException if the file could not be written
      */
     private void writePropertiesFile() throws IOException {
+        // enable jacoco agent if available
+        // system properties are set in build.gradle
+        String jacocoArgs = "";
+        String jacocoRuntimePath = System.getProperty("jacocoRuntimePath");
+        String jacocoDestFile = System.getProperty("jacocoDestFile");
+        if (jacocoRuntimePath != null && jacocoDestFile != null) {
+            jacocoArgs = "-javaagent:\"" + jacocoRuntimePath + "\"=destfile=\"" + jacocoDestFile + "\"";
+        }
+
         // stop gradle daemon immediately and set maximum heap size to
         // a low value so the functional tests run well on the CI server
         String content = "org.gradle.daemon.idletimeout=0\n" +
-                "org.gradle.jvmargs=-Xmx128M\n";
+                "org.gradle.jvmargs=-Xmx128M " + jacocoArgs + "\n";
 
         FileUtils.writeStringToFile(propertiesFile, content, StandardCharsets.UTF_8);
     }
