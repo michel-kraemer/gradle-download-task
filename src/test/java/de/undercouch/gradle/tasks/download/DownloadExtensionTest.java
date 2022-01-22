@@ -14,13 +14,13 @@
 
 package de.undercouch.gradle.tasks.download;
 
-import groovy.lang.Closure;
 import org.apache.hc.client5.http.ClientProtocolException;
 import org.gradle.api.Project;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
@@ -30,6 +30,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 
 /**
  * Tests {@link DownloadExtension}
@@ -55,17 +56,15 @@ public class DownloadExtensionTest extends TestBaseWithMockServer {
      */
     private void doDownload(Project project, final String src, final File dst) {
         DownloadExtension e = new DownloadExtension(project);
-        e.configure(new Closure<Object>(this, this) {
-            private static final long serialVersionUID = -7729300978830802384L;
-
-            @SuppressWarnings("unused")
-            public void doCall() {
-                DownloadAction action = (DownloadAction)this.getDelegate();
+        e.run(action -> {
+            try {
                 action.src(src);
                 assertThat(action.getSrc()).isInstanceOf(URL.class);
                 assertThat(action.getSrc().toString()).isEqualTo(src);
                 action.dest(dst);
                 assertThat(action.getDest()).isSameAs(dst);
+            } catch (IOException t) {
+                fail("Could not execute action", t);
             }
         });
     }
