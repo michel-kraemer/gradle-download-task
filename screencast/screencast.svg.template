@@ -56,7 +56,7 @@
       {{ animate("line5") }}
     </text>
     <text x="20" y="135" class="bold">
-      &gt; :downloadFile &gt; {% for b in bytes %}<tspan>{{ b }}{{ animate("bytes_" + loop.index0) }}</tspan>{% endfor %}/187.78 MB downloaded
+      &gt; :downloadFile &gt; big_buck_bunny_720p_stereo.ogg &gt; {% for b in bytes %}<tspan>{{ b }}{{ animate("bytes_" + loop.index0) }}</tspan>{% endfor %}/187.78 MB downloaded
       {{ animate("line6") }}
     </text>
     <text x="20" y="155">
