@@ -1,20 +1,5 @@
-// Copyright 2013-2019 Michel Kraemer
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package de.undercouch.gradle.tasks.download;
 
-import groovy.lang.Closure;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.junit.jupiter.api.Test;
@@ -45,17 +30,11 @@ public class VerifyExtensionTest extends TestBase {
     private void doVerify(Project project, final String src,
             final String checksum) {
         VerifyExtension e = new VerifyExtension(project);
-        e.configure(new Closure<Object>(this, this) {
-            private static final long serialVersionUID = 8101704138005375213L;
-
-            @SuppressWarnings("unused")
-            public void doCall() {
-                VerifyAction action = (VerifyAction)this.getDelegate();
-                action.src(src);
-                action.checksum(checksum);
-                assertThat(action.getChecksum()).isEqualTo(checksum);
-                assertThat(action.getSrc().toString()).isEqualTo(src);
-            }
+        e.run(action -> {
+            action.src(src);
+            action.checksum(checksum);
+            assertThat(action.getChecksum()).isEqualTo(checksum);
+            assertThat(action.getSrc().toString()).isEqualTo(src);
         });
     }
 
