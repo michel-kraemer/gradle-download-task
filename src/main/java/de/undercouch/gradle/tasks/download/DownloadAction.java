@@ -143,6 +143,19 @@ public class DownloadAction implements DownloadSpec {
      * @throws IOException if the file could not downloaded
      */
     public CompletableFuture<Void> execute() throws IOException {
+        return execute(true);
+    }
+
+    /**
+     * Starts downloading
+     * @param throwOnError {@code true} if the asynchronous worker action should
+     * throw if the download fails. {@code false} if only the returned
+     * {@link CompletableFuture} should complete exceptionally.
+     * @return a {@link CompletableFuture} that completes once the download
+     * has finished
+     * @throws IOException if the file could not downloaded
+     */
+    public CompletableFuture<Void> execute(boolean throwOnError) throws IOException {
         if (GradleVersion.current().compareTo(HARD_MIN_GRADLE_VERSION) < 0 && !quiet) {
             throw new IllegalStateException("gradle-download-task requires " +
                     "Gradle 5.x or higher");
@@ -215,7 +228,9 @@ public class DownloadAction implements DownloadSpec {
                     f.complete(null);
                 } catch (Throwable t) {
                     f.completeExceptionally(t);
-                    throw t;
+                    if (throwOnError) {
+                        throw t;
+                    }
                 }
             });
         }

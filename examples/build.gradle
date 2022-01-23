@@ -5,7 +5,7 @@ task runAllExamples {
         ":groovy:directory-github:downloadDirectoryGitHub",
         ":groovy:etag:downloadFile",
         ":groovy:lazy-src-and-dest:downloadFile",
-        // ":groovy:mirrors", // DOES NOT WORK AT THE MOMENT
+        ":groovy:mirrors:downloadFile",
         ":groovy:multiple-files:downloadFiles",
         ":groovy:multiple-files-rename:downloadMultipleFiles1",
         ":groovy:multiple-files-rename:downloadMultipleFiles2",
@@ -21,7 +21,7 @@ task runAllExamples {
         ":kotlin:directory-github:downloadDirectoryGitHub",
         ":kotlin:etag:downloadFile",
         ":kotlin:lazy-src-and-dest:downloadFile",
-        // ":kotlin:mirrors", // DOES NOT WORK AT THE MOMENT
+        ":kotlin:mirrors:downloadFile",
         ":kotlin:multiple-files:downloadFiles",
         ":kotlin:multiple-files-rename:downloadMultipleFiles1",
         ":kotlin:multiple-files-rename:downloadMultipleFiles2",

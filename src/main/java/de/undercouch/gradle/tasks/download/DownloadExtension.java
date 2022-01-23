@@ -26,7 +26,7 @@ public class DownloadExtension {
         DownloadAction da = new DownloadAction(project);
         action.execute(da);
         try {
-            da.execute().get();
+            da.execute(false).get();
         } catch (Exception e) {
             String message = e.getMessage();
             if (message == null) {

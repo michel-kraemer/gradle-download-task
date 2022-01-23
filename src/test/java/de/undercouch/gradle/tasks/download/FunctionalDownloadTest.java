@@ -15,6 +15,7 @@
 package de.undercouch.gradle.tasks.download;
 
 import org.apache.commons.io.FileUtils;
+import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.BuildTask;
 import org.gradle.testkit.runner.GradleRunner;
 import org.junit.jupiter.api.BeforeEach;
@@ -457,6 +458,39 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         assertThat(new File(destFile, TEST_FILE_NAME2))
                 .usingCharset(StandardCharsets.UTF_8)
                 .hasContent(CONTENTS2);
+    }
+
+    /**
+     * If the download extension fails and the exception is caught, the task
+     * should not automatically fail too
+     * @throws Exception if anything goes wrong
+     */
+    @FunctionalTest
+    @SuppressWarnings("unused")
+    private void downloadExtensionShouldNotFailTask(String gradleVersion) throws Exception{
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+                .willReturn(aResponse()
+                        .withStatus(404)));
+
+        GradleRunner runner = createRunnerWithBuildFile(
+                "plugins { id 'de.undercouch.download' }\n" +
+                "task downloadTask {\n" +
+                    "doLast {\n" +
+                        "try {\n" +
+                            "download.run {\n" +
+                                "src " + singleSrc + "\n" +
+                                "dest " + dest + "\n" +
+                            "}\n" +
+                        "} catch (Exception e) {\n" +
+                            "println('Exception thrown: ' + e.class)\n" +
+                        "}\n" +
+                    "}\n" +
+                "}\n", gradleVersion);
+
+        BuildResult result = runner.withArguments(singletonList("downloadTask"))
+                .build();
+        assertThat(result.getOutput()).contains("Exception thrown: class java.lang.IllegalStateException");
+        assertTaskSuccess(result.task(":downloadTask"));
     }
 
     /**
