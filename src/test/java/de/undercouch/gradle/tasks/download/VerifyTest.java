@@ -15,6 +15,7 @@
 package de.undercouch.gradle.tasks.download;
 
 import groovy.lang.Closure;
+import kotlin.jvm.functions.Function0;
 import org.apache.commons.codec.binary.Hex;
 import org.gradle.api.GradleException;
 import org.gradle.api.internal.provider.DefaultProvider;
@@ -249,6 +250,36 @@ public class VerifyTest extends TestBaseWithMockServer {
             srcCalled[0] = true;
             return t.getDest().getAbsolutePath();
         }));
+
+        execute(t);
+        execute(v); // will throw if the checksum is not OK
+
+        assertThat(srcCalled[0]).isTrue();
+    }
+
+    /**
+     * Tests lazy evaluation of the 'src' property if it is a Kotlin Function
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void kotlinFunctionSrc() throws Exception {
+        configureDefaultStub();
+
+        final boolean[] srcCalled = new boolean[] { false };
+
+        final Download t = makeProjectAndTask();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        File dst = newTempFile();
+        t.dest(dst);
+
+        Verify v = makeVerifyTask(t);
+        v.algorithm("MD5");
+        String calculatedChecksum = calculateChecksum();
+        v.checksum(calculatedChecksum);
+        v.src((Function0<Object>)() -> {
+            srcCalled[0] = true;
+            return t.getDest().getAbsolutePath();
+        });
 
         execute(t);
         execute(v); // will throw if the checksum is not OK

@@ -1,31 +1,17 @@
-// Copyright 2015-2019 Michel Kraemer
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package de.undercouch.gradle.tasks.download;
 
 import groovy.lang.Closure;
+import kotlin.jvm.functions.Function0;
+import org.gradle.api.GradleException;
+import org.gradle.api.Project;
+import org.gradle.api.file.ProjectLayout;
+import org.gradle.api.provider.Provider;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-
-import org.gradle.api.GradleException;
-import org.gradle.api.Project;
-import org.gradle.api.file.ProjectLayout;
-import org.gradle.api.provider.Provider;
 
 /**
  * Verifies a file's integrity by calculating its checksum.
@@ -92,6 +78,11 @@ public class VerifyAction implements VerifySpec {
     
     @Override
     public void src(Object src) {
+        if (src instanceof Function0) {
+            // lazily evaluate Kotlin function
+            Function0<?> function = (Function0<?>)src;
+            src = function.invoke();
+        }
         if (src instanceof Closure) {
             //lazily evaluate closure
             Closure<?> closure = (Closure<?>)src;

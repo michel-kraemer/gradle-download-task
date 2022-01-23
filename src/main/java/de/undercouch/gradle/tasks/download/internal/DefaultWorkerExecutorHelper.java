@@ -18,7 +18,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * {@link Job}s asynchronously using the Gradle Worker API
  * @author Michel Kraemer
  */
-@SuppressWarnings("UnstableApiUsage")
 public class DefaultWorkerExecutorHelper extends WorkerExecutorHelper {
     /**
      * A unique ID for jobs. Used to access jobs in {@link #jobs}

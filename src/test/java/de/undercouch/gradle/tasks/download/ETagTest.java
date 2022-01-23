@@ -16,7 +16,10 @@ package de.undercouch.gradle.tasks.download;
 
 import groovy.json.JsonOutput;
 import groovy.json.JsonSlurper;
+import groovy.lang.Closure;
+import kotlin.jvm.functions.Function0;
 import org.apache.commons.io.FileUtils;
+import org.gradle.api.internal.provider.DefaultProvider;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -24,6 +27,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
@@ -249,12 +253,9 @@ public class ETagTest extends TestBaseWithMockServer {
         assertThat(t.getCachedETagsFile()).isEqualTo(cachedETagsFile);
     }
 
-    /**
-     * Tests if the cachedETagsFile can be configured
-     * @throws Exception if anything goes wrong
-     */
-    @Test
-    public void configureCachedETagsFile() throws Exception {
+    private void configureCachedETagsFile(File newCachedETagsFile, Object provider) throws Exception {
+        assertThat(newCachedETagsFile.delete()).isTrue();
+
         String etag = "\"foobar\"";
 
         stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
@@ -264,9 +265,7 @@ public class ETagTest extends TestBaseWithMockServer {
                         .withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        File newCachedETagsFile = newTempFile();
-        assertThat(newCachedETagsFile.delete()).isTrue();
-        t.cachedETagsFile(newCachedETagsFile);
+        t.cachedETagsFile(provider);
         t.src(wireMock.url(TEST_FILE_NAME));
         File dst = newTempFile();
         assertThat(dst.delete()).isTrue();
@@ -280,6 +279,52 @@ public class ETagTest extends TestBaseWithMockServer {
 
         assertThat(t.getCachedETagsFile()).isEqualTo(newCachedETagsFile);
         assertThat(newCachedETagsFile).exists();
+    }
+
+    /**
+     * Tests if the cachedETagsFile can be configured
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void configureCachedETagsFile() throws Exception {
+        File newCachedETagsFile = newTempFile();
+        configureCachedETagsFile(newCachedETagsFile, newCachedETagsFile);
+    }
+
+    /**
+     * Tests if the cachedETagsFile can be configured lazily using Groovy closures
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void lazyConfigureCachedETagsFile() throws Exception {
+        File newCachedETagsFile = newTempFile();
+        configureCachedETagsFile(newCachedETagsFile, new Closure<Object>(this, this) {
+            @SuppressWarnings("unused")
+            public Object doCall() {
+                return newCachedETagsFile;
+            }
+        });
+    }
+
+    /**
+     * Tests if the cachedETagsFile can be configured lazily using a provider
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void providerConfigureCachedETagsFile() throws Exception {
+        File newCachedETagsFile = newTempFile();
+        configureCachedETagsFile(newCachedETagsFile, new DefaultProvider<>(
+                (Callable<Object>)() -> newCachedETagsFile));
+    }
+
+    /**
+     * Tests if the cachedETagsFile can be configured lazily using Kotlin functions
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void kotlinFunctionConfigureCachedETagsFile() throws Exception {
+        File newCachedETagsFile = newTempFile();
+        configureCachedETagsFile(newCachedETagsFile, (Function0<Object>)() -> newCachedETagsFile);
     }
 
     /**

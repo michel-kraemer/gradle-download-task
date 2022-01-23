@@ -1,17 +1,3 @@
-// Copyright 2013-2019 Michel Kraemer
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package de.undercouch.gradle.tasks.download;
 
 import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
@@ -21,6 +7,7 @@ import de.undercouch.gradle.tasks.download.internal.WorkerExecutorHelper;
 import groovy.json.JsonOutput;
 import groovy.json.JsonSlurper;
 import groovy.lang.Closure;
+import kotlin.jvm.functions.Function0;
 import org.apache.hc.client5.http.ClientProtocolException;
 import org.apache.hc.client5.http.auth.AuthCache;
 import org.apache.hc.client5.http.auth.AuthScope;
@@ -838,7 +825,7 @@ public class DownloadAction implements DownloadSpec {
         }
         return files;
     }
-    
+
     @Override
     public void src(Object src) {
         sourceObjects.add(src);
@@ -932,6 +919,11 @@ public class DownloadAction implements DownloadSpec {
      * {@code null} or could not be converted
      */
     private File getDestinationFromDirProperty(Object dir) {
+        if (dir instanceof Function0) {
+            // lazily evaluate Kotlin function
+            Function0<?> function = (Function0<?>)dir;
+            dir = function.invoke();
+        }
         if (dir instanceof Closure) {
             // lazily evaluate closure
             Closure<?> closure = (Closure<?>)dir;
@@ -981,6 +973,11 @@ public class DownloadAction implements DownloadSpec {
 
     @Override
     public void cachedETagsFile(Object location) {
+        if (location instanceof Function0) {
+            // lazily evaluate Kotlin function
+            Function0<?> function = (Function0<?>)location;
+            location = function.invoke();
+        }
         if (location instanceof Closure) {
             // lazily evaluate closure
             Closure<?> closure = (Closure<?>)location;
@@ -1010,6 +1007,11 @@ public class DownloadAction implements DownloadSpec {
     private List<URL> convertSource(Object src) {
         List<URL> result = new ArrayList<>();
 
+        if (src instanceof Function0) {
+            // lazily evaluate Kotlin function
+            Function0<?> function = (Function0<?>)src;
+            src = function.invoke();
+        }
         if (src instanceof Closure) {
             // lazily evaluate closure
             Closure<?> closure = (Closure<?>)src;
