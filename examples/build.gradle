@@ -14,6 +14,22 @@ task runAllExamples {
         ":groovy:temp-rename:downloadFile",
         ":groovy:unzip:downloadAndUnzipFile",
         ":groovy:verify:verifyFile",
-        ":groovy:verify-extension:downloadAndVerifyFile"
+        ":groovy:verify-extension:downloadAndVerifyFile",
+
+        ":kotlin:custom-header:downloadFile",
+        ":kotlin:directory:downloadDirectory",
+        ":kotlin:directory-github:downloadDirectoryGitHub",
+        ":kotlin:etag:downloadFile",
+        ":kotlin:lazy-src-and-dest:downloadFile",
+        // ":kotlin:mirrors", // DOES NOT WORK AT THE MOMENT
+        ":kotlin:multiple-files:downloadFiles",
+        ":kotlin:multiple-files-rename:downloadMultipleFiles1",
+        ":kotlin:multiple-files-rename:downloadMultipleFiles2",
+        ":kotlin:simple:downloadFile",
+        ":kotlin:simple-extension:downloadFile",
+        ":kotlin:temp-rename:downloadFile",
+        ":kotlin:unzip:downloadAndUnzipFile",
+        ":kotlin:verify:verifyFile",
+        ":kotlin:verify-extension:downloadAndVerifyFile"
     ])
 }

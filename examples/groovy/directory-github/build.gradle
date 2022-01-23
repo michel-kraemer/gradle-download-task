@@ -20,7 +20,7 @@ task downloadDirectoryGitHub {
         }
 
         // parse directory listing
-        def contents = new groovy.json.JsonSlurper().parseFile(contentsFile, "utf-8")
+        def contents = new groovy.json.JsonSlurper().parse(contentsFile, "utf-8")
         def urls = contents.collect { it.download_url }
 
         // download files
