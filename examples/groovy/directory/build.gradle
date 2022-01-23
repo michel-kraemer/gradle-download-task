@@ -17,7 +17,7 @@ buildscript {
  * Include the gradle-download-task plugin
  */
 plugins {
-    id 'de.undercouch.download' version '4.1.2'
+    id 'de.undercouch.download' version '5.0.0-SNAPSHOT'
 }
 
 /**
@@ -27,10 +27,10 @@ plugins {
  */
 task downloadDirectory {
     doLast {
-        def dir = 'https://repo.maven.apache.org/maven2/de/undercouch/gradle-download-task/1.0/'
+        def dir = 'https://repo.maven.apache.org/maven2/de/undercouch/gradle-download-task/4.1.2/'
         def urlLister = new org.apache.ivy.util.url.ApacheURLLister()
         def files = urlLister.listFiles(new URL(dir))
-        download {
+        download.run {
            src files
            dest buildDir
         }

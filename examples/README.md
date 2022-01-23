@@ -3,125 +3,81 @@ Gradle Download Task Examples
 
 This directory contains a number of examples for gradle-download-task.
 
-The examples work with Gradle 2.1 and higher. If you need instructions
-for older Gradle versions, please have a look at the project's [readme file](../README.md).
-
 A more detailed description of the examples here can be found in the blog post
 [10 recipes for gradle-download-task](http://www.michel-kraemer.com/recipes-for-gradle-download).
 
-[simpleTask.gradle](simpleTask.gradle)
+[simple](groovy/simple/build.gradle)
 --------------------------------------
 
 Download a single file.
 
-    gradle -b simpleTask.gradle
-
-[simpleExtension.gradle](simpleExtension.gradle)
+[simple-extension](groovy/simple-extension/build.gradle)
 ------------------------------------------------
 
 Download a single file using the DSL extension.
 
-    gradle -b simpleExtension.gradle
-
-[multipleFiles.gradle](multipleFiles.gradle)
+[multiple-files](groovy/multiple-files/build.gradle)
 --------------------------------------------
 
 Download multiple files.
 
-    gradle -b multipleFiles.gradle
-
-[multipleFilesRename.gradle](multipleFilesRename.gradle)
+[multiple-files-rename](groovy/multiple-files-rename/build.gradle)
 --------------------------------------------------------
 
 Download multiple files and specify destination file names for each of them.
 
-    gradle -b multipleFilesRename.gradle
-
-[customHeader.gradle](customHeader.gradle)
+[custom-header](groovy/custom-header/build.gradle)
 ------------------------------------------
 
 Download single file and specify a custom HTTP header.
 
-    gradle -b customHeader.gradle
-
-[directory.gradle](directory.gradle)
+[directory](groovy/directory/build.gradle)
 ------------------------------------
 
 Download all files from a directory.
 
-    gradle -b directory.gradle
-
-[directoryGitHub.gradle](directoryGitHub.gradle)
+[directory-github](groovy/directory-github/build.gradle)
 ------------------------------------
 
 Download all files from a directory in GitHub. Use the GitHub API to get the
 directory's contents. Parse the result and download the files.
 
-    gradle -b directoryGitHub.gradle
-
-[mirrors.gradle](mirrors.gradle)
+[etag](groovy/etag/build.gradle)
 --------------------------------
 
-Download a single file from a mirror server. Configure multiple mirror servers
-and use the first one that is working.
+Download a file conditionally using its entity tag (ETag).
 
-    gradle -b mirrors.gradle
-
-[srcAndDestClosure.gradle](srcAndDestClosure.gradle)
+[lazy-src-and-dest](groovy/lazy-src-and-dest/build.gradle)
 ----------------------------------------------------
 
 Download a single file to a directory. Use closures for the `src` and `dest`
 property.
 
-    gradle -b srcAndDestClosure.gradle
+[mirrors](groovy/mirrors/build.gradle)
+--------------------------------
 
-[tempRename.gradle](tempRename.gradle)
+Download a single file from a mirror server. Configure multiple mirror servers
+and use the first one that is working.
+
+[temp-rename](groovy/temp-rename/build.gradle)
 --------------------------------------
 
 Conditionally download a single file using a temporary name (`<filename>.part`).
 Rename the file afterwards if the download was successful.
 
-    gradle -b tempRename.gradle
-
-[unzip.gradle](unzip.gradle)
+[unzip](groovy/unzip/build.gradle)
 ----------------------------
 
 Download a ZIP file and extract its contents.
 
-    gradle -b unzip.gradle
-
-[useETag.gradle](useETag.gradle)
---------------------------------
-
-Download a file conditionally using its entity tag (ETag).
-
-    gradle -b useETag.gradle
-
-[verify.gradle](verify.gradle)
+[verify](groovy/verify/build.gradle)
 ------------------------------
 
 Download a file and verify its contents by calculating its checksum and
 comparing it to a given value.
 
-    gradle -b verify.gradle
-
-[verifyExtension.gradle](verifyExtension.gradle)
+[verify-extension](groovy/verify-extension/build.gradle)
 ------------------------------------------------
 
-Same as [verify.gradle](verify.gradle) but uses the `verifyChecksum` extension
+Same as [verify](groovy/verify/build.gradle) but uses the `verifyChecksum` extension
 instead of the `Verify` task.
-
-    gradle -b verifyExtension.gradle
-
-Run all examples
-----------------
-
-Useful for testing.
-
-Bash:
-
-    find . -maxdepth 1 -name '*.gradle' -type f -exec echo {} \; -exec gradle -b {} \;
-
-Windows:
-
-    FORFILES /M *.gradle /C "cmd /c if @isdir equ FALSE echo @file && gradle -b @file"

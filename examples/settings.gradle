@@ -1,1 +1,35 @@
-// Empty file. Necessary for Gradle 5.x or higher.
+// The following pluginManagement block is only necessary for the example
+// scripts here. It allows us to use snapshot versions of gradle-download-task
+// from mavenLocal() and the sonatype OSS repo for development purposes.
+// THIS CONFIGURATION IS NOT NEEDED IN REAL PROJECTS!
+pluginManagement {
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.namespace == "de.undercouch" && requested.id.name == "download") {
+                useModule("de.undercouch:gradle-download-task:${requested.version}")
+            }
+        }
+    }
+    repositories {
+        mavenLocal()
+        maven {
+            url "https://oss.sonatype.org/content/groups/public"
+        }
+        gradlePluginPortal()
+    }
+}
+
+include "groovy:custom-header"
+include "groovy:directory"
+include "groovy:directory-github"
+include "groovy:etag"
+include "groovy:lazy-src-and-dest"
+// include "groovy:mirrors" DOES NOT WORK AT THE MOMENT
+include "groovy:multiple-files"
+include "groovy:multiple-files-rename"
+include "groovy:simple"
+include "groovy:simple-extension"
+include "groovy:temp-rename"
+include "groovy:unzip"
+include "groovy:verify"
+include "groovy:verify-extension"

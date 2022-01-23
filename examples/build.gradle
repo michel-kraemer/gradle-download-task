@@ -1,0 +1,19 @@
+task runAllExamples {
+    dependsOn([
+        ":groovy:custom-header:downloadFile",
+        ":groovy:directory:downloadDirectory",
+        ":groovy:directory-github:downloadDirectoryGitHub",
+        ":groovy:etag:downloadFile",
+        ":groovy:lazy-src-and-dest:downloadFile",
+        // ":groovy:mirrors", // DOES NOT WORK AT THE MOMENT
+        ":groovy:multiple-files:downloadFiles",
+        ":groovy:multiple-files-rename:downloadMultipleFiles1",
+        ":groovy:multiple-files-rename:downloadMultipleFiles2",
+        ":groovy:simple:downloadFile",
+        ":groovy:simple-extension:downloadFile",
+        ":groovy:temp-rename:downloadFile",
+        ":groovy:unzip:downloadAndUnzipFile",
+        ":groovy:verify:verifyFile",
+        ":groovy:verify-extension:downloadAndVerifyFile"
+    ])
+}

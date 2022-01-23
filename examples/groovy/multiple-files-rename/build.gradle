@@ -2,7 +2,7 @@
  * Include the gradle-download-task plugin
  */
 plugins {
-    id 'de.undercouch.download' version '4.1.2'
+    id 'de.undercouch.download' version '5.0.0-SNAPSHOT'
 }
 
 /**
@@ -19,9 +19,9 @@ ext.src = [
 task downloadMultipleFiles1 {
     doLast {
         for (s in src) {
-            download {
+            download.run {
                 src s.key
-                dest new File(buildDir, s.value)
+                dest new File("$buildDir/alternative1", s.value)
             }
         }
     }
@@ -32,12 +32,14 @@ task downloadMultipleFiles1 {
  */
 task downloadMultipleFiles2
 
+def i = 0
 for (s in src) {
-    task "downloadMultipleFiles2_${s.key.hashCode()}"(type: Download) {
+    ++i
+    task "downloadMultipleFiles2_${i}"(type: Download) {
         src s.key
-        dest new File(buildDir, s.value)
+        dest new File("$buildDir/alternative2", s.value)
     }
-    downloadMultipleFiles2.dependsOn("downloadMultipleFiles2_${s.key.hashCode()}")
+    downloadMultipleFiles2.dependsOn("downloadMultipleFiles2_${i}")
 }
 
 defaultTasks 'downloadMultipleFiles1', 'downloadMultipleFiles2'

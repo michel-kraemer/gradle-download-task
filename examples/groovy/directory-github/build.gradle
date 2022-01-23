@@ -2,7 +2,7 @@
  * Include the gradle-download-task plugin
  */
 plugins {
-    id 'de.undercouch.download' version '4.1.2'
+    id 'de.undercouch.download' version '5.0.0-SNAPSHOT'
 }
 
 /**
@@ -12,9 +12,9 @@ plugins {
 task downloadDirectoryGitHub {
     doLast {
         // download directory listing via GitHub API
-        def dir = 'https://api.github.com/repos/michel-kraemer/gradle-download-task/contents/examples'
+        def dir = 'https://api.github.com/repos/michel-kraemer/gradle-download-task/contents/screencast'
         def contentsFile = new File(buildDir, "directory_contents.json")
-        download {
+        download.run {
            src dir
            dest contentsFile
         }
@@ -24,7 +24,7 @@ task downloadDirectoryGitHub {
         def urls = contents.collect { it.download_url }
 
         // download files
-        download {
+        download.run {
            src urls
            dest buildDir
         }

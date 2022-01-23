@@ -2,7 +2,7 @@
  * Include the gradle-download-task plugin
  */
 plugins {
-    id 'de.undercouch.download' version '4.1.2'
+    id 'de.undercouch.download' version '5.0.0-SNAPSHOT'
 }
 
 /**
@@ -15,10 +15,10 @@ task downloadFile {
             'https://repo.maven.apache.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar',
             'https://repo.maven-non-existing2.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar'
         ] as Queue
-        while(true) {
+        while (true) {
             def mirror = mirrors.poll()
             try {
-                download {
+                download.run {
                     src mirror
                     dest buildDir
                     overwrite true
