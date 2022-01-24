@@ -56,20 +56,26 @@ public abstract class FunctionalTestBase extends TestBaseWithMockServer {
     /**
      * Create a gradle runner using the given build file
      * @param buildFile the build file
-     * @param gradleVersion the Gradle version to test against
      * @return the gradle runner
      * @throws IOException if the build file could not written to disk
      */
-    protected GradleRunner createRunnerWithBuildFile(String buildFile,
-            String gradleVersion) throws IOException {
+    protected GradleRunner createRunnerWithBuildFile(String buildFile) throws IOException {
         FileUtils.writeStringToFile(this.buildFile, buildFile, StandardCharsets.UTF_8);
 
         writePropertiesFile();
 
-        return GradleRunner.create()
+        GradleRunner runner =  GradleRunner.create()
+                .forwardOutput()
                 .withPluginClasspath()
-                .withProjectDir(testProjectDir.toFile())
-                .withGradleVersion(gradleVersion);
+                .withProjectDir(testProjectDir.toFile());
+
+        String gradleVersion = System.getProperty("gradleVersionUnderTest");
+        if (gradleVersion != null) {
+            System.out.println("Using Gradle version " + gradleVersion);
+            runner = runner.withGradleVersion(gradleVersion);
+        }
+
+        return runner;
     }
 
     /**

@@ -17,12 +17,18 @@ import org.mortbay.jetty.handler.ResourceHandler
 import org.mortbay.resource.Resource
 import org.gradle.util.GradleVersion
 
-task integrationTest {
-    doLast {
-        def testStr = "This is a test"
-        def testStr2 = "This is another test"
-
-        def versionsToTest = [
+ext {
+    // on CI server, limit to major versions to avoid running
+    // out of open file descriptors (happens when we load the
+    // jar files of too many Gradle distributions into memory)
+    if ("true".equals(System.getenv("CI"))) {
+        versionsToTest = [
+            "5.6.4",
+            "6.9.2",
+            "7.3.3"
+        ]
+    } else {
+        versionsToTest = [
             '5.0', '5.1', '5.1.1', '5.2', '5.2.1', '5.3', '5.3.1',
             '5.4', '5.4.1', '5.5', '5.5.1',
             '5.6', '5.6.1', '5.6.2', '5.6.3', '5.6.4',
@@ -33,6 +39,13 @@ task integrationTest {
             '7.0', '7.0.1', '7.0.2', '7.1', '7.1.1', '7.2',
             '7.3', '7.3.1', '7.3.2', '7.3.3'
         ]
+    }
+}
+
+task integrationTest {
+    doLast {
+        def testStr = "This is a test"
+        def testStr2 = "This is another test"
 
         //handle regex to only include certain gradle versions
         if (project.hasProperty('integrationTestIncludes')) {

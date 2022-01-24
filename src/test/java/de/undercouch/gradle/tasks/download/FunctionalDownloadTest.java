@@ -19,20 +19,13 @@ import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.BuildTask;
 import org.gradle.testkit.runner.GradleRunner;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
@@ -56,48 +49,6 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     private File destFile;
 
     /**
-     * @return the Gradle versions to test against
-     */
-    public static Stream<Arguments> versionsToTest() {
-        List<String> versions;
-        if ("true".equals(System.getenv("CI"))) {
-            // on CI server, limit to major versions to avoid running
-            // out of open file descriptors (happens when we load the
-            // jar files of too many Gradle distributions into memory)
-            versions = Arrays.asList(
-                    "5.6.4",
-                    "6.9.2",
-                    "7.3.3"
-            );
-        } else {
-            versions = Arrays.asList(
-                    "5.0", "5.1", "5.1.1", "5.2", "5.2.1", "5.3", "5.3.1",
-                    "5.4", "5.4.1", "5.5", "5.5.1",
-                    "5.6", "5.6.1", "5.6.2", "5.6.3", "5.6.4",
-                    "6.0", "6.0.1", "6.1", "6.1.1", "6.2", "6.2.1", "6.2.2",
-                    "6.3", "6.4", "6.4.1", "6.5", "6.5.1", "6.6", "6.6.1",
-                    "6.7", "6.7.1", "6.8", "6.8.1", "6.8.2", "6.8.3",
-                    "6.9", "6.9.1", "6.9.2",
-                    "7.0", "7.0.1", "7.0.2", "7.1", "7.1.1", "7.2",
-                    "7.3", "7.3.1", "7.3.2", "7.3.3"
-            );
-        }
-
-        // get methods annotated with @FunctionalTest
-        List<String> methods = Arrays.stream(FunctionalDownloadTest.class.getDeclaredMethods())
-                .filter(m -> Arrays.stream(m.getDeclaredAnnotations())
-                                .anyMatch(a -> a.annotationType() == FunctionalTest.class))
-                .map(Method::getName)
-                .collect(Collectors.toList());
-
-        // Run each @FunctionalTest for each version
-        // Tests should be sorted by version, so the Gradle daemon can be
-        // reused. Otherwise, the tests will be really slow.
-        return versions.stream().flatMap(a -> methods.stream().flatMap(b ->
-                Stream.of(Arguments.of(a, b))));
-    }
-
-    /**
      * Constructs a new functional test
      */
     @BeforeEach
@@ -110,33 +61,13 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     }
 
     /**
-     * We use our own strategy to call test methods based on the parameters
-     * provided by {@link #versionsToTest()} instead of parameterized tests
-     * from JUnit 5. Parameterized tests apply to a single test and not to the
-     * whole class. This means JUnit calls one test method n times for n
-     * parameters and then continues with the next method. In our case, this
-     * means that the tests are very slow, because Gradle daemons cannot be
-     * reused. Instead, we have to call each test method for one version and
-     * then continue with the next version (i.e. we have to group test methods
-     * by version). This allows Gradle daemons to be reused.
-     */
-    @ParameterizedTest()
-    @MethodSource("versionsToTest")
-    public void test(String gradleVersion, String testMethod) throws Exception {
-        Method m = FunctionalDownloadTest.class.getDeclaredMethod(testMethod, String.class);
-        m.invoke(this, gradleVersion);
-    }
-
-    /**
      * Test if a single file can be downloaded successfully
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadSingleFile(String gradleVersion) throws Exception {
+    @Test
+    public void downloadSingleFile() throws Exception {
         configureDefaultStub();
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false),
-                gradleVersion));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
         assertThat(destFile).isFile();
         assertThat(destFile).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
@@ -146,15 +77,12 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * a RegularFileProperty
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadSingleFileUsingRegularFileProperty(String gradleVersion)
-            throws Exception {
+    @Test
+    public void downloadSingleFileUsingRegularFileProperty() throws Exception {
         configureDefaultStub();
         String setup = "RegularFileProperty fp = project.objects.fileProperty();\n" +
                 "fp.set(" + dest + ")\n";
-        assertTaskSuccess(download(new Parameters(singleSrc, "fp", setup, true, false),
-                gradleVersion));
+        assertTaskSuccess(download(new Parameters(singleSrc, "fp", setup, true, false)));
         assertThat(destFile).isFile();
         assertThat(destFile).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
@@ -164,15 +92,12 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * is a basic Property provider
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadSingleFileUsingFileProperty(String gradleVersion)
-            throws Exception {
+    @Test
+    public void downloadSingleFileUsingFileProperty() throws Exception {
         configureDefaultStub();
         String setup = "Property fp = project.objects.property(File.class);\n" +
                 "fp.set(" + dest + ")\n";
-        assertTaskSuccess(download(new Parameters(singleSrc, "fp", setup, true, false),
-                gradleVersion));
+        assertTaskSuccess(download(new Parameters(singleSrc, "fp", setup, true, false)));
         assertThat(destFile).isFile();
         assertThat(destFile).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
@@ -183,14 +108,11 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * a file inside the buildDirectory
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadSingleFileUsingBuildDirectoryFile(String gradleVersion)
-            throws Exception {
+    @Test
+    public void downloadSingleFileUsingBuildDirectoryFile() throws Exception {
         configureDefaultStub();
         String dest = "layout.buildDirectory.file('download/outputfile')";
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false),
-                gradleVersion));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
         File destFile = new File(testProjectDir.toFile(), "build/download/outputfile");
         assertThat(destFile).isFile();
         assertThat(destFile).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
@@ -202,14 +124,11 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * is a directory inside the buildDirectory
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadSingleFileUsingBuildDirectoryDir(String gradleVersion)
-            throws Exception {
+    @Test
+    public void downloadSingleFileUsingBuildDirectoryDir() throws Exception {
         configureDefaultStub();
         String dest = "layout.buildDirectory.dir('download/')";
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false),
-                gradleVersion));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
         File[] destFiles = new File(testProjectDir.toFile(), "build/download/").listFiles();
         assertThat(destFiles).isNotNull();
         File destFile = destFiles[0];
@@ -221,12 +140,11 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * Test if a single file can be downloaded successfully with quiet mode
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadSingleFileWithQuietMode(String gradleVersion) throws Exception {
+    @Test
+    public void downloadSingleFileWithQuietMode() throws Exception {
         configureDefaultStub();
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true,
-                false, true, false, true), gradleVersion));
+                false, true, false, true)));
         assertThat(destFile).isFile();
         assertThat(destFile).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
@@ -235,13 +153,12 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * Test if a single file can be downloaded successfully with quiet mode
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadSingleFileWithoutCompress(String gradleVersion) throws Exception {
+    @Test
+    public void downloadSingleFileWithoutCompress() throws Exception {
         configureDefaultStub();
         configureDefaultStub2();
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true,
-                false, false, false, false), gradleVersion));
+                false, false, false, false)));
         assertThat(destFile).isFile();
         assertThat(destFile).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
@@ -250,13 +167,11 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * Test if multiple files can be downloaded successfully
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadMultipleFiles(String gradleVersion) throws Exception {
+    @Test
+    public void downloadMultipleFiles() throws Exception {
         configureDefaultStub();
         configureDefaultStub2();
-        assertTaskSuccess(download(new Parameters(multipleSrc, dest, true, false),
-                gradleVersion));
+        assertTaskSuccess(download(new Parameters(multipleSrc, dest, true, false)));
         assertThat(destFile).isDirectory();
         assertThat(new File(destFile, TEST_FILE_NAME))
                 .usingCharset(StandardCharsets.UTF_8)
@@ -270,29 +185,23 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * Download a file twice and check if the second attempt is skipped
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadSingleFileTwiceMarksTaskAsUpToDate(String gradleVersion)
-            throws Exception {
+    @Test
+    public void downloadSingleFileTwiceMarksTaskAsUpToDate() throws Exception {
         configureDefaultStub();
         final Parameters parameters = new Parameters(singleSrc, dest, false, false);
-        assertTaskSuccess(download(parameters, gradleVersion));
-        assertTaskUpToDate(download(parameters, gradleVersion));
+        assertTaskSuccess(download(parameters));
+        assertTaskUpToDate(download(parameters));
     }
 
     /**
      * Download a file with 'overwrite' flag and check if the second attempt succeeds
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadSingleFileTwiceWithOverwriteExecutesTwice(String gradleVersion)
-            throws Exception {
+    @Test
+    public void downloadSingleFileTwiceWithOverwriteExecutesTwice() throws Exception {
         configureDefaultStub();
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, false),
-                gradleVersion));
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false),
-                gradleVersion));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, false)));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
     }
 
     /**
@@ -300,33 +209,27 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * skipped even if the 'overwrite' flag is set
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadSingleFileTwiceWithOfflineMode(String gradleVersion)
-            throws Exception {
+    @Test
+    public void downloadSingleFileTwiceWithOfflineMode() throws Exception {
         configureDefaultStub();
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, false),
-                gradleVersion));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, false)));
         assertTaskSkipped(download(new Parameters(singleSrc, dest, true, false,
-                true, true, false), gradleVersion));
+                true, true, false)));
     }
 
     /**
      * Download a file once, then download again with 'onlyIfModified'
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadOnlyIfNewer(String gradleVersion) throws Exception {
+    @Test
+    public void downloadOnlyIfNewer() throws Exception {
         stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .willReturn(aResponse()
                         .withHeader("Last-Modified", "Sat, 21 Jun 2019 11:54:15 GMT")
                         .withBody(CONTENTS)));
 
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, true),
-                gradleVersion));
-        assertTaskUpToDate(download(new Parameters(singleSrc, dest, true, true),
-                gradleVersion));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, true)));
+        assertTaskUpToDate(download(new Parameters(singleSrc, dest, true, true)));
     }
 
     /**
@@ -334,34 +237,29 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * File changed between downloads.
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadOnlyIfNewerRedownloadsIfFileHasBeenUpdated(String gradleVersion)
-            throws Exception {
+    @Test
+    public void downloadOnlyIfNewerRedownloadsIfFileHasBeenUpdated() throws Exception {
         stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .willReturn(aResponse()
                         .withHeader("Last-Modified", "Sat, 21 Jun 2019 11:54:15 GMT")
                         .withBody(CONTENTS)));
 
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, true),
-                gradleVersion));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, true)));
 
         stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .willReturn(aResponse()
                         .withHeader("Last-Modified", "Sat, 21 Jun 2019 11:55:15 GMT")
                         .withBody(CONTENTS)));
 
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, true),
-                gradleVersion));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, true)));
     }
 
     /**
      * Download a file once, then download again with 'useETag'
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadUseETag(String gradleVersion) throws Exception {
+    @Test
+    public void downloadUseETag() throws Exception {
         String etag = "\"foobar\"";
 
         stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
@@ -376,19 +274,17 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                         .withStatus(304)));
 
         assertTaskSuccess(download(new Parameters(singleSrc, dest, true, true,
-                false, false, false, true), gradleVersion));
+                false, false, false, true)));
         assertTaskUpToDate(download(new Parameters(singleSrc, dest, true, true,
-                false, false, false, true), gradleVersion));
+                false, false, false, true)));
     }
 
     /**
      * Create destination file locally, then run download.
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadOnlyIfNewerReDownloadIfFileExists(String gradleVersion)
-            throws Exception {
+    @Test
+    public void downloadOnlyIfNewerReDownloadIfFileExists() throws Exception {
         String lm = "Sat, 21 Jun 2019 11:54:15 GMT";
         long expectedlmlong = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH)
                 .parse(lm)
@@ -401,25 +297,21 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
 
         FileUtils.writeStringToFile(destFile, CONTENTS, StandardCharsets.UTF_8);
         assertThat(destFile.setLastModified(expectedlmlong)).isTrue();
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false),
-                gradleVersion));
+        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
     }
 
     /**
      * Copy a file from a file:// URL once, then download again with 'onlyIfModified'
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadFileURLOnlyIfNewer(String gradleVersion) throws Exception {
+    @Test
+    public void downloadFileURLOnlyIfNewer() throws Exception {
         File srcFile = newTempFile();
         FileUtils.writeStringToFile(srcFile, CONTENTS, StandardCharsets.UTF_8);
         String srcFileUri = "'" + srcFile.toURI() + "'";
-        assertTaskSuccess(download(new Parameters(srcFileUri, dest, true, true),
-                gradleVersion));
+        assertTaskSuccess(download(new Parameters(srcFileUri, dest, true, true)));
         assertThat(destFile.setLastModified(srcFile.lastModified())).isTrue();
-        assertTaskUpToDate(download(new Parameters(srcFileUri, dest, true, true),
-                gradleVersion));
+        assertTaskUpToDate(download(new Parameters(srcFileUri, dest, true, true)));
     }
 
     /**
@@ -427,13 +319,11 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * output file
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void fileDependenciesTriggersDownloadTask(String gradleVersion)
-            throws Exception {
+    @Test
+    public void fileDependenciesTriggersDownloadTask() throws Exception {
         configureDefaultStub();
         assertTaskSuccess(runTask(":processTask", new Parameters(singleSrc,
-                dest, true, false), gradleVersion));
+                dest, true, false)));
         assertThat(destFile).isFile();
     }
 
@@ -442,15 +332,14 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * output files
      * @throws Exception if anything went wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void fileDependenciesWithMultipleSourcesTriggersDownloadTask(
-            String gradleVersion) throws Exception {
+    @Test
+    public void fileDependenciesWithMultipleSourcesTriggersDownloadTask()
+            throws Exception {
         configureDefaultStub();
         configureDefaultStub2();
         assertThat(destFile.mkdirs()).isTrue();
         assertTaskSuccess(runTask(":processTask", new Parameters(multipleSrc,
-                dest, true, false), gradleVersion));
+                dest, true, false)));
         assertThat(destFile).isDirectory();
         assertThat(new File(destFile, TEST_FILE_NAME))
                 .usingCharset(StandardCharsets.UTF_8)
@@ -465,9 +354,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
      * should not automatically fail too
      * @throws Exception if anything goes wrong
      */
-    @FunctionalTest
-    @SuppressWarnings("unused")
-    private void downloadExtensionShouldNotFailTask(String gradleVersion) throws Exception{
+    @Test
+    public void downloadExtensionShouldNotFailTask() throws Exception{
         stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .willReturn(aResponse()
                         .withStatus(404)));
@@ -485,7 +373,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                             "println('Exception thrown: ' + e.class)\n" +
                         "}\n" +
                     "}\n" +
-                "}\n", gradleVersion);
+                "}\n");
 
         BuildResult result = runner.withArguments(singletonList("downloadTask"))
                 .build();
@@ -496,26 +384,22 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     /**
      * Create a download task
      * @param parameters the download parameters
-     * @param gradleVersion the Gradle version to test against
      * @return the download task
      * @throws Exception if anything went wrong
      */
-    protected BuildTask download(Parameters parameters,
-            String gradleVersion) throws Exception {
-        return runTask(":downloadTask", parameters, gradleVersion);
+    protected BuildTask download(Parameters parameters) throws Exception {
+        return runTask(":downloadTask", parameters);
     }
 
     /**
      * Create a task
      * @param taskName the task's name
      * @param parameters the download parameters
-     * @param gradleVersion the Gradle version to test against
      * @return the task
      * @throws Exception if anything went wrong
      */
-    protected BuildTask runTask(String taskName, Parameters parameters,
-            String gradleVersion) throws Exception {
-        return createRunner(parameters, gradleVersion)
+    protected BuildTask runTask(String taskName, Parameters parameters) throws Exception {
+        return createRunner(parameters)
                 .withArguments(parameters.offline ? asList("--offline", taskName) :
                     singletonList(taskName))
                 .build()
@@ -525,12 +409,10 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     /**
      * Create a gradle runner to test against
      * @param parameters the download parameters
-     * @param gradleVersion the Gradle version to test against
      * @return the runner
      * @throws IOException if the build file could not be created
      */
-    protected GradleRunner createRunner(Parameters parameters,
-            String gradleVersion) throws IOException {
+    protected GradleRunner createRunner(Parameters parameters) throws IOException {
         return createRunnerWithBuildFile(
             "plugins { id 'de.undercouch.download' }\n" +
             parameters.setup +
@@ -549,7 +431,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                     "assert !inputs.files.isEmpty()\n" +
                     "inputs.files.each { f -> assert f.isFile() }\n" +
                 "}\n" +
-            "}\n", gradleVersion);
+            "}\n");
     }
 
     private static class Parameters {

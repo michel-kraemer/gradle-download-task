@@ -62,7 +62,19 @@ jacocoTestReport {
     }
 }
 
-test {
+task functionalTest
+for (v in versionsToTest) {
+    def vn = v.replace(".", "_")
+    task "functionalTest_$vn"(type: Test) {
+        include "**/FunctionalDownloadTest.class"
+        systemProperty 'gradleVersionUnderTest', v
+    }
+    functionalTest.dependsOn("functionalTest_$vn")
+}
+
+test.finalizedBy(functionalTest)
+
+tasks.withType(Test).all {
     // use junit5 for tests
     useJUnitPlatform()
 
