@@ -20,6 +20,19 @@ targetCompatibility = '1.8'
 ext {
     isReleaseVersion = !version.endsWith("SNAPSHOT")
     junitVersion = '5.8.2'
+
+    // on CI server, limit functional tests to major versions to avoid running
+    // out of open file descriptors (happens when we load the jar files of too
+    // many Gradle distributions into memory)
+    if ("true".equals(System.getenv("CI"))) {
+        limitedVersionsToTest = [
+            "5.6.4",
+            "6.9.2",
+            "7.3.3"
+        ]
+    } else {
+        limitedVersionsToTest = versionsToTest
+    }
 }
 
 repositories {
@@ -62,8 +75,10 @@ jacocoTestReport {
     }
 }
 
+// configure functional tests
 task functionalTest
-for (v in versionsToTest) {
+
+for (v in limitedVersionsToTest) {
     def vn = v.replace(".", "_")
     task "functionalTest_$vn"(type: Test) {
         include "**/FunctionalDownloadTest.class"
