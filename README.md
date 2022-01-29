@@ -2,7 +2,7 @@
 	<img src="logo/logo.png" width="250" height="250">
 	<h1>gradle-download-task</h1>
 	<p>
-		<b>Download files in your Gradle build script with <strike>style</strike> progress</b>
+		<b>Download files in your Gradle build script with <strike>style</strike> progress and in parallel</b>
 	</p>
 	<br>
 </div>
@@ -20,8 +20,9 @@
 <br>
 
 This is a download task for [Gradle](http://www.gradle.org/).
-It displays progress information just as Gradle does when it retrieves
-an artifact from a repository.
+It **displays progress information** just like Gradle does when it retrieves
+an artifact from a repository. It is also able to **download multiple files in
+parallel** and supports **concurrent execution** with other tasks.
 
 The plugin has been successfully tested with Gradle 5.0 up to 7.3.3.
 It should work with newer versions as well.
@@ -64,14 +65,14 @@ extension to retrieve a file anywhere in your build script:
 ```groovy
 task myTask {
     doLast {
-        //do something ...
-        //... then download a file
-        download {
+        // do something ...
+        // ... then download a file
+        download.run {
             src 'http://www.example.com/index.html'
             dest buildDir
             overwrite false
         }
-        //... do something else
+        // ... do something else
     }
 }
 ```
@@ -104,7 +105,7 @@ Note that this feature depends on the server and whether it supports the
 `If-Modified-Since` request header and provides a `Last-Modified`
 timestamp in its response.
 
-### Sequentially download a list of files to a directory
+### Concurrently download a list of files to a directory
 
 ```groovy
 task downloadMultipleFiles(type: Download) {
@@ -130,7 +131,7 @@ task downloadDirectory {
         def dir = 'http://central.maven.org/maven2/de/undercouch/gradle-download-task/1.0/'
         def urlLister = new org.apache.ivy.util.url.ApacheURLLister()
         def files = urlLister.listFiles(new URL(dir))
-        download {
+        download.run {
            src files
            dest buildDir
         }
@@ -145,8 +146,8 @@ plugin with Gradle's built-in support for ZIP files:
 
 ```groovy
 task downloadZipFile(type: Download) {
-    src 'https://github.com/michel-kraemer/gradle-download-task/archive/1.0.zip'
-    dest new File(buildDir, '1.0.zip')
+    src 'https://github.com/michel-kraemer/gradle-download-task/archive/refs/tags/5.0.0.zip'
+    dest new File(buildDir, '5.0.0.zip')
 }
 
 task downloadAndUnzipFile(dependsOn: downloadZipFile, type: Copy) {
@@ -186,8 +187,8 @@ has been modified on the server since the last download <em>(default:
 <code>false</code>)</em></dd>
 </dl>
 
-<em>Tip!</em> You may provide Groovy Closures to the `src` and `dest`
-properties to calculate their value at runtime.
+<em>Tip!</em> You may provide Groovy Closures or Kotlin Lambdas to the `src`
+and `dest` properties to calculate their value at runtime.
 
 ### Connection
 
@@ -226,16 +227,11 @@ means infinite retries. <em>(default: <code>0</code>)</em></dd>
 
 <dl>
 <dt>username</dt>
-<dd>The username for <code>Basic</code> or <code>Digest</code> authentication
+<dd>The username that should be used if the server requires authentication
 <em>(optional)</em></dd>
 <dt>password</dt>
-<dd>The password for <code>Basic</code> or <code>Digest</code> authentication
+<dd>The password that should be used if the server requires authentication
 <em>(optional)</em></dd>
-<dt>authScheme</dt>
-<dd>The authentication scheme to use (valid values are <code>Basic</code> and
-<code>Digest</code>). If <code>username</code> and <code>password</code> are
-set, the default value of this property will be <code>Basic</code>. Otherwise,
-this property has no default value. <em>(optional)</em></dd>
 </dl>
 
 ### Advanced
@@ -355,6 +351,19 @@ systemProp.https.proxyUser=userid
 systemProp.https.proxyPassword=password
 systemProp.https.nonProxyHosts=*.nonproxyrepos.com|localhost
 ```
+
+Migrating from version 4.x to 5.x
+---------------------------------
+
+gradle-download-task 5.0.0 introduces the following breaking changes:
+
+* The `authScheme` property has been removed. The plugin now automatically
+  detects the correct scheme to use based on the server response.
+* The `download` extension was incompatible with Gradle 8. Also, using it
+  from Kotlin build scripts was rather inconvenient. It is therefore now
+  necessary to call the extension through its `run` method. Replace
+  `download { ... }` with `download.run { ... }`. The same applies to the
+  `verify` extension.
 
 Migrating from version 3.x to 4.x
 ---------------------------------
