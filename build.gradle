@@ -124,6 +124,11 @@ shadowJar {
     archiveClassifier = ""
 }
 
+// always execute shadowJar task before publishing the plugin
+tasks.named("publishPlugins") {
+    dependsOn shadowJar
+}
+
 // Disabling default jar task as it is overridden by shadowJar
 // This also prevents us from accidentally publishing the wrong jar
 tasks.named("jar").configure {
