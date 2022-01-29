@@ -34,7 +34,7 @@ First, apply the plugin configuration:
 
 ```groovy
 plugins {
-    id "de.undercouch.download" version "4.1.2"
+    id "de.undercouch.download" version "5.0.0"
 }
 ```
 
