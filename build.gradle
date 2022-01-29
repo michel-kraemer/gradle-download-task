@@ -124,6 +124,12 @@ shadowJar {
     archiveClassifier = ""
 }
 
+// Disabling default jar task as it is overridden by shadowJar
+// This also prevents us from accidentally publishing the wrong jar
+tasks.named("jar").configure {
+    enabled = false
+}
+
 publishing {
     publications {
         shadow(MavenPublication) { publication ->
