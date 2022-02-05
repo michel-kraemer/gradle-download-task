@@ -1,6 +1,6 @@
 plugins {
     id "com.gradle.plugin-publish" version "0.20.0"
-    id "com.github.johnrengelman.shadow" version "6.1.0"
+    id "com.github.johnrengelman.shadow" version "7.1.2"
     id "io.github.gradle-nexus.publish-plugin" version "1.1.0"
 }
 
@@ -122,6 +122,12 @@ gradlePlugin {
 
 shadowJar {
     archiveClassifier = ""
+}
+
+// do not include Gradle API into shadow JAR
+// see also https://github.com/johnrengelman/shadow/issues/747
+configurations.named(JavaPlugin.API_CONFIGURATION_NAME) {
+    dependencies.remove(project.dependencies.gradleApi())
 }
 
 // always execute shadowJar task before publishing the plugin
