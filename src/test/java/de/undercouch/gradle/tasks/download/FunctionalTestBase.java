@@ -59,10 +59,10 @@ public abstract class FunctionalTestBase extends TestBaseWithMockServer {
      * @return the gradle runner
      * @throws IOException if the build file could not written to disk
      */
-    protected GradleRunner createRunnerWithBuildFile(String buildFile) throws IOException {
+    protected GradleRunner createRunnerWithBuildFile(String buildFile, boolean skipJacocoAgent) throws IOException {
         FileUtils.writeStringToFile(this.buildFile, buildFile, StandardCharsets.UTF_8);
 
-        writePropertiesFile();
+        writePropertiesFile(skipJacocoAgent);
 
         GradleRunner runner =  GradleRunner.create()
                 .forwardOutput()
@@ -107,15 +107,16 @@ public abstract class FunctionalTestBase extends TestBaseWithMockServer {
 
     /**
      * Write a default 'gradle.properties' file to disk
+     * @param skipJacocoAgent {@code true} if the jacoco agent should be disabled
      * @throws IOException if the file could not be written
      */
-    private void writePropertiesFile() throws IOException {
+    private void writePropertiesFile(boolean skipJacocoAgent) throws IOException {
         // enable jacoco agent if available
         // system properties are set in build.gradle
         String jacocoArgs = "";
         String jacocoRuntimePath = System.getProperty("jacocoRuntimePath");
         String jacocoDestFile = System.getProperty("jacocoDestFile");
-        if (jacocoRuntimePath != null && jacocoDestFile != null) {
+        if (!skipJacocoAgent && jacocoRuntimePath != null && jacocoDestFile != null) {
             jacocoArgs = "-javaagent:\"" + jacocoRuntimePath + "\"=destfile=\"" + jacocoDestFile + "\"";
         }
 

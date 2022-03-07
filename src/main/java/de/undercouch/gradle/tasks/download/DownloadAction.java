@@ -47,7 +47,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -73,7 +75,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Michel Kraemer
  */
 @SuppressWarnings({"ResultOfMethodCallIgnored", "CommentedOutCode"})
-public class DownloadAction implements DownloadSpec {
+public class DownloadAction implements DownloadSpec, Serializable {
     private static final GradleVersion HARD_MIN_GRADLE_VERSION =
             GradleVersion.version("5.0");
     // private static final GradleVersion SOFT_MIN_GRADLE_VERSION =
@@ -87,10 +89,10 @@ public class DownloadAction implements DownloadSpec {
     private final boolean isOffline;
     private final List<Object> sourceObjects = new ArrayList<>(1);
     private List<URL> cachedSources;
-    private final Lock cachedSourcesLock = new ReentrantLock();
+    private transient Lock cachedSourcesLock = new ReentrantLock();
     private Object destObject;
     private File cachedDest;
-    private final Lock cachedDestLock = new ReentrantLock();
+    private transient Lock cachedDestLock = new ReentrantLock();
     private boolean quiet = false;
     private boolean overwrite = true;
     private boolean onlyIfModified = false;
@@ -106,7 +108,7 @@ public class DownloadAction implements DownloadSpec {
     private boolean tempAndMove = false;
     private UseETag useETag = UseETag.FALSE;
     private File cachedETagsFile;
-    private final Lock cachedETagsFileLock = new ReentrantLock();
+    private transient Lock cachedETagsFileLock = new ReentrantLock();
     private final AtomicInteger upToDate = new AtomicInteger(0);
 
     /**
@@ -1208,6 +1210,23 @@ public class DownloadAction implements DownloadSpec {
         } finally {
             cachedETagsFileLock.unlock();
         }
+    }
+
+    /**
+     * In order to support Gradle's configuration cache, we need to make some
+     * fields transient. This method re-initializes these fields after the
+     * object has been read from the cache.
+     * @param in the input stream to read the object from the cache
+     * @throws IOException if the object could not be read
+     * @throws ClassNotFoundException if the object could not be deserialized
+     */
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+
+        // initialize transient fields
+        cachedSourcesLock = new ReentrantLock();
+        cachedDestLock = new ReentrantLock();
+        cachedETagsFileLock = new ReentrantLock();
     }
 
     /**

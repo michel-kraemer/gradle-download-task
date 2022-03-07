@@ -18,6 +18,7 @@ import org.apache.commons.io.FileUtils;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.BuildTask;
 import org.gradle.testkit.runner.GradleRunner;
+import org.gradle.util.GradleVersion;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -25,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Locale;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -36,6 +38,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Tests the plugin's functionality
@@ -394,12 +397,38 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                             "println('Exception thrown: ' + e.class)\n" +
                         "}\n" +
                     "}\n" +
-                "}\n");
+                "}\n", false);
 
         BuildResult result = runner.withArguments(singletonList("downloadTask"))
                 .build();
         assertThat(result.getOutput()).contains("Exception thrown: class java.lang.IllegalStateException");
         assertTaskSuccess(result.task(":downloadTask"));
+    }
+
+    /**
+     * Test if the configuration cache can be used
+     * @throws Exception if anything went wrong
+     */
+    @Test
+    public void configurationCache() throws Exception {
+        String gradleVersion = System.getProperty("gradleVersionUnderTest");
+        if (gradleVersion != null) {
+            assumeTrue(GradleVersion.version(gradleVersion)
+                            .compareTo(GradleVersion.version("6.6")) >= 0,
+                    "Configuration cache has been introduced in Gradle 6.6");
+        }
+
+        configureDefaultStub();
+
+        // disable jacoco agent because (as of now) Gradle does not support
+        // Java agents in combination with build cache
+        Parameters params = new Parameters.Builder(singleSrc, dest).skipJacocoAgent(true).build();
+        BuildResult result = createRunner(params)
+                .withArguments(Arrays.asList("--configuration-cache", ":downloadTask"))
+                .build();
+        assertTaskSuccess(result.task(":downloadTask"));
+        assertThat(destFile).isFile();
+        assertThat(destFile).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
 
     /**
@@ -452,7 +481,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                     "assert !inputs.files.isEmpty()\n" +
                     "inputs.files.each { f -> assert f.isFile() }\n" +
                 "}\n" +
-            "}\n");
+            "}\n", parameters.skipJacocoAgent);
     }
 
     private static class Parameters {
@@ -465,9 +494,10 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         final boolean quiet;
         final boolean offline;
         final boolean useETag;
+        final boolean skipJacocoAgent;
 
         private Parameters(String src, String dest, String setup, boolean overwrite, boolean onlyIfModified,
-                boolean compress, boolean offline, boolean quiet, boolean useETag) {
+                boolean compress, boolean offline, boolean quiet, boolean useETag, boolean skipJacocoAgent) {
             this.src = src;
             this.dest = dest;
             this.setup = setup;
@@ -477,6 +507,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
             this.offline = offline;
             this.quiet = quiet;
             this.useETag = useETag;
+            this.skipJacocoAgent = skipJacocoAgent;
         }
 
         public static class Builder {
@@ -489,6 +520,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
             private boolean quiet = false;
             private boolean offline = false;
             private boolean useETag = false;
+            private boolean skipJacocoAgent = false;
 
             public Builder(String src, String dest) {
                 this.src = src;
@@ -530,9 +562,14 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 return this;
             }
 
+            public Builder skipJacocoAgent(boolean skipJacocoAgent) {
+                this.skipJacocoAgent = skipJacocoAgent;
+                return this;
+            }
+
             public Parameters build() {
                 return new Parameters(src, dest, setup, overwrite, onlyIfModified,
-                        compress, offline, quiet, useETag);
+                        compress, offline, quiet, useETag, skipJacocoAgent);
             }
         }
     }
