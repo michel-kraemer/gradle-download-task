@@ -67,7 +67,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Test
     public void downloadSingleFile() throws Exception {
         configureDefaultStub();
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
+        Parameters params = new Parameters.Builder(singleSrc, dest).build();
+        assertTaskSuccess(download(params));
         assertThat(destFile).isFile();
         assertThat(destFile).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
@@ -82,7 +83,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         configureDefaultStub();
         String setup = "RegularFileProperty fp = project.objects.fileProperty();\n" +
                 "fp.set(" + dest + ")\n";
-        assertTaskSuccess(download(new Parameters(singleSrc, "fp", setup, true, false)));
+        Parameters params = new Parameters.Builder(singleSrc, "fp").setup(setup).build();
+        assertTaskSuccess(download(params));
         assertThat(destFile).isFile();
         assertThat(destFile).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
@@ -97,7 +99,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         configureDefaultStub();
         String setup = "Property fp = project.objects.property(File.class);\n" +
                 "fp.set(" + dest + ")\n";
-        assertTaskSuccess(download(new Parameters(singleSrc, "fp", setup, true, false)));
+        Parameters params = new Parameters.Builder(singleSrc, "fp").setup(setup).build();
+        assertTaskSuccess(download(params));
         assertThat(destFile).isFile();
         assertThat(destFile).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
@@ -112,7 +115,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     public void downloadSingleFileUsingBuildDirectoryFile() throws Exception {
         configureDefaultStub();
         String dest = "layout.buildDirectory.file('download/outputfile')";
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
+        Parameters params = new Parameters.Builder(singleSrc, dest).build();
+        assertTaskSuccess(download(params));
         File destFile = new File(testProjectDir.toFile(), "build/download/outputfile");
         assertThat(destFile).isFile();
         assertThat(destFile).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
@@ -128,7 +132,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     public void downloadSingleFileUsingBuildDirectoryDir() throws Exception {
         configureDefaultStub();
         String dest = "layout.buildDirectory.dir('download/')";
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
+        Parameters params = new Parameters.Builder(singleSrc, dest).build();
+        assertTaskSuccess(download(params));
         File[] destFiles = new File(testProjectDir.toFile(), "build/download/").listFiles();
         assertThat(destFiles).isNotNull();
         File destFile = destFiles[0];
@@ -143,8 +148,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Test
     public void downloadSingleFileWithQuietMode() throws Exception {
         configureDefaultStub();
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, true,
-                false, true, false, true)));
+        Parameters params = new Parameters.Builder(singleSrc, dest).quiet(true).build();
+        assertTaskSuccess(download(params));
         assertThat(destFile).isFile();
         assertThat(destFile).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
@@ -157,8 +162,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     public void downloadSingleFileWithoutCompress() throws Exception {
         configureDefaultStub();
         configureDefaultStub2();
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, true,
-                false, false, false, false)));
+        Parameters params = new Parameters.Builder(singleSrc, dest).compress(false).build();
+        assertTaskSuccess(download(params));
         assertThat(destFile).isFile();
         assertThat(destFile).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
@@ -171,7 +176,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     public void downloadMultipleFiles() throws Exception {
         configureDefaultStub();
         configureDefaultStub2();
-        assertTaskSuccess(download(new Parameters(multipleSrc, dest, true, false)));
+        Parameters params = new Parameters.Builder(multipleSrc, dest).build();
+        assertTaskSuccess(download(params));
         assertThat(destFile).isDirectory();
         assertThat(new File(destFile, TEST_FILE_NAME))
                 .usingCharset(StandardCharsets.UTF_8)
@@ -188,9 +194,9 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Test
     public void downloadSingleFileTwiceMarksTaskAsUpToDate() throws Exception {
         configureDefaultStub();
-        final Parameters parameters = new Parameters(singleSrc, dest, false, false);
-        assertTaskSuccess(download(parameters));
-        assertTaskUpToDate(download(parameters));
+        Parameters params = new Parameters.Builder(singleSrc, dest).overwrite(false).build();
+        assertTaskSuccess(download(params));
+        assertTaskUpToDate(download(params));
     }
 
     /**
@@ -200,8 +206,10 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Test
     public void downloadSingleFileTwiceWithOverwriteExecutesTwice() throws Exception {
         configureDefaultStub();
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, false)));
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
+        Parameters params1 = new Parameters.Builder(singleSrc, dest).overwrite(false).build();
+        assertTaskSuccess(download(params1));
+        Parameters params2 = new Parameters.Builder(singleSrc, dest).overwrite(true).build();
+        assertTaskSuccess(download(params2));
     }
 
     /**
@@ -212,9 +220,12 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Test
     public void downloadSingleFileTwiceWithOfflineMode() throws Exception {
         configureDefaultStub();
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, false)));
-        assertTaskSkipped(download(new Parameters(singleSrc, dest, true, false,
-                true, true, false)));
+        Parameters params1 = new Parameters.Builder(singleSrc, dest)
+                .overwrite(false).build();
+        assertTaskSuccess(download(params1));
+        Parameters params2 = new Parameters.Builder(singleSrc, dest)
+                .overwrite(true).offline(true).build();
+        assertTaskSkipped(download(params2));
     }
 
     /**
@@ -228,8 +239,12 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                         .withHeader("Last-Modified", "Sat, 21 Jun 2019 11:54:15 GMT")
                         .withBody(CONTENTS)));
 
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, true)));
-        assertTaskUpToDate(download(new Parameters(singleSrc, dest, true, true)));
+        Parameters params1 = new Parameters.Builder(singleSrc, dest)
+                .overwrite(false).onlyIfModified(true).build();
+        assertTaskSuccess(download(params1));
+        Parameters params2 = new Parameters.Builder(singleSrc, dest)
+                .overwrite(true).onlyIfModified(true).build();
+        assertTaskUpToDate(download(params2));
     }
 
     /**
@@ -244,14 +259,18 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                         .withHeader("Last-Modified", "Sat, 21 Jun 2019 11:54:15 GMT")
                         .withBody(CONTENTS)));
 
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, false, true)));
+        Parameters params1 = new Parameters.Builder(singleSrc, dest)
+                .overwrite(false).onlyIfModified(true).build();
+        assertTaskSuccess(download(params1));
 
         stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .willReturn(aResponse()
                         .withHeader("Last-Modified", "Sat, 21 Jun 2019 11:55:15 GMT")
                         .withBody(CONTENTS)));
 
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, true)));
+        Parameters params2 = new Parameters.Builder(singleSrc, dest)
+                .overwrite(true).onlyIfModified(true).build();
+        assertTaskSuccess(download(params2));
     }
 
     /**
@@ -273,10 +292,10 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 .willReturn(aResponse()
                         .withStatus(304)));
 
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, true,
-                false, false, false, true)));
-        assertTaskUpToDate(download(new Parameters(singleSrc, dest, true, true,
-                false, false, false, true)));
+        Parameters params = new Parameters.Builder(singleSrc, dest)
+                .onlyIfModified(true).useETag(true).build();
+        assertTaskSuccess(download(params));
+        assertTaskUpToDate(download(params));
     }
 
     /**
@@ -297,7 +316,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
 
         FileUtils.writeStringToFile(destFile, CONTENTS, StandardCharsets.UTF_8);
         assertThat(destFile.setLastModified(expectedlmlong)).isTrue();
-        assertTaskSuccess(download(new Parameters(singleSrc, dest, true, false)));
+        Parameters params = new Parameters.Builder(singleSrc, dest).build();
+        assertTaskSuccess(download(params));
     }
 
     /**
@@ -309,9 +329,10 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         File srcFile = newTempFile();
         FileUtils.writeStringToFile(srcFile, CONTENTS, StandardCharsets.UTF_8);
         String srcFileUri = "'" + srcFile.toURI() + "'";
-        assertTaskSuccess(download(new Parameters(srcFileUri, dest, true, true)));
+        Parameters params = new Parameters.Builder(srcFileUri, dest).onlyIfModified(true).build();
+        assertTaskSuccess(download(params));
         assertThat(destFile.setLastModified(srcFile.lastModified())).isTrue();
-        assertTaskUpToDate(download(new Parameters(srcFileUri, dest, true, true)));
+        assertTaskUpToDate(download(params));
     }
 
     /**
@@ -322,8 +343,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     @Test
     public void fileDependenciesTriggersDownloadTask() throws Exception {
         configureDefaultStub();
-        assertTaskSuccess(runTask(":processTask", new Parameters(singleSrc,
-                dest, true, false)));
+        Parameters params = new Parameters.Builder(singleSrc, dest).build();
+        assertTaskSuccess(runTask(":processTask", params));
         assertThat(destFile).isFile();
     }
 
@@ -338,8 +359,8 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         configureDefaultStub();
         configureDefaultStub2();
         assertThat(destFile.mkdirs()).isTrue();
-        assertTaskSuccess(runTask(":processTask", new Parameters(multipleSrc,
-                dest, true, false)));
+        Parameters params = new Parameters.Builder(multipleSrc, dest).build();
+        assertTaskSuccess(runTask(":processTask", params));
         assertThat(destFile).isDirectory();
         assertThat(new File(destFile, TEST_FILE_NAME))
                 .usingCharset(StandardCharsets.UTF_8)
@@ -445,25 +466,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
         final boolean offline;
         final boolean useETag;
 
-        Parameters(String src, String dest, String setup, boolean overwrite, boolean onlyIfModified) {
-            this(src, dest, setup, overwrite, onlyIfModified, true, false, false, false);
-        }
-
-        Parameters(String src, String dest, boolean overwrite, boolean onlyIfModified) {
-            this(src, dest, overwrite, onlyIfModified, true, false, false);
-        }
-
-        Parameters(String src, String dest, boolean overwrite, boolean onlyIfModified,
-                boolean compress, boolean offline, boolean quiet) {
-            this(src, dest, overwrite, onlyIfModified, compress, offline, quiet, false);
-        }
-
-        Parameters(String src, String dest, boolean overwrite, boolean onlyIfModified,
-                boolean compress, boolean offline, boolean quiet, boolean useETag) {
-            this(src, dest, "", overwrite, onlyIfModified, compress, offline, quiet, useETag);
-        }
-
-        Parameters(String src, String dest, String setup, boolean overwrite, boolean onlyIfModified,
+        private Parameters(String src, String dest, String setup, boolean overwrite, boolean onlyIfModified,
                 boolean compress, boolean offline, boolean quiet, boolean useETag) {
             this.src = src;
             this.dest = dest;
@@ -474,6 +477,63 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
             this.offline = offline;
             this.quiet = quiet;
             this.useETag = useETag;
+        }
+
+        public static class Builder {
+            private final String src;
+            private final String dest;
+            private String setup = "";
+            private boolean overwrite = true;
+            private boolean onlyIfModified = false;
+            private boolean compress = true;
+            private boolean quiet = false;
+            private boolean offline = false;
+            private boolean useETag = false;
+
+            public Builder(String src, String dest) {
+                this.src = src;
+                this.dest = dest;
+            }
+
+            public Builder setup(String setup) {
+                this.setup = setup;
+                return this;
+            }
+
+            public Builder overwrite(boolean overwrite) {
+                this.overwrite = overwrite;
+                return this;
+            }
+
+            public Builder onlyIfModified(boolean onlyIfModified) {
+                this.onlyIfModified = onlyIfModified;
+                return this;
+            }
+
+            public Builder compress(boolean compress) {
+                this.compress = compress;
+                return this;
+            }
+
+            public Builder quiet(boolean quiet) {
+                this.quiet = quiet;
+                return this;
+            }
+
+            public Builder offline(boolean offline) {
+                this.offline = offline;
+                return this;
+            }
+
+            public Builder useETag(boolean useETag) {
+                this.useETag = useETag;
+                return this;
+            }
+
+            public Parameters build() {
+                return new Parameters(src, dest, setup, overwrite, onlyIfModified,
+                        compress, offline, quiet, useETag);
+            }
         }
     }
 }
