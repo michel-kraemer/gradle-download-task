@@ -24,7 +24,7 @@ It **displays progress information** just like Gradle does when it retrieves
 an artifact from a repository. It is also able to **download multiple files in
 parallel** and supports **concurrent execution** with other tasks.
 
-The plugin has been successfully tested with Gradle 5.0 up to 7.3.3.
+The plugin has been successfully tested with Gradle 5.0 up to 7.4.
 It should work with newer versions as well.
 
 Usage
