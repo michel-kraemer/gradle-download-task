@@ -36,12 +36,12 @@ Who’s using gradle-download-task?
     <td align="center" width="230">
       <h3>Facebook</h3>
       <a href="https://github.com/facebook/react-native/">React Native</a><br>
-      <a href="github.com/facebook/hermes/">Hermes</a><br><br>
+      <a href="https://github.com/facebook/hermes/">Hermes</a><br><br>
     </td>
     <td align="center" width="230">
       <a href="https://github.com/wala/WALA"><img width="90" valign="middle" src="https://wala.github.io/public/img/wala.png"></a><br>
-      T. J. Watson Libraries<br>
-      for Analysis (WALA)
+      <a href="https://github.com/wala/WALA">T. J. Watson Libraries<br>
+      for Analysis (WALA)</a>
     </td>
     <td align="center" width="230">
       <a href="https://github.com/search?l=gradle&q=%22de.undercouch.download%22&type=Code"><strong>6000+ more</strong><br>open-source projects &hellip;</a><br><br>
