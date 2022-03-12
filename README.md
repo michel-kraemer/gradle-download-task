@@ -27,6 +27,30 @@ parallel** and supports **concurrent execution** with other tasks.
 The plugin has been successfully tested with Gradle 5.0 up to 7.4.
 It should work with newer versions as well.
 
+Who’s using gradle-download-task?
+---------------------------------
+
+<table border="0">
+<tbody>
+  <tr>
+    <td align="center" width="230">
+      <h3>Facebook</h3>
+      <a href="https://github.com/facebook/react-native/">React Native</a><br>
+      <a href="github.com/facebook/hermes/">Hermes</a><br><br>
+    </td>
+    <td align="center" width="230">
+      <a href="https://github.com/wala/WALA"><img width="90" valign="middle" src="https://wala.github.io/public/img/wala.png"></a><br>
+      T. J. Watson Libraries<br>
+      for Analysis (WALA)
+    </td>
+    <td align="center" width="230">
+      <a href="https://github.com/search?l=gradle&q=%22de.undercouch.download%22&type=Code"><strong>6000+ more</strong><br>open-source projects &hellip;</a><br><br>
+      Want to be listed here?<br>Just comment on <a href="https://github.com/michel-kraemer/gradle-download-task/issues/192">this issue</a>.
+    </td>
+  </tr>
+</tbody>
+</table>
+
 Usage
 -----
 
@@ -252,7 +276,7 @@ can be configured with the <code>downloadTaskDir</code> property. <em>(default:
 <code>false</code>)</em></dd>
 <dt>useETag</dt>
 <dd>Use this flag in combination with <code>onlyIfModified</code>. If both
-flags are <code>true</code>, the plugin will check a file's timestamp as well
+flags are <code>true</code>, the plugin will check a file’s timestamp as well
 as its entity tag (ETag) and only download it if it has been modified on the
 server since the last download. The plugin can differentiate between
 <a href="https://tools.ietf.org/html/rfc7232#section-2.1">strong and weak
@@ -277,8 +301,8 @@ Verify task
 
 The plugin also provides a `Verify` task that can be used to check the integrity
 of a downloaded file by calculating its checksum and comparing it to a
-pre-defined value. The task succeeds if the file's checksum equals the
-given value and fails if it doesn't.
+pre-defined value. The task succeeds if the file’s checksum equals the
+given value and fails if it doesn’t.
 
 Use the task as follows:
 
@@ -340,7 +364,7 @@ systemProp.http.proxyPassword=password
 systemProp.http.nonProxyHosts=*.nonproxyrepos.com|localhost
 ```
 
-Put this file in your project's root directory or in your Gradle home directory.
+Put this file in your project’s root directory or in your Gradle home directory.
 
 HTTPS is also supported:
 
@@ -377,7 +401,7 @@ API:
   better. Also, it improves compatibility with Gradle 5.x, where all tasks have
   a `timeout` property by default. 
 * The `credentials` property has been removed. The same applies to the
-  possibility to pass instances of Apache HttpClient's `AuthScheme` to the
+  possibility to pass instances of Apache HttpClient’s `AuthScheme` to the
   `authScheme` property. The strings `Basic` and `Digest` are now the only
   accepted values. There is no replacement. If you need this functionality,
   please file an issue.
