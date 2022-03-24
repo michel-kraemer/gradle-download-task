@@ -22,8 +22,6 @@ jobs:
           java-version: 8
           distribution: zulu
 
-      - uses: gradle/gradle-build-action@v2
-
       # publish to local maven repo but skip signing because this fails without a key
       - name: Build and install
         run: ./gradlew publishToMavenLocal -x signShadowPublication
@@ -62,8 +60,6 @@ jobs:
         with:
           java-version: 8
           distribution: zulu
-
-      - uses: gradle/gradle-build-action@v2
 
       # publish to local maven repo but skip signing because this fails without a key
       - name: Build and install
