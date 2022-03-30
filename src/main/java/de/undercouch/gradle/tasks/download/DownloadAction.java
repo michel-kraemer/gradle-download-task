@@ -257,7 +257,11 @@ public class DownloadAction implements DownloadSpec, Serializable {
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            rf.complete(null);
+            if (t == null) {
+                rf.complete(v);
+            } else {
+                rf.completeExceptionally(t);
+            }
         });
 
         return rf;
