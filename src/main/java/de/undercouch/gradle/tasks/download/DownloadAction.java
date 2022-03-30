@@ -3,6 +3,7 @@ package de.undercouch.gradle.tasks.download;
 import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
+import de.undercouch.gradle.tasks.download.internal.WorkerExecutorFuture;
 import de.undercouch.gradle.tasks.download.internal.WorkerExecutorHelper;
 import groovy.json.JsonOutput;
 import groovy.json.JsonSlurper;
@@ -243,14 +244,23 @@ public class DownloadAction implements DownloadSpec, Serializable {
             workerExecutor.await();
         }
 
-        return CompletableFuture.allOf(futures).whenComplete((v, t) -> {
+        // Create a custom completable future that calls `workerExecutor.await()`
+        // on any `get` call. This is necessary so we can wait for all work
+        // items in the queue even if we only have one thread (i.e. if
+        // `max-workers` equals 1). See issue #205 for more details.
+        CompletableFuture<Void> rf = new WorkerExecutorFuture(workerExecutor);
+
+        CompletableFuture.allOf(futures).whenComplete((v, t) -> {
             // always close HTTP client factory
             try {
                 clientFactory.close();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
+            rf.complete(null);
         });
+
+        return rf;
     }
 
     private void execute(URL src, HttpClientFactory clientFactory,
