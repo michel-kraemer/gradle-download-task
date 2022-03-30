@@ -15,7 +15,7 @@ buildscript {
  * Include the gradle-download-task plugin
  */
 plugins {
-    id("de.undercouch.download") version "5.0.2"
+    id("de.undercouch.download") version "5.0.3"
 }
 
 import de.undercouch.gradle.tasks.download.Download
