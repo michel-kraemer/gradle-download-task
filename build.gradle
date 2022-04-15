@@ -1,5 +1,5 @@
 plugins {
-    id "com.gradle.plugin-publish" version "0.20.0"
+    id "com.gradle.plugin-publish" version "1.0.0-rc-1"
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "io.github.gradle-nexus.publish-plugin" version "1.1.0"
 }
@@ -63,11 +63,6 @@ dependencies {
     jacocoRuntime "org.jacoco:org.jacoco.agent:${jacoco.toolVersion}:runtime"
 }
 
-java {
-    withJavadocJar()
-    withSourcesJar()
-}
-
 jacocoTestReport {
     reports {
         xml.enabled = true
@@ -116,23 +111,8 @@ task relocateShadowJar(type: ConfigureShadowRelocation) {
 
 tasks.shadowJar.dependsOn tasks.relocateShadowJar
 
-gradlePlugin {
-    automatedPublishing = false
-}
-
 shadowJar {
     archiveClassifier = ""
-}
-
-// do not include Gradle API into shadow JAR
-// see also https://github.com/johnrengelman/shadow/issues/747
-configurations.named(JavaPlugin.API_CONFIGURATION_NAME) {
-    dependencies.remove(project.dependencies.gradleApi())
-}
-
-// always execute shadowJar task before publishing the plugin
-tasks.named("publishPlugins") {
-    dependsOn shadowJar
 }
 
 // Disabling default jar task as it is overridden by shadowJar
@@ -141,52 +121,61 @@ tasks.named("jar").configure {
     enabled = false
 }
 
-publishing {
-    publications {
-        shadow(MavenPublication) { publication ->
-            project.shadow.component(publication)
+def configurePom(pom) {
+    pom.description = 'Adds a download task to Gradle that displays progress information'
+    pom.url = 'https://github.com/michel-kraemer/gradle-download-task'
 
-            artifact sourcesJar
-            artifact javadocJar
+    pom.scm {
+        url = 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
+        connection = 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
+        developerConnection = 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
+    }
 
-            pom {
-               artifactId = 'gradle-download-task'
-               name = 'gradle-download-task'
-               packaging = 'jar'
-               description = 'Adds a download task to Gradle that displays progress information'
-               url = 'https://github.com/michel-kraemer/gradle-download-task'
+    pom.licenses {
+        license {
+            name = 'The Apache Software License, Version 2.0'
+            url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+            distribution = 'repo'
+        }
+    }
 
-               scm {
-                   url = 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
-                   connection = 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
-                   developerConnection = 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
-               }
-
-               licenses {
-                   license {
-                       name = 'The Apache Software License, Version 2.0'
-                       url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
-                       distribution = 'repo'
-                   }
-               }
-
-               developers {
-                   developer {
-                       id = 'michel-kraemer'
-                       name = 'Michel Kraemer'
-                       email = 'michel@undercouch.de'
-                       url = 'https://michelkraemer.com'
-                   }
-               }
-           }
+    pom.developers {
+        developer {
+            id = 'michel-kraemer'
+            name = 'Michel Kraemer'
+            email = 'michel@undercouch.de'
+            url = 'https://michelkraemer.com'
         }
     }
 }
 
-// sign all artifacts
+publishing {
+    publications {
+        pluginMaven(MavenPublication) {
+            pom { pom ->
+               artifactId = 'gradle-download-task'
+               name = 'gradle-download-task'
+               packaging = 'jar'
+
+               configurePom(pom)
+           }
+        }
+    }
+
+    afterEvaluate {
+        publications {
+            downloadPluginPluginMarkerMaven {
+                pom { pom ->
+                    configurePom(pom)
+                }
+            }
+        }
+    }
+}
+
 signing {
+    // use GPG to sign artifacts
     useGpgCmd()
-    sign publishing.publications.shadow
 }
 
 tasks.withType(Sign) {
@@ -200,28 +189,20 @@ nexusPublishing {
     }
 }
 
+gradlePlugin {
+    plugins {
+        downloadPlugin {
+            id = 'de.undercouch.download'
+            implementationClass = 'de.undercouch.gradle.tasks.download.DownloadTaskPlugin'
+            displayName = 'gradle-download-task'
+            description = 'Adds a download task to Gradle that displays progress information'
+        }
+    }
+}
+
 pluginBundle {
     website = 'https://github.com/michel-kraemer/gradle-download-task'
     vcsUrl = 'https://github.com/michel-kraemer/gradle-download-task'
     description = 'Adds a download task to Gradle that displays progress information'
-
-    withDependencies {
-        // remove all dependencies from the pom file just as we do it
-        // when we publish the maven artifact
-        it.clear()
-    }
-
-    plugins {
-        greetingsPlugin {
-            id = 'de.undercouch.download'
-            displayName = 'gradle-download-task'
-            description = 'Adds a download task to Gradle that displays progress information'
-            tags = ['download', 'task', 'progress', 'url', 'server', 'file', 'http', 'https']
-        }
-    }
-
-    mavenCoordinates {
-        groupId = "de.undercouch"
-        artifactId = "gradle-download-task"
-    }
+    tags = ['download', 'task', 'progress', 'url', 'server', 'file', 'http', 'https']
 }
