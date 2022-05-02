@@ -3,13 +3,6 @@
 // from mavenLocal() and the sonatype OSS repo for development purposes.
 // THIS CONFIGURATION IS NOT NEEDED IN REAL PROJECTS!
 pluginManagement {
-    resolutionStrategy {
-        eachPlugin {
-            if (requested.id.namespace == "de.undercouch" && requested.id.name == "download") {
-                useModule("de.undercouch:gradle-download-task:${requested.version}")
-            }
-        }
-    }
     repositories {
         mavenLocal()
         maven {
