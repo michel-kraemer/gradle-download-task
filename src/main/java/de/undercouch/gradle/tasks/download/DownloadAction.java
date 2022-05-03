@@ -779,12 +779,17 @@ public class DownloadAction implements DownloadSpec, Serializable {
         //handle response
         int code = response.getCode();
         if ((code < 200 || code > 299) && code != HttpStatus.SC_NOT_MODIFIED) {
-            String phrase = response.getReasonPhrase();
             String url = httpHost + file;
+            String message = "HTTP status code: " + code + ", URL: " + url;
+            if (code == HttpStatus.SC_UNAUTHORIZED && !response.containsHeader("www-authenticate")) {
+                message += ", Missing WWW-Authenticate header in response, use the " +
+                        "preemptiveAuth flag to send credentials in first request";
+            }
+            String phrase = response.getReasonPhrase();
             if (phrase == null || phrase.isEmpty()) {
-                phrase = "HTTP status code: " + code + ", URL: " + url;
+                phrase = message;
             } else {
-                phrase += " (HTTP status code: " + code + ", URL: " + url + ")";
+                phrase += " (" + message + ")";
             }
             response.close();
             throw new ClientProtocolException(phrase);

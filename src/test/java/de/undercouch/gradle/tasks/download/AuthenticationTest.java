@@ -29,8 +29,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -54,6 +56,35 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         stubFor(get(urlEqualTo(AUTHENTICATE))
                 .withHeader("Authorization", absent())
                 .willReturn(aResponse()
+                        .withStatus(HttpServletResponse.SC_UNAUTHORIZED)
+                        .withHeader("WWW-Authenticate", "Basic")));
+
+        Download t = makeProjectAndTask();
+        t.src(wireMock.url(AUTHENTICATE));
+        File dst = newTempFile();
+        t.dest(dst);
+
+        Assertions.setMaxStackTraceElementsDisplayed(1000);
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(WorkerExecutionException.class)
+                .getRootCause()
+                .isInstanceOf(ClientProtocolException.class)
+                .hasMessageContaining("HTTP status code: 401")
+                .hasMessageNotContaining("Missing WWW-Authenticate");
+
+        // check if non-preemptive authentication request was made
+        verify(1, getRequestedFor(urlEqualTo(AUTHENTICATE)).withoutHeader("Authorization"));
+    }
+
+    /**
+     * Tests if the plugin can handle failed authentication
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void noAuthorizationNoWWWAuthenticateHeader() throws Exception {
+        stubFor(get(urlEqualTo(AUTHENTICATE))
+                .withHeader("Authorization", absent())
+                .willReturn(aResponse()
                         .withStatus(HttpServletResponse.SC_UNAUTHORIZED)));
 
         Download t = makeProjectAndTask();
@@ -66,7 +97,11 @@ public class AuthenticationTest extends TestBaseWithMockServer {
                 .isInstanceOf(WorkerExecutionException.class)
                 .getRootCause()
                 .isInstanceOf(ClientProtocolException.class)
-                .hasMessageContaining("HTTP status code: 401");
+                .hasMessageContaining("HTTP status code: 401")
+                .hasMessageContaining("Missing WWW-Authenticate");
+
+        // check if non-preemptive authentication request was made
+        verify(1, getRequestedFor(urlEqualTo(AUTHENTICATE)).withoutHeader("Authorization"));
     }
     
     /**
@@ -102,6 +137,9 @@ public class AuthenticationTest extends TestBaseWithMockServer {
                 .getRootCause()
                 .isInstanceOf(ClientProtocolException.class)
                 .hasMessageContaining("HTTP status code: 401");
+
+        // check if non-preemptive authentication request was made
+        verify(1, getRequestedFor(urlEqualTo(AUTHENTICATE)).withoutHeader("Authorization"));
     }
 
     /**
@@ -132,6 +170,10 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         execute(t);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
+
+        // check if non-preemptive authentication request was made
+        verify(1, getRequestedFor(urlEqualTo(AUTHENTICATE)).withoutHeader("Authorization"));
+        verify(1, getRequestedFor(urlEqualTo(AUTHENTICATE)).withHeader("Authorization", equalTo(ahdr)));
     }
 
     /**
@@ -171,5 +213,9 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         t.username(USERNAME);
         t.password(PASSWORD);
         execute(t);
+
+        // check if non-preemptive authentication request was made
+        verify(1, getRequestedFor(urlEqualTo(AUTHENTICATE)).withoutHeader("Authorization"));
+        verify(1, getRequestedFor(urlEqualTo(AUTHENTICATE)).withHeader("Authorization", equalTo(ahdr)));
     }
 }
