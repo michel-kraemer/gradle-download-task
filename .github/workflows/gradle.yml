@@ -50,7 +50,7 @@ jobs:
 
     strategy:
       matrix:
-        version: ["5", "6\\.[0-5]", "6\\.[6-9]", "7"]
+        version: ["5", "6\\\\.[0-5]", "6\\\\.[6-9]", "7"]
 
     steps:
       - uses: actions/checkout@v3
