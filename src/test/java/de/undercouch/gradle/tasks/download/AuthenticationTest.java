@@ -177,6 +177,36 @@ public class AuthenticationTest extends TestBaseWithMockServer {
     }
 
     /**
+     * Tests if the plugin can access a protected resource using preemptive
+     * Basic authentication
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void validPreemptive() throws Exception {
+        String ahdr = "Basic " + Base64.encodeBase64String(
+                (USERNAME + ":" + PASSWORD).getBytes(StandardCharsets.UTF_8));
+
+        stubFor(get(urlEqualTo(AUTHENTICATE))
+                .withHeader("Authorization", equalTo(ahdr))
+                .willReturn(aResponse()
+                        .withBody(CONTENTS)));
+
+        Download t = makeProjectAndTask();
+        t.src(wireMock.url(AUTHENTICATE));
+        File dst = newTempFile();
+        t.dest(dst);
+        t.username(USERNAME);
+        t.password(PASSWORD);
+        t.preemptiveAuth(true);
+        execute(t);
+
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
+
+        // check if only one preemptive authentication request was made
+        verify(1, getRequestedFor(urlEqualTo(AUTHENTICATE)));
+    }
+
+    /**
      * Tests if the plugin can access a protected resource
      * @throws Exception if anything goes wrong
      */

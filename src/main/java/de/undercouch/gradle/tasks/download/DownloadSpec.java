@@ -95,6 +95,24 @@ public interface DownloadSpec {
     void header(String name, String value);
 
     /**
+     * Specifies if preemptive Basic authentication should be enabled. By default,
+     * gradle-download-task automatically detects the required authentication
+     * scheme by sending two requests: one without credentials to determine
+     * the scheme based on the {@code WWW-Authenticate} header in the server's
+     * response and the actual request with credentials. This will fail if the
+     * server does not send a {@code WWW-Authenticate} header. In this case,
+     * set {@code preemptiveAuth} to {@code true} to use Basic authentication
+     * and to always send credentials in the first request.
+     *
+     * Note: Sending credentials in clear text in the first request without
+     * checking if the server actually needs them might pose a security risk.
+     *
+     * @param preemptiveAuth {@code true} if preemptive Basic authentication
+     * should be enabled
+     */
+    void preemptiveAuth(boolean preemptiveAuth);
+
+    /**
      * Specifies if HTTPS certificate verification errors should be ignored
      * and any certificate (even an invalid one) should be accepted. By default
      * certificates are validated and errors are not being ignored.
@@ -215,6 +233,12 @@ public interface DownloadSpec {
      * @return the password for authentication
      */
     String getPassword();
+
+    /**
+     * @return true if preemptive Basic authenticate is enabled
+     * @see #preemptiveAuth(boolean)
+     */
+    boolean isPreemptiveAuth();
 
     /**
      * @return the HTTP request headers to use when downloading

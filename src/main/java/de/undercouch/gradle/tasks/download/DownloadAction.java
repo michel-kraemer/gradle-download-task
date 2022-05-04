@@ -20,12 +20,14 @@ import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.auth.BasicScheme;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.client5.http.utils.DateUtils;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.HttpStatus;
@@ -100,6 +102,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
     private boolean compress = true;
     private String username;
     private String password;
+    private boolean preemptiveAuth = false;
     private Map<String, String> headers;
     private boolean acceptAnyCertificate = false;
     private int connectTimeoutMs = 30 * 1000;
@@ -781,8 +784,8 @@ public class DownloadAction implements DownloadSpec, Serializable {
         if ((code < 200 || code > 299) && code != HttpStatus.SC_NOT_MODIFIED) {
             String url = httpHost + file;
             String message = "HTTP status code: " + code + ", URL: " + url;
-            if (code == HttpStatus.SC_UNAUTHORIZED && !response.containsHeader("www-authenticate")) {
-                message += ", Missing WWW-Authenticate header in response, use the " +
+            if (code == HttpStatus.SC_UNAUTHORIZED && !response.containsHeader(HttpHeaders.WWW_AUTHENTICATE)) {
+                message += ". Missing " + HttpHeaders.WWW_AUTHENTICATE + " header in response; use the " +
                         "preemptiveAuth flag to send credentials in first request";
             }
             String phrase = response.getReasonPhrase();
@@ -812,11 +815,17 @@ public class DownloadAction implements DownloadSpec, Serializable {
             authCache = new BasicAuthCache();
             context.setAuthCache(authCache);
         }
-        
+
         CredentialsProvider credsProvider = context.getCredentialsProvider();
         if (credsProvider == null) {
             credsProvider = new BasicCredentialsProvider();
             context.setCredentialsProvider(credsProvider);
+        }
+
+        if (preemptiveAuth && username != null && password != null) {
+            BasicScheme basicAuth = new BasicScheme();
+            basicAuth.initPreemptive(credentials);
+            authCache.put(host, basicAuth);
         }
 
         ((CredentialsStore)credsProvider).setCredentials(new AuthScope(host), credentials);
@@ -905,6 +914,11 @@ public class DownloadAction implements DownloadSpec, Serializable {
     @Override
     public void password(String password) {
         this.password = password;
+    }
+
+    @Override
+    public void preemptiveAuth(boolean preemptiveAuth) {
+        this.preemptiveAuth = preemptiveAuth;
     }
 
     @Override
@@ -1168,6 +1182,11 @@ public class DownloadAction implements DownloadSpec, Serializable {
     @Override
     public String getPassword() {
         return password;
+    }
+
+    @Override
+    public boolean isPreemptiveAuth() {
+        return preemptiveAuth;
     }
 
     @Override

@@ -256,6 +256,18 @@ means infinite retries. <em>(default: <code>0</code>)</em></dd>
 <dt>password</dt>
 <dd>The password that should be used if the server requires authentication
 <em>(optional)</em></dd>
+<dt>preemptiveAuth</dt>
+<dd><code>true</code> if preemptive Basic authentication should be enabled.
+By default, gradle-download-task automatically detects the required
+authentication scheme by sending two requests: one without credentials to
+determine the scheme based on the <code>WWW-Authenticate</code> header in the
+server's response and the actual request with credentials. This will fail if the
+server does not send a <code>WWW-Authenticate</code> header. In this case, set
+<code>preemptiveAuth</code> to <code>true</code> to use Basic authentication
+and to always send credentials in the first request. <strong>Note:</strong>
+Sending credentials in clear text in the first request without checking if the
+server actually needs them might pose a security risk. <em>(default:
+<code>false</code>)</em></dd>
 </dl>
 
 ### Advanced

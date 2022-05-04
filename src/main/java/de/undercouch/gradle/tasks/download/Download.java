@@ -138,7 +138,12 @@ public class Download extends DefaultTask implements DownloadSpec {
     public void password(String password) {
         action.password(password);
     }
-    
+
+    @Override
+    public void preemptiveAuth(boolean preemptiveAuth) {
+        action.preemptiveAuth(preemptiveAuth);
+    }
+
     @Override
     public void headers(Map<String, String> headers) {
         action.headers(headers);
@@ -243,6 +248,12 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public String getPassword() {
         return action.getPassword();
+    }
+
+    @Input
+    @Override
+    public boolean isPreemptiveAuth() {
+        return action.isPreemptiveAuth();
     }
 
     @Input
