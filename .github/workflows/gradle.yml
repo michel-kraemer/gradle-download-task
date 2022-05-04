@@ -66,4 +66,4 @@ jobs:
         run: ./gradlew publishToMavenLocal -x signPluginMavenPublication -x signDownloadPluginPluginMarkerMavenPublication
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -PintegrationTestIncludes="^${{ matrix.version }}\\."
+        run: ./gradlew integrationTest -PintegrationTestIncludes="^${{ matrix.version }}"
