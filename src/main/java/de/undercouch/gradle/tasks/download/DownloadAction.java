@@ -1105,7 +1105,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
     private List<URL> getSources() {
         cachedSourcesLock.lock();
         try {
-            if (cachedSources != null) {
+            if (cachedSources != null && !cachedSources.isEmpty()) {
                 return cachedSources;
             }
 
