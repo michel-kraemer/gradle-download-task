@@ -11,7 +11,9 @@ import java.io.File;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -279,6 +281,53 @@ public class DownloadTest extends TestBaseWithMockServer {
         assertThat(dstCalled[0]).isTrue();
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
+    }
+
+    /**
+     * Test if cached sources are updated properly
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void updateCachedSources() throws Exception {
+        final AtomicInteger srcCalled = new AtomicInteger();
+
+        final File dst = newTempDir();
+
+        Download t = makeProjectAndTask();
+        t.src(new Closure<Object>(this, this) {
+            private static final long serialVersionUID = -4463658999363261400L;
+
+            @SuppressWarnings("unused")
+            public Object doCall() {
+                srcCalled.incrementAndGet();
+                return wireMock.url(TEST_FILE_NAME);
+            }
+        });
+
+        assertThat(srcCalled.get()).isEqualTo(0);
+
+        // calling t.getSrc() will call our closure and cache the result
+        assertThat(t.getSrc()).isInstanceOf(URL.class);
+        assertThat(srcCalled.get()).isEqualTo(1);
+
+        // add another src
+        t.src(wireMock.url(TEST_FILE_NAME2));
+
+        // getSrc() should return the updated sources but our closure should
+        // still have only been called once
+        assertThat(t.getSrc()).isInstanceOf(List.class);
+        assertThat(srcCalled.get()).isEqualTo(1);
+
+        t.dest(dst);
+
+        execute(t);
+
+        assertThat(new File(dst, TEST_FILE_NAME))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS);
+        assertThat(new File(dst, TEST_FILE_NAME2))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS2);
     }
 
     /**

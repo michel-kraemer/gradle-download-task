@@ -92,6 +92,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
     private final boolean isOffline;
     private final List<Object> sourceObjects = new ArrayList<>(1);
     private List<URL> cachedSources;
+    private int sourceObjectsCached;
     private transient Lock cachedSourcesLock = new ReentrantLock();
     private Object destObject;
     private File cachedDest;
@@ -1105,14 +1106,19 @@ public class DownloadAction implements DownloadSpec, Serializable {
     private List<URL> getSources() {
         cachedSourcesLock.lock();
         try {
-            if (cachedSources != null) {
+            if (cachedSources != null && sourceObjectsCached == sourceObjects.size()) {
                 return cachedSources;
             }
 
-            cachedSources = new ArrayList<>(sourceObjects.size());
-            for (Object src : sourceObjects) {
-                cachedSources.addAll(convertSource(src));
+            if (cachedSources == null) {
+                cachedSources = new ArrayList<>(sourceObjects.size());
             }
+
+            // update cache
+            for (int i = sourceObjectsCached; i < sourceObjects.size(); ++i) {
+                cachedSources.addAll(convertSource(sourceObjects.get(i)));
+            }
+            sourceObjectsCached = sourceObjects.size();
 
             return cachedSources;
         } finally {
