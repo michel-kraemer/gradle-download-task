@@ -166,7 +166,7 @@ public class RedirectTest extends TestBaseWithMockServer {
        t.dest(dst);
        assertThatThrownBy(() -> execute(t))
                .isInstanceOf(WorkerExecutionException.class)
-               .getRootCause()
+               .rootCause()
                .isInstanceOf(CircularRedirectException.class)
                .hasMessageContaining("Circular redirect");
    }
@@ -190,7 +190,7 @@ public class RedirectTest extends TestBaseWithMockServer {
         t.dest(dst);
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
-                .getRootCause()
+                .rootCause()
                 .isInstanceOf(RedirectException.class)
                 .hasMessage("Maximum redirects (50) exceeded");
     }

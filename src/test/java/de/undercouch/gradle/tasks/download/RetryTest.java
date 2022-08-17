@@ -80,7 +80,7 @@ public class RetryTest extends TestBaseWithMockServer {
         t.dest(dst);
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
-                .getRootCause()
+                .rootCause()
                 .isInstanceOf(NoHttpResponseException.class)
                 .hasMessageContaining("failed to respond");
         verify(1, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
@@ -228,7 +228,7 @@ public class RetryTest extends TestBaseWithMockServer {
         t.dest(dst);
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
-                .getRootCause()
+                .rootCause()
                 .isInstanceOf(NoHttpResponseException.class)
                 .hasMessageContaining("failed to respond");
         verify(3, getRequestedFor(urlEqualTo("/" + TEST_FILE_NAME)));
@@ -432,7 +432,7 @@ public class RetryTest extends TestBaseWithMockServer {
         t.dest(dst);
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
-                .getRootCause()
+                .rootCause()
                 .isInstanceOf(ConnectTimeoutException.class);
 
         assertThat(dst).isEmpty();
@@ -456,7 +456,6 @@ public class RetryTest extends TestBaseWithMockServer {
         // spy on the logger and record all messages
         List<String> recordedWarn = new ArrayList<>();
         List<String> recordedDebug = new ArrayList<>();
-        List<Throwable> recordedExceptions = new ArrayList<>();
         Logger realLogger = project.getLogger();
         Logger logger = spy(realLogger);
         doAnswer(msg -> {
@@ -467,7 +466,6 @@ public class RetryTest extends TestBaseWithMockServer {
         doAnswer(msg -> {
             recordedDebug.add(msg.getArgument(0));
             realLogger.debug(msg.getArgument(0));
-            recordedExceptions.add(msg.getArgument(1));
             return null;
         }).when(logger).debug(anyString(), (Throwable)any());
         Download t = makeTask(project);
@@ -486,7 +484,7 @@ public class RetryTest extends TestBaseWithMockServer {
         t.dest(dst);
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
-                .getRootCause()
+                .rootCause()
                 .isInstanceOf(UnknownHostException.class);
 
         assertThat(dst).isEmpty();

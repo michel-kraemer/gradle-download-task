@@ -67,7 +67,7 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         Assertions.setMaxStackTraceElementsDisplayed(1000);
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
-                .getRootCause()
+                .rootCause()
                 .isInstanceOf(ClientProtocolException.class)
                 .hasMessageContaining("HTTP status code: 401")
                 .hasMessageNotContaining("Missing WWW-Authenticate");
@@ -95,7 +95,7 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         Assertions.setMaxStackTraceElementsDisplayed(1000);
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
-                .getRootCause()
+                .rootCause()
                 .isInstanceOf(ClientProtocolException.class)
                 .hasMessageContaining("HTTP status code: 401")
                 .hasMessageContaining("Missing WWW-Authenticate");
@@ -134,7 +134,7 @@ public class AuthenticationTest extends TestBaseWithMockServer {
 
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
-                .getRootCause()
+                .rootCause()
                 .isInstanceOf(ClientProtocolException.class)
                 .hasMessageContaining("HTTP status code: 401");
 

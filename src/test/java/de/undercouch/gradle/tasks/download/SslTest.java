@@ -82,7 +82,7 @@ public class SslTest extends TestBase {
         assertThat(t.isAcceptAnyCertificate()).isFalse();
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
-                .getRootCause()
+                .rootCause()
                 .isInstanceOf(CertPathBuilderException.class)
                 .hasMessageContaining("unable to find valid certification path");
     }

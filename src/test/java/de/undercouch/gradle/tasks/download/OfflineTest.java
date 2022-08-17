@@ -58,7 +58,7 @@ public class OfflineTest extends TestBaseWithMockServer {
         t.dest(dst);
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
-                .getRootCause()
+                .rootCause()
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContainingAll("Unable to download file", "in offline mode");
     }
