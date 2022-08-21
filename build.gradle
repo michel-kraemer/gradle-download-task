@@ -57,8 +57,8 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junitVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
-    testImplementation "org.mockito:mockito-core:4.6.1"
-    testImplementation "xyz.rogfam:littleproxy:2.0.10"
+    testImplementation "org.mockito:mockito-core:4.7.0"
+    testImplementation "xyz.rogfam:littleproxy:2.0.11"
 
     jacocoRuntime "org.jacoco:org.jacoco.agent:${jacoco.toolVersion}:runtime"
 }
