@@ -34,10 +34,11 @@ import javax.net.ssl.TrustManager;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Map;
 
 /**
  * Default implementation of {@link HttpClientFactory}. Creates a new client
- * every time {@link #createHttpClient(HttpHost, boolean, int, Logger, boolean)}
+ * every time {@link #createHttpClient(HttpHost, boolean, int, Map, Logger, boolean)}
  * is called. The caller is responsible for closing this client.
  * @author Michel Kraemer
  */
@@ -51,8 +52,8 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
 
     @Override
     public CloseableHttpClient createHttpClient(HttpHost httpHost,
-            boolean acceptAnyCertificate, final int retries, Logger logger,
-            boolean quiet) {
+            boolean acceptAnyCertificate, final int retries,
+            Map<String, String> headers, Logger logger, boolean quiet) {
         HttpClientBuilder builder = HttpClientBuilder.create();
 
         //configure retries
@@ -83,6 +84,10 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
                     new BasicHttpClientConnectionManager(registry);
             builder.setConnectionManager(cm);
         }
+
+        // add interceptor that strips the standard ports :80 and :443 from the
+        // Host header unless the host has been explicitly specified by the user
+        builder.addRequestInterceptorLast(new StripPortsFromHostInterceptor(headers));
 
         if (logger.isDebugEnabled()) {
             DebugInterceptor di = new DebugInterceptor();

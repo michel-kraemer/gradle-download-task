@@ -18,6 +18,8 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.core5.http.HttpHost;
 import org.gradle.api.logging.Logger;
 
+import java.util.Map;
+
 /**
  * Factory for Apache {@link CloseableHttpClient} objects
  * @author Michel Kraemer
@@ -30,10 +32,11 @@ public interface HttpClientFactory {
      * errors should be ignored and any certificate (even an invalid one)
      * should be accepted
      * @param retries the number of retries to perform if an HTTP request fails
+     * @param headers the HTTP headers specified by the user
      * @param logger the project's logger
      * @param quiet {@code true} if the quiet flag is set
      * @return the HTTP client
      */
-    CloseableHttpClient createHttpClient(HttpHost httpHost,
-            boolean acceptAnyCertificate, int retries, Logger logger, boolean quiet);
+    CloseableHttpClient createHttpClient(HttpHost httpHost, boolean acceptAnyCertificate,
+            int retries, Map<String, String> headers, Logger logger, boolean quiet);
 }

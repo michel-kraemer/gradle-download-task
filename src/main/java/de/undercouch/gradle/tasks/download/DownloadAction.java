@@ -348,7 +348,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
         
         //create HTTP client
         CloseableHttpClient client = clientFactory.createHttpClient(
-                httpHost, acceptAnyCertificate, retries, logger, quiet);
+                httpHost, acceptAnyCertificate, retries, headers, logger, quiet);
 
         //open URL connection
         String etag = null;
