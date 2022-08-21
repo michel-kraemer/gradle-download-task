@@ -171,7 +171,7 @@ plugin with Gradle's built-in support for ZIP files:
 ```groovy
 task downloadZipFile(type: Download) {
     src 'https://github.com/michel-kraemer/gradle-download-task/archive/refs/tags/5.1.2.zip'
-    dest new File(buildDir, '5.1.0.zip')
+    dest new File(buildDir, '5.1.2.zip')
 }
 
 task downloadAndUnzipFile(dependsOn: downloadZipFile, type: Copy) {
