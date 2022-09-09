@@ -214,22 +214,22 @@ public class DownloadAction implements DownloadSpec, Serializable {
         for (int i = 0; i < sources.size(); i++) {
             URL src = sources.get(i);
 
-            // create progress logger
-            ProgressLoggerWrapper progressLogger = new ProgressLoggerWrapper(logger);
-            if (!quiet) {
-                try {
-                    progressLogger.init(servicesOwner, src.toString());
-                } catch (Exception e) {
-                    // unable to get progress logger
-                    logger.error("Unable to get progress logger. Download "
-                            + "progress will not be displayed.");
-                }
-            }
-
             // submit download job for asynchronous execution
             CompletableFuture<Void> f = new CompletableFuture<>();
             futures[i] = f;
             workerExecutor.submit(() -> {
+                // create progress logger
+                ProgressLoggerWrapper progressLogger = new ProgressLoggerWrapper(logger);
+                if (!quiet) {
+                    try {
+                        progressLogger.init(servicesOwner, src.toString());
+                    } catch (Exception e) {
+                        // unable to get progress logger
+                        logger.error("Unable to get progress logger. Download "
+                                + "progress will not be displayed.");
+                    }
+                }
+
                 try {
                     execute(src, clientFactory, progressLogger);
                     f.complete(null);
