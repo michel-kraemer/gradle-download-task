@@ -1,3 +1,5 @@
+import java.util.concurrent.CompletableFuture
+
 /**
  * Include the gradle-download-task plugin
  */
@@ -18,12 +20,13 @@ ext.src = [
  */
 task downloadMultipleFiles1 {
     doLast {
-        for (s in src) {
-            download.run {
+        def fs = src.collect { s ->
+            download.runAsync {
                 src s.key
                 dest new File("$buildDir/alternative1", s.value)
             }
         }
+        CompletableFuture.allOf(fs as CompletableFuture[]).join()
     }
 }
 

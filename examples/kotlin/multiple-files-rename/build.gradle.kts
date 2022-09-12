@@ -1,3 +1,5 @@
+import java.util.concurrent.CompletableFuture
+
 /**
  * Include the gradle-download-task plugin
  */
@@ -20,12 +22,13 @@ val src by extra(mapOf(
  */
 tasks.register("downloadMultipleFiles1") {
     doLast {
-        for (s in src) {
-            download.run {
+        val fs = src.map { s ->
+            download.runAsync {
                 src(s.key)
                 dest(File("$buildDir/alternative1", s.value))
             }
         }
+        CompletableFuture.allOf(*fs.toTypedArray()).join()
     }
 }
 
