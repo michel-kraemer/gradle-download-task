@@ -4,6 +4,7 @@ import groovy.lang.Closure;
 import kotlin.jvm.functions.Function0;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.internal.provider.DefaultProvider;
+import org.gradle.workers.WorkerExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +22,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 
 /**
  * Tests the gradle-download-task plugin
@@ -464,5 +466,172 @@ public class DownloadTest extends TestBaseWithMockServer {
 
         String content = FileUtils.readFileToString(dst, "UTF-8");
         assertThat(content).isEqualTo(testContent);
+    }
+
+    /**
+     * Tests if specifying an eachFile action leads to an exception if only
+     * one source is given
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void eachFileActionSingleSource() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        t.dest(newTempFile());
+        t.eachFile(details -> {
+            fail("We should never get here");
+        });
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("eachFile");
+    }
+
+    /**
+     * Tests if we can catch an exception from an eachFile action
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void eachFileActionThrows() throws Exception {
+        Download t = makeProjectAndTask();
+        t.src(Arrays.asList(wireMock.url(TEST_FILE_NAME), wireMock.url(TEST_FILE_NAME2)));
+        t.dest(newTempDir());
+        t.eachFile(details -> {
+            throw new RuntimeException("Dummy");
+        });
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(WorkerExecutionException.class)
+                .rootCause()
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Dummy");
+    }
+
+    /**
+     * Tests if multiple files can be downloaded and an {@code eachFile} action
+     * is called for each of them
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void eachFileActionMultipleFiles() throws Exception {
+        Download t = makeProjectAndTask();
+        String u1 = wireMock.url(TEST_FILE_NAME);
+        String u2 = wireMock.url(TEST_FILE_NAME2);
+        t.src(Arrays.asList(u1, u2));
+
+        File dst = newTempDir();
+        t.dest(dst);
+
+        AtomicInteger calls = new AtomicInteger(0);
+        t.eachFile(details -> {
+            if (details.getSourceURL().toString().equals(u1)) {
+                assertThat(details.getName()).isEqualTo(TEST_FILE_NAME);
+                calls.incrementAndGet();
+            } else if (details.getSourceURL().toString().equals(u2)) {
+                assertThat(details.getName()).isEqualTo(TEST_FILE_NAME2);
+                calls.incrementAndGet();
+            } else {
+                fail("Unknown source URL: " + details.getSourceURL());
+            }
+        });
+        execute(t);
+
+        assertThat(new File(dst, TEST_FILE_NAME))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS);
+        assertThat(new File(dst, TEST_FILE_NAME2))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS2);
+        assertThat(calls.get()).isEqualTo(2);
+    }
+
+    /**
+     * Tests if multiple files can be downloaded and an {@code eachFile} action
+     * can be applied to rename them
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void eachFileActionMultipleFilesRename() throws Exception {
+        Download t = makeProjectAndTask();
+        String u1 = wireMock.url(TEST_FILE_NAME);
+        String u2 = wireMock.url(TEST_FILE_NAME2);
+        t.src(Arrays.asList(u1, u2));
+
+        String nn1 = TEST_FILE_NAME + ".renamed";
+        String nn2 = TEST_FILE_NAME2 + ".renamed";
+
+        File dst = newTempDir();
+        t.dest(dst);
+
+        t.eachFile(details -> {
+            if (details.getSourceURL().toString().equals(u1)) {
+                assertThat(details.getName()).isEqualTo(TEST_FILE_NAME);
+                details.setName(nn1);
+            } else if (details.getSourceURL().toString().equals(u2)) {
+                assertThat(details.getName()).isEqualTo(TEST_FILE_NAME2);
+                details.setName(nn2);
+            } else {
+                fail("Unknown source URL: " + details.getSourceURL());
+            }
+        });
+        execute(t);
+
+        assertThat(new File(dst, TEST_FILE_NAME)).doesNotExist();
+        assertThat(new File(dst, TEST_FILE_NAME2)).doesNotExist();
+        assertThat(new File(dst, nn1))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS);
+        assertThat(new File(dst, nn2))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS2);
+    }
+
+    /**
+     * Tests if multiple files can be downloaded and duplicate URLs can be
+     * renamed by an {@code eachFile} action
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void eachFileActionMultipleFilesDuplicate() throws Exception {
+        Download t = makeProjectAndTask();
+        String u1 = wireMock.url(TEST_FILE_NAME);
+        String u2 = wireMock.url(TEST_FILE_NAME2);
+        String u3 = wireMock.url(TEST_FILE_NAME2);
+        t.src(Arrays.asList(u1, u2, u3));
+
+        File dst = newTempDir();
+        t.dest(dst);
+
+        AtomicInteger calls1 = new AtomicInteger(0);
+        AtomicInteger calls2 = new AtomicInteger(0);
+        t.eachFile(details -> {
+            if (details.getSourceURL().toString().equals(u1)) {
+                assertThat(details.getName()).isEqualTo(TEST_FILE_NAME);
+                calls1.incrementAndGet();
+                details.setName("1.txt");
+            } else if (details.getSourceURL().toString().equals(u2)) {
+                assertThat(details.getName()).isEqualTo(TEST_FILE_NAME2);
+                if (calls2.incrementAndGet() == 1) {
+                    details.setName("2.txt");
+                } else {
+                    details.setName("3.txt");
+                }
+            } else {
+                fail("Unknown source URL: " + details.getSourceURL());
+            }
+        });
+        execute(t);
+
+        assertThat(calls1.get()).isEqualTo(1);
+        assertThat(calls2.get()).isEqualTo(2);
+        assertThat(new File(dst, TEST_FILE_NAME)).doesNotExist();
+        assertThat(new File(dst, TEST_FILE_NAME2)).doesNotExist();
+        assertThat(new File(dst, "1.txt"))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS);
+        assertThat(new File(dst, "2.txt"))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS2);
+        assertThat(new File(dst, "3.txt"))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS2);
     }
 }

@@ -14,6 +14,7 @@
 
 package de.undercouch.gradle.tasks.download;
 
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Console;
 import org.gradle.api.tasks.Input;
@@ -192,6 +193,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public void cachedETagsFile(Object location) {
         action.cachedETagsFile(location);
+    }
+
+    @Override
+    public void eachFile(Action<? super DownloadDetails> action) {
+        this.action.eachFile(action);
     }
 
     @Input

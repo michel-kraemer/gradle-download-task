@@ -1,6 +1,7 @@
 package de.undercouch.gradle.tasks.download;
 
 import de.undercouch.gradle.tasks.download.internal.CachingHttpClientFactory;
+import de.undercouch.gradle.tasks.download.internal.DefaultDownloadDetails;
 import de.undercouch.gradle.tasks.download.internal.HttpClientFactory;
 import de.undercouch.gradle.tasks.download.internal.ProgressLoggerWrapper;
 import de.undercouch.gradle.tasks.download.internal.WorkerExecutorFuture;
@@ -32,6 +33,7 @@ import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.util.Timeout;
+import org.gradle.api.Action;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -114,6 +116,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
     private UseETag useETag = UseETag.FALSE;
     private File cachedETagsFile;
     private transient Lock cachedETagsFileLock = new ReentrantLock();
+    private final List<Action<? super DownloadDetails>> eachFileActions = new ArrayList<>();
     private final AtomicInteger upToDate = new AtomicInteger(0);
 
     /**
@@ -205,6 +208,11 @@ public class DownloadAction implements DownloadSpec, Serializable {
                 throw new IllegalArgumentException("If multiple sources are provided, "
                         + "the destination has to be a directory.");
             }
+        }
+
+        if (!eachFileActions.isEmpty() && sources.size() < 2) {
+            throw new IllegalArgumentException("An 'eachFile' action can only " +
+                    "be added if multiple sources are provided.");
         }
 
         WorkerExecutorHelper workerExecutor = WorkerExecutorHelper.newInstance(objectFactory);
@@ -697,6 +705,19 @@ public class DownloadAction implements DownloadSpec, Serializable {
                 name = name.substring(0, name.length() - 1);
             }
             name = name.substring(name.lastIndexOf('/') + 1);
+
+            // Call eachFile actions. We only need to do this if destFile is a
+            // directory because eachFile actions can only be specified if
+            // multiple sources are provided and this in turn requires destFile
+            // to be a directory.
+            if (!eachFileActions.isEmpty()) {
+                DownloadDetails details = new DefaultDownloadDetails(name, src);
+                for (Action<? super DownloadDetails> a : eachFileActions) {
+                    a.execute(details);
+                }
+                name = details.getName();
+            }
+
             destFile = new File(destFile, name);
         } else {
             //create destination directory
@@ -1048,6 +1069,11 @@ public class DownloadAction implements DownloadSpec, Serializable {
             throw new IllegalArgumentException("Location for cached ETags must " +
                 "either be a File or a CharSequence");
         }
+    }
+
+    @Override
+    public void eachFile(Action<? super DownloadDetails> action) {
+        eachFileActions.add(action);
     }
 
     /**

@@ -1,5 +1,3 @@
-import java.util.concurrent.CompletableFuture
-
 /**
  * Include the gradle-download-task plugin
  */
@@ -10,39 +8,17 @@ plugins {
 /**
  * Define files to download and destination file names
  */
-ext.src = [
+ext.urls = [
     'http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess;hb=HEAD': 'config.guess',
     'http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=HEAD': 'config.sub'
 ]
 
-/**
- * ALTERNATIVE 1: call the download extension in a for loop
- */
-task downloadMultipleFiles1 {
-    doLast {
-        def fs = src.collect { s ->
-            download.runAsync {
-                src s.key
-                dest new File("$buildDir/alternative1", s.value)
-            }
-        }
-        CompletableFuture.allOf(fs as CompletableFuture[]).join()
+task downloadFiles(type: Download) {
+    src urls.keySet()
+    dest buildDir
+    eachFile { f ->
+        f.name = urls[f.sourceURL.toString()]
     }
 }
 
-/**
- * ALTERNATIVE 2: create multiple tasks
- */
-task downloadMultipleFiles2
-
-def i = 0
-for (s in src) {
-    ++i
-    task "downloadMultipleFiles2_${i}"(type: Download) {
-        src s.key
-        dest new File("$buildDir/alternative2", s.value)
-    }
-    downloadMultipleFiles2.dependsOn("downloadMultipleFiles2_${i}")
-}
-
-defaultTasks 'downloadMultipleFiles1', 'downloadMultipleFiles2'
+defaultTasks 'downloadFiles'

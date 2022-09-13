@@ -14,6 +14,8 @@
 
 package de.undercouch.gradle.tasks.download;
 
+import org.gradle.api.Action;
+
 import java.io.File;
 import java.net.MalformedURLException;
 import java.util.Map;
@@ -95,17 +97,17 @@ public interface DownloadSpec {
     void header(String name, String value);
 
     /**
-     * Specifies if preemptive Basic authentication should be enabled. By default,
+     * <p>Specifies if preemptive Basic authentication should be enabled. By default,
      * gradle-download-task automatically detects the required authentication
      * scheme by sending two requests: one without credentials to determine
      * the scheme based on the {@code WWW-Authenticate} header in the server's
      * response and the actual request with credentials. This will fail if the
      * server does not send a {@code WWW-Authenticate} header. In this case,
      * set {@code preemptiveAuth} to {@code true} to use Basic authentication
-     * and to always send credentials in the first request.
+     * and to always send credentials in the first request.</p>
      *
-     * Note: Sending credentials in clear text in the first request without
-     * checking if the server actually needs them might pose a security risk.
+     * <p>Note: Sending credentials in clear text in the first request without
+     * checking if the server actually needs them might pose a security risk.</p>
      *
      * @param preemptiveAuth {@code true} if preemptive Basic authentication
      * should be enabled
@@ -186,6 +188,17 @@ public interface DownloadSpec {
      * @param location the location (default: ${downloadTaskDir}/etags.json)
      */
     void cachedETagsFile(Object location);
+
+    /**
+     * If multiple download sources are specified, this method adds an action
+     * to be applied to each source URL before it is downloaded. The action
+     * can modify some aspects of the target file in the destination directory
+     * specified by {@link #dest(Object)} (for example, the file's name). If
+     * only one download source has been given, adding an action will lead to
+     * an {@link IllegalArgumentException}.
+     * @param action the action to add
+     */
+    void eachFile(Action<? super DownloadDetails> action);
 
     /**
      * @return the download source(s), either a URL or a list of URLs
