@@ -101,6 +101,12 @@ task myTask {
 }
 ```
 
+Note that the `download` extension also has a `runAsync` method that downloads
+a file asynchronously. It returns a `CompletableFuture` that either completes
+successfully or exceptionally depending on whether the download has finished
+successfully or if it has failed. Make sure to always wait for the result of
+the `CompletableFuture`. Otherwise, errors might get lost.
+
 Minimum requirements
 --------------------
 
