@@ -215,6 +215,13 @@ multiple files should be downloaded. <em>(required)</em></dd>
 <dd><code>true</code> if the file should only be downloaded if it
 has been modified on the server since the last download <em>(default:
 <code>false</code>)</em></dd>
+<dt>eachFile</dt>
+<dd>If multiple download sources are specified, this method adds an action to
+be applied to each source URL before it is downloaded. The action is called
+with a <a href="#downloaddetails">DownloadDetails</a> object and can modify
+some aspects of the target file in the destination directory (e.g. the
+filename). If only one download source has been given, adding an
+<code>eachFile</code> action will make the plugin fail.</dd>
 </dl>
 
 <em>Tip!</em> You may provide Groovy Closures or Kotlin Lambdas to the `src`
@@ -358,6 +365,25 @@ The verify task supports the following properties:
 <dd>The algorithm to use to compute the checksum. See the
 <a href="http://docs.oracle.com/javase/7/docs/technotes/guides/security/StandardNames.html#MessageDigest">list of algorithm names</a>
 for more information. <em>(default: <code>MD5</code>)</em></dd>
+</dl>
+
+DownloadDetails
+---------------
+
+If you specify an [`eachFile`](#general) action, it will be called with an
+instance of the `DownloadDetails` class, which provides details about a
+download source and its target file. It can be used to change some aspects of
+the target file (e.g. its name).
+
+The `DownloadDetails` class provides the following methods:
+
+<dl>
+<dt>URL getSourceURL()</dt>
+<dd>Get the source URL of the file to be downloaded</dd>
+<dt>String getName()</dt>
+<dd>Get the name of the target file</dd>
+<dt>void setName(String)</dt>
+<dd>Set the name of the target file</dd>
 </dl>
 
 Proxy configuration
