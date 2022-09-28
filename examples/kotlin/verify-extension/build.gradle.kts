@@ -2,7 +2,7 @@
  * Include the gradle-download-task plugin
  */
 plugins {
-    id("de.undercouch.download") version "5.2.0"
+    id("de.undercouch.download") version "5.2.1"
 }
 
 /**
