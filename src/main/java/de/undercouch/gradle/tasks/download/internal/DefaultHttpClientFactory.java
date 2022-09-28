@@ -80,6 +80,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
                         .register("https", icsf)
                         .register("http", PlainConnectionSocketFactory.INSTANCE)
                         .build();
+            // use pooling connection manager to support multiple threads
             HttpClientConnectionManager cm =
                     new PoolingHttpClientConnectionManager(registry);
             builder.setConnectionManager(cm);
