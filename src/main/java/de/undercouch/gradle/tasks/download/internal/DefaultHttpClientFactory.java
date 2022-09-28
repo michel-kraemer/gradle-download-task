@@ -16,7 +16,7 @@ package de.undercouch.gradle.tasks.download.internal;
 
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
-import org.apache.hc.client5.http.impl.io.BasicHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.routing.SystemDefaultRoutePlanner;
 import org.apache.hc.client5.http.io.HttpClientConnectionManager;
 import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
@@ -81,7 +81,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
                         .register("http", PlainConnectionSocketFactory.INSTANCE)
                         .build();
             HttpClientConnectionManager cm =
-                    new BasicHttpClientConnectionManager(registry);
+                    new PoolingHttpClientConnectionManager(registry);
             builder.setConnectionManager(cm);
         }
 
