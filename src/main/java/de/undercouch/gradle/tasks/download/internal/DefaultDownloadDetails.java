@@ -1,6 +1,7 @@
 package de.undercouch.gradle.tasks.download.internal;
 
 import de.undercouch.gradle.tasks.download.DownloadDetails;
+import org.gradle.api.file.RelativePath;
 
 import java.net.URL;
 import java.util.Objects;
@@ -10,27 +11,47 @@ import java.util.Objects;
  * @author Michel Kraemer
  */
 public class DefaultDownloadDetails implements DownloadDetails {
-    private String name;
+    private RelativePath relativePath;
     private final URL sourceURL;
 
-    public DefaultDownloadDetails(String name, URL sourceURL) {
-        this.name = name;
+    public DefaultDownloadDetails(RelativePath relativePath, URL sourceURL) {
+        this.relativePath = relativePath;
         this.sourceURL = sourceURL;
     }
 
     @Override
     public void setName(String name) {
-        this.name = name;
+        relativePath = relativePath.replaceLastName(name);
     }
 
     @Override
     public String getName() {
-        return this.name;
+        return relativePath.getLastName();
     }
 
     @Override
     public URL getSourceURL() {
         return this.sourceURL;
+    }
+
+    @Override
+    public RelativePath getRelativePath() {
+        return relativePath;
+    }
+
+    @Override
+    public void setRelativePath(RelativePath path) {
+        relativePath = path;
+    }
+
+    @Override
+    public String getPath() {
+        return relativePath.getPathString();
+    }
+
+    @Override
+    public void setPath(String path) {
+        relativePath = RelativePath.parse(relativePath.isFile(), path);
     }
 
     @Override
@@ -42,18 +63,18 @@ public class DefaultDownloadDetails implements DownloadDetails {
             return false;
         }
         DefaultDownloadDetails that = (DefaultDownloadDetails)o;
-        return name.equals(that.name) && sourceURL.equals(that.sourceURL);
+        return relativePath.equals(that.relativePath) && sourceURL.equals(that.sourceURL);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, sourceURL);
+        return Objects.hash(relativePath, sourceURL);
     }
 
     @Override
     public String toString() {
         return "DefaultDownloadDetails{" +
-                "name='" + name + '\'' +
+                "relativePath='" + relativePath + '\'' +
                 ", sourceURL=" + sourceURL +
                 '}';
     }

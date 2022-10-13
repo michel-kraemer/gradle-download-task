@@ -41,6 +41,7 @@ import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFile;
+import org.gradle.api.file.RelativePath;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Provider;
@@ -710,15 +711,21 @@ public class DownloadAction implements DownloadSpec, Serializable {
             // directory because eachFile actions can only be specified if
             // multiple sources are provided and this in turn requires destFile
             // to be a directory.
+            RelativePath path = RelativePath.parse(true, name);
             if (!eachFileActions.isEmpty()) {
-                DownloadDetails details = new DefaultDownloadDetails(name, src);
+                DownloadDetails details = new DefaultDownloadDetails(path, src);
                 for (Action<? super DownloadDetails> a : eachFileActions) {
                     a.execute(details);
                 }
-                name = details.getName();
+                path = details.getRelativePath();
             }
 
-            destFile = new File(destFile, name);
+            destFile = path.getFile(destFile);
+
+            if (!eachFileActions.isEmpty()) {
+                // make sure all parent directories exist
+                destFile.getParentFile().mkdirs();
+            }
         } else {
             //create destination directory
             File parent = destFile.getParentFile();

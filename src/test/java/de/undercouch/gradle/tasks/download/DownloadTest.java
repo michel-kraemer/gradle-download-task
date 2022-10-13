@@ -3,6 +3,7 @@ package de.undercouch.gradle.tasks.download;
 import groovy.lang.Closure;
 import kotlin.jvm.functions.Function0;
 import org.apache.commons.io.FileUtils;
+import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.provider.DefaultProvider;
 import org.gradle.workers.WorkerExecutionException;
 import org.junit.jupiter.api.BeforeEach;
@@ -568,6 +569,120 @@ public class DownloadTest extends TestBaseWithMockServer {
             } else if (details.getSourceURL().toString().equals(u2)) {
                 assertThat(details.getName()).isEqualTo(TEST_FILE_NAME2);
                 details.setName(nn2);
+            } else {
+                fail("Unknown source URL: " + details.getSourceURL());
+            }
+        });
+        execute(t);
+
+        assertThat(new File(dst, TEST_FILE_NAME)).doesNotExist();
+        assertThat(new File(dst, TEST_FILE_NAME2)).doesNotExist();
+        assertThat(new File(dst, nn1))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS);
+        assertThat(new File(dst, nn2))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS2);
+    }
+
+    /**
+     * Tests if multiple files can be downloaded and an {@code eachFile} action
+     * can be applied to change their relative path
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void eachFileActionMultipleFilesRelativePath() throws Exception {
+        Download t = makeProjectAndTask();
+        String u1 = wireMock.url(TEST_FILE_NAME);
+        String u2 = wireMock.url(TEST_FILE_NAME2);
+        t.src(Arrays.asList(u1, u2));
+
+        String nn1 = "foo/" + TEST_FILE_NAME;
+        String nn2 = "foo/" + TEST_FILE_NAME2;
+
+        File dst = newTempDir();
+        t.dest(dst);
+
+        t.eachFile(details -> {
+            if (details.getSourceURL().toString().equals(u1)) {
+                assertThat(details.getName()).isEqualTo(TEST_FILE_NAME);
+                assertThat(details.getPath()).isEqualTo(TEST_FILE_NAME);
+                assertThat((Object)details.getRelativePath())
+                        .isEqualTo(RelativePath.parse(true, TEST_FILE_NAME));
+                // use setRelativePath()
+                details.setRelativePath(RelativePath.parse(true, nn1));
+                assertThat(details.getName()).isEqualTo(TEST_FILE_NAME);
+                assertThat(details.getPath()).isEqualTo(nn1);
+                assertThat((Object)details.getRelativePath())
+                        .isEqualTo(RelativePath.parse(true, nn1));
+            } else if (details.getSourceURL().toString().equals(u2)) {
+                assertThat(details.getName()).isEqualTo(TEST_FILE_NAME2);
+                assertThat(details.getPath()).isEqualTo(TEST_FILE_NAME2);
+                assertThat((Object)details.getRelativePath())
+                        .isEqualTo(RelativePath.parse(true, TEST_FILE_NAME2));
+                // use setPath()
+                details.setPath(nn2);
+                assertThat(details.getName()).isEqualTo(TEST_FILE_NAME2);
+                assertThat(details.getPath()).isEqualTo(nn2);
+                assertThat((Object)details.getRelativePath())
+                        .isEqualTo(RelativePath.parse(true, nn2));
+            } else {
+                fail("Unknown source URL: " + details.getSourceURL());
+            }
+        });
+        execute(t);
+
+        assertThat(new File(dst, TEST_FILE_NAME)).doesNotExist();
+        assertThat(new File(dst, TEST_FILE_NAME2)).doesNotExist();
+        assertThat(new File(dst, nn1))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS);
+        assertThat(new File(dst, nn2))
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS2);
+    }
+
+    /**
+     * Tests if multiple files can be downloaded and an {@code eachFile} action
+     * can be applied to change their relative path by setting their name
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void eachFileActionMultipleFilesRelativePathByName() throws Exception {
+        Download t = makeProjectAndTask();
+        String u1 = wireMock.url(TEST_FILE_NAME);
+        String u2 = wireMock.url(TEST_FILE_NAME2);
+        t.src(Arrays.asList(u1, u2));
+
+        String nn1 = "foo/" + TEST_FILE_NAME;
+        String nn2 = "foo/" + TEST_FILE_NAME2;
+
+        File dst = newTempDir();
+        t.dest(dst);
+
+        t.eachFile(details -> {
+            if (details.getSourceURL().toString().equals(u1)) {
+                assertThat(details.getName()).isEqualTo(TEST_FILE_NAME);
+                assertThat(details.getPath()).isEqualTo(TEST_FILE_NAME);
+                assertThat((Object)details.getRelativePath())
+                        .isEqualTo(RelativePath.parse(true, TEST_FILE_NAME));
+                // use setName() instead of setRelativePath() or setPath()
+                details.setName(nn1);
+                assertThat(details.getName()).isEqualTo(nn1);
+                assertThat(details.getPath()).isEqualTo(nn1);
+                assertThat(details.getRelativePath().getPathString())
+                        .isEqualTo(RelativePath.parse(true, nn1).getPathString());
+            } else if (details.getSourceURL().toString().equals(u2)) {
+                assertThat(details.getName()).isEqualTo(TEST_FILE_NAME2);
+                assertThat(details.getPath()).isEqualTo(TEST_FILE_NAME2);
+                assertThat((Object)details.getRelativePath())
+                        .isEqualTo(RelativePath.parse(true, TEST_FILE_NAME2));
+                // use setName() instead of setRelativePath() or setPath()
+                details.setName(nn2);
+                assertThat(details.getName()).isEqualTo(nn2);
+                assertThat(details.getPath()).isEqualTo(nn2);
+                assertThat(details.getRelativePath().getPathString())
+                        .isEqualTo(RelativePath.parse(true, nn2).getPathString());
             } else {
                 fail("Unknown source URL: " + details.getSourceURL());
             }
