@@ -65,7 +65,9 @@ public class OutputsTest extends TestBaseWithMockServer {
         t.src(wireMock.baseUrl());
         File buildDir = t.getProject().getBuildDir();
         t.dest(buildDir);
-        assertThat(t.getOutputs().getFiles().getSingleFile()).isEqualTo(buildDir);
+        // check the output files parent is our dir
+        assertThat(t.getOutputs().getFiles().getSingleFile().getParentFile())
+                .isEqualTo(buildDir);
     }
 
     /**
@@ -79,7 +81,9 @@ public class OutputsTest extends TestBaseWithMockServer {
         t.src(wireMock.baseUrl());
         File buildDir = t.getProject().getLayout().getBuildDirectory().getAsFile().get();
         t.dest(buildDir);
-        assertThat(t.getOutputs().getFiles().getSingleFile()).isEqualTo(buildDir);
+        // check the output files parent is our dir
+        assertThat(t.getOutputs().getFiles().getSingleFile().getParentFile())
+                .isEqualTo(buildDir);
     }
 
     /**

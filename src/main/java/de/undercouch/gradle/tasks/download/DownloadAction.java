@@ -715,15 +715,19 @@ public class DownloadAction implements DownloadSpec, Serializable {
     /**
      * Generates the path to an output file for a given source URL
      * @param src the source
+     * @param multipleSources {@code true} if multiple sources have been specified
+     * and the output file should be created inside a destination directory
      * @return the path to the output file
      */
-    private File makeDestFile(URL src) {
+    private File makeDestFile(URL src, boolean multipleSources) {
         File destFile = getDest();
         if (destFile == null) {
             throw new IllegalArgumentException("Please provide a download destination");
         }
 
-        if (destFile.isDirectory()) {
+        boolean isDirectory = destFile.isDirectory() ||
+                destFile.equals(projectLayout.getBuildDirectory().get().getAsFile());
+        if (multipleSources || isDirectory) {
             // guess name from URL
             String name = src.toString();
             if (name.endsWith("/")) {
@@ -915,14 +919,19 @@ public class DownloadAction implements DownloadSpec, Serializable {
                 return Collections.unmodifiableList(cachedOutputFiles);
             }
 
-            if (cachedOutputFiles == null) {
+            // Create a new list if it does not exist yet or reset the list
+            // if it previously only contained one element. The latter is
+            // necessary, because 'multipleSources' below will become true and
+            // the output file will be different.
+            if (cachedOutputFiles == null || cachedOutputFiles.size() == 1) {
                 cachedOutputFiles = new ArrayList<>(sources.size());
             }
 
             // update cache
+            boolean multipleSources = sources.size() > 1;
             Set<File> distinctFiles = new HashSet<>(cachedOutputFiles);
             for (int i = cachedOutputFiles.size(); i < sources.size(); ++i) {
-                File destFile = makeDestFile(sources.get(i));
+                File destFile = makeDestFile(sources.get(i), multipleSources);
                 cachedOutputFiles.add(destFile);
                 if (!distinctFiles.add(destFile)) {
                     throw new IllegalArgumentException("Duplicate destination " +
