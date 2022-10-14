@@ -11,16 +11,16 @@ import de.undercouch.gradle.tasks.download.Verify
 /**
  * Download a single file to a directory
  */
-tasks.register<Download>("downloadFile") {
+val downloadFile by tasks.registering(Download::class) {
     src("http://www.example.com/index.html")
     dest(buildDir)
 }
 
-tasks.register<Verify>("verifyFile") {
-    dependsOn("downloadFile")
-    src(File(buildDir, "index.html"))
+val verifyFile by tasks.registering(Verify::class) {
+    dependsOn(downloadFile)
+    src(downloadFile.get().outputs.files.singleFile)
     algorithm("MD5")
     checksum("84238dfc8092e5d9c0dac8ef93371a07")
 }
 
-defaultTasks("verifyFile")
+defaultTasks(verifyFile.get())

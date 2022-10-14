@@ -14,7 +14,7 @@ task downloadFile(type: Download) {
 }
 
 task verifyFile(type: Verify, dependsOn: downloadFile) {
-    src new File(buildDir, 'index.html')
+    src downloadFile.outputs.files.singleFile
     algorithm 'MD5'
     checksum '84238dfc8092e5d9c0dac8ef93371a07'
 }
