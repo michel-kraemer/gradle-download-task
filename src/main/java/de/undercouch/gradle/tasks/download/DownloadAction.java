@@ -67,9 +67,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -911,8 +913,14 @@ public class DownloadAction implements DownloadSpec, Serializable {
             }
 
             // update cache
+            Set<File> distinctFiles = new HashSet<>(cachedOutputFiles);
             for (int i = cachedOutputFiles.size(); i < sources.size(); ++i) {
-                cachedOutputFiles.add(makeDestFile(sources.get(i)));
+                File destFile = makeDestFile(sources.get(i));
+                cachedOutputFiles.add(destFile);
+                if (!distinctFiles.add(destFile)) {
+                    throw new IllegalArgumentException("Duplicate destination " +
+                            "file '" + destFile + "'");
+                }
             }
 
             return Collections.unmodifiableList(cachedOutputFiles);

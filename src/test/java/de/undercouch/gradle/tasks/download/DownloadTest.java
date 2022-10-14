@@ -5,7 +5,6 @@ import kotlin.jvm.functions.Function0;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.provider.DefaultProvider;
-import org.gradle.workers.WorkerExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -842,5 +841,26 @@ public class DownloadTest extends TestBaseWithMockServer {
         assertThat(new File(dst, "3.txt"))
                 .usingCharset(StandardCharsets.UTF_8)
                 .hasContent(CONTENTS2);
+    }
+
+    /**
+     * Tests if an exception is thrown if an eachFile action returns duplicate
+     * destinations.
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void eachFileActionDuplicateDests() throws Exception {
+        Download t = makeProjectAndTask();
+        String u1 = wireMock.url(TEST_FILE_NAME);
+        String u2 = wireMock.url(TEST_FILE_NAME2);
+        t.src(Arrays.asList(u1, u2));
+
+        File dst = newTempDir();
+        t.dest(dst);
+
+        t.eachFile(details -> details.setName(TEST_FILE_NAME));
+        assertThatThrownBy(() -> execute(t))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Duplicate destination file '" + new File(dst, TEST_FILE_NAME) + "'");
     }
 }
