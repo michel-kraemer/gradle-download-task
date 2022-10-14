@@ -216,12 +216,15 @@ public class DownloadAction implements DownloadSpec, Serializable {
             }
         }
 
-        List<File> outputFiles = getOutputFiles();
-
         if (!eachFileActions.isEmpty() && sources.size() < 2) {
             throw new IllegalArgumentException("An 'eachFile' action can only " +
                     "be added if multiple sources are provided.");
         }
+
+        List<File> destFiles = getOutputFiles();
+
+        // make sure parent directories of target files exist
+        ensureTargetDirectoriesExist(destFiles);
 
         WorkerExecutorHelper workerExecutor = WorkerExecutorHelper.newInstance(objectFactory);
 
@@ -229,7 +232,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
         CompletableFuture<?>[] futures = new CompletableFuture[sources.size()];
         for (int i = 0; i < sources.size(); i++) {
             URL src = sources.get(i);
-            File outputFile = outputFiles.get(i);
+            File destFile = destFiles.get(i);
 
             // submit download job for asynchronous execution
             CompletableFuture<Void> f = new CompletableFuture<>();
@@ -248,7 +251,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
                 }
 
                 try {
-                    execute(src, outputFile, clientFactory, progressLogger);
+                    execute(src, destFile, clientFactory, progressLogger);
                     f.complete(null);
                 } catch (Throwable t) {
                     f.completeExceptionally(t);
@@ -569,6 +572,21 @@ public class DownloadAction implements DownloadSpec, Serializable {
     }
 
     /**
+     * Make sure the parent directories of all given files exist and create
+     * them if necessary
+     * @param destFiles the files
+     */
+    private void ensureTargetDirectoriesExist(List<File> destFiles) {
+        Set<File> parentDirs = new HashSet<>();
+        for (File o : destFiles) {
+            File parentDir = o.getParentFile();
+            if (parentDir != null && parentDirs.add(parentDir)) {
+                parentDir.mkdirs();
+            }
+        }
+    }
+
+    /**
      * Reads the {@link #cachedETagsFile}
      * @return a map containing the parsed contents of the cached etags file
      * or an empty map if the file does not exist yet
@@ -695,8 +713,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
     }
 
     /**
-     * Generates the path to an output file for a given source URL. Creates
-     * all necessary parent directories for the destination file.
+     * Generates the path to an output file for a given source URL
      * @param src the source
      * @return the path to the output file
      */
@@ -707,7 +724,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
         }
 
         if (destFile.isDirectory()) {
-            //guess name from URL
+            // guess name from URL
             String name = src.toString();
             if (name.endsWith("/")) {
                 name = name.substring(0, name.length() - 1);
@@ -728,18 +745,8 @@ public class DownloadAction implements DownloadSpec, Serializable {
             }
 
             destFile = path.getFile(destFile);
-
-            if (!eachFileActions.isEmpty()) {
-                // make sure all parent directories exist
-                destFile.getParentFile().mkdirs();
-            }
-        } else {
-            //create destination directory
-            File parent = destFile.getParentFile();
-            if (parent != null) {
-                parent.mkdirs();
-            }
         }
+
         return destFile;
     }
     
