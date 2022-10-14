@@ -65,6 +65,7 @@ import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -100,6 +101,8 @@ public class DownloadAction implements DownloadSpec, Serializable {
     private Object destObject;
     private File cachedDest;
     private transient Lock cachedDestLock = new ReentrantLock();
+    private List<File> cachedOutputFiles;
+    private transient Lock cachedOutputFilesLock = new ReentrantLock();
     private boolean quiet = false;
     private boolean overwrite = true;
     private boolean onlyIfModified = false;
@@ -211,6 +214,8 @@ public class DownloadAction implements DownloadSpec, Serializable {
             }
         }
 
+        List<File> outputFiles = getOutputFiles();
+
         if (!eachFileActions.isEmpty() && sources.size() < 2) {
             throw new IllegalArgumentException("An 'eachFile' action can only " +
                     "be added if multiple sources are provided.");
@@ -222,6 +227,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
         CompletableFuture<?>[] futures = new CompletableFuture[sources.size()];
         for (int i = 0; i < sources.size(); i++) {
             URL src = sources.get(i);
+            File outputFile = outputFiles.get(i);
 
             // submit download job for asynchronous execution
             CompletableFuture<Void> f = new CompletableFuture<>();
@@ -240,7 +246,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
                 }
 
                 try {
-                    execute(src, clientFactory, progressLogger);
+                    execute(src, outputFile, clientFactory, progressLogger);
                     f.complete(null);
                 } catch (Throwable t) {
                     f.completeExceptionally(t);
@@ -280,9 +286,8 @@ public class DownloadAction implements DownloadSpec, Serializable {
         return rf;
     }
 
-    private void execute(URL src, HttpClientFactory clientFactory,
+    private void execute(URL src, File destFile, HttpClientFactory clientFactory,
             ProgressLoggerWrapper progressLogger) throws IOException {
-        final File destFile = makeDestFile(src);
         if (!overwrite && destFile.exists()) {
             if (!quiet) {
                 logger.info("Destination file already exists. "
@@ -890,14 +895,30 @@ public class DownloadAction implements DownloadSpec, Serializable {
 
     /**
      * @return a list of files created by this action (i.e. the destination files)
+     * in the same order as the sources returned by {@link #getSources()}
      */
     public List<File> getOutputFiles() {
         List<URL> sources = getSources();
-        List<File> files = new ArrayList<>(sources.size());
-        for (URL src : sources) {
-            files.add(makeDestFile(src));
+
+        cachedOutputFilesLock.lock();
+        try {
+            if (cachedOutputFiles != null && cachedOutputFiles.size() == sources.size()) {
+                return Collections.unmodifiableList(cachedOutputFiles);
+            }
+
+            if (cachedOutputFiles == null) {
+                cachedOutputFiles = new ArrayList<>(sources.size());
+            }
+
+            // update cache
+            for (int i = cachedOutputFiles.size(); i < sources.size(); ++i) {
+                cachedOutputFiles.add(makeDestFile(sources.get(i)));
+            }
+
+            return Collections.unmodifiableList(cachedOutputFiles);
+        } finally {
+            cachedOutputFilesLock.unlock();
         }
-        return files;
     }
 
     @Override
@@ -1303,6 +1324,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
         // initialize transient fields
         cachedSourcesLock = new ReentrantLock();
         cachedDestLock = new ReentrantLock();
+        cachedOutputFilesLock = new ReentrantLock();
         cachedETagsFileLock = new ReentrantLock();
     }
 

@@ -334,6 +334,102 @@ public class DownloadTest extends TestBaseWithMockServer {
     }
 
     /**
+     * Make sure eachFile actions are called only once
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void eachFileCalledOnce() throws Exception {
+        final AtomicInteger eachFileCalled = new AtomicInteger();
+
+        final File dst = newTempDir();
+        File destFile1 = new File(dst, TEST_FILE_NAME);
+        File destFile2 = new File(dst, TEST_FILE_NAME2);
+
+        Download t = makeProjectAndTask();
+        String u1 = wireMock.url(TEST_FILE_NAME);
+        String u2 = wireMock.url(TEST_FILE_NAME2);
+        t.src(Arrays.asList(u1, u2));
+        t.dest(dst);
+        t.eachFile(f -> eachFileCalled.incrementAndGet());
+
+        assertThat(eachFileCalled.get()).isEqualTo(0);
+
+        // calling t.getOutputFiles() will call the eachFile action (once for
+        // each source) and cache the result
+        assertThat(t.getOutputFiles()).isEqualTo(Arrays.asList(destFile1, destFile2));
+        assertThat(eachFileCalled.get()).isEqualTo(2);
+
+        // call it again, the eachFile action should not be called again
+        assertThat(t.getOutputFiles()).isEqualTo(Arrays.asList(destFile1, destFile2));
+        assertThat(eachFileCalled.get()).isEqualTo(2);
+
+        execute(t);
+
+        assertThat(destFile1)
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS);
+        assertThat(destFile2)
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS2);
+
+        // eachFile action should not have been called again
+        assertThat(eachFileCalled.get()).isEqualTo(2);
+    }
+
+    /**
+     * Test if the cached list of output files is updated properly
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void updateCachedOutputFiles() throws Exception {
+        final AtomicInteger eachFileCalled = new AtomicInteger();
+
+        final File dst = newTempDir();
+        File destFile1 = new File(dst, TEST_FILE_NAME + ".1");
+        File destFile2 = new File(dst, TEST_FILE_NAME2 + ".2");
+        File destFile3 = new File(dst, TEST_FILE_NAME2 + ".3");
+
+        Download t = makeProjectAndTask();
+        String u1 = wireMock.url(TEST_FILE_NAME);
+        String u2 = wireMock.url(TEST_FILE_NAME2);
+        t.src(Arrays.asList(u1, u2));
+        t.dest(dst);
+        t.eachFile(f -> f.setName(f.getName() + "." + eachFileCalled.incrementAndGet()));
+
+        assertThat(eachFileCalled.get()).isEqualTo(0);
+
+        // t.getOutputFiles() will call the eachFile action (once for each
+        // source) and cache the result
+        assertThat(t.getOutputFiles()).isEqualTo(Arrays.asList(destFile1, destFile2));
+        assertThat(eachFileCalled.get()).isEqualTo(2);
+
+        // add another src
+        t.src(wireMock.url(TEST_FILE_NAME2));
+
+        // t.getOutputFiles() will now call the eachFile action again for the
+        // new source and then cache the new result
+        assertThat(t.getOutputFiles()).isEqualTo(Arrays.asList(destFile1, destFile2, destFile3));
+        assertThat(eachFileCalled.get()).isEqualTo(3);
+
+        t.dest(dst);
+
+        execute(t);
+
+        assertThat(destFile1)
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS);
+        assertThat(destFile2)
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS2);
+        assertThat(destFile3)
+                .usingCharset(StandardCharsets.UTF_8)
+                .hasContent(CONTENTS2);
+
+        // the eachFile action should still have been called only three times
+        assertThat(eachFileCalled.get()).isEqualTo(3);
+    }
+
+    /**
      * Do not overwrite an existing file
      * @throws Exception if anything goes wrong
      */
@@ -500,8 +596,6 @@ public class DownloadTest extends TestBaseWithMockServer {
             throw new RuntimeException("Dummy");
         });
         assertThatThrownBy(() -> execute(t))
-                .isInstanceOf(WorkerExecutionException.class)
-                .rootCause()
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Dummy");
     }
