@@ -220,8 +220,8 @@ has been modified on the server since the last download <em>(default:
 be applied to each source URL before it is downloaded. The action is called
 with a <a href="#downloaddetails">DownloadDetails</a> object and can modify
 some aspects of the target file in the destination directory (e.g. the
-filename). If only one download source has been given, adding an
-<code>eachFile</code> action will make the plugin fail.</dd>
+filename or relative path). If only one download source has been given, adding
+an <code>eachFile</code> action will make the plugin fail.</dd>
 </dl>
 
 <em>Tip!</em> You may provide Groovy Closures or Kotlin Lambdas to the `src`
@@ -373,7 +373,7 @@ DownloadDetails
 If you specify an [`eachFile`](#general) action, it will be called with an
 instance of the `DownloadDetails` class, which provides details about a
 download source and its target file. It can be used to change some aspects of
-the target file (e.g. its name).
+the target file (e.g. its name or relative path).
 
 The `DownloadDetails` class provides the following methods:
 
@@ -384,6 +384,16 @@ The `DownloadDetails` class provides the following methods:
 <dd>Get the name of the target file</dd>
 <dt>void setName(String)</dt>
 <dd>Set the name of the target file</dd>
+<dt>String getPath()</dt>
+<dd>Get the path of the target file (including the filename), relative to
+download directory</dd>
+<dt>void setPath(String)</dt>
+<dd>Set the path of the target file (including the filename)</dd>
+<dt><a href="https://docs.gradle.org/current/javadoc/org/gradle/api/file/RelativePath.html">RelativePath</a> getRelativePath()</dt>
+<dd>Get the path of the target file (including the filename), relative to
+download directory</dd>
+<dt>void setRelativePath(<a href="https://docs.gradle.org/current/javadoc/org/gradle/api/file/RelativePath.html">RelativePath</a> path)</dt>
+<dd>Set the path of the target file (including the filename)</dd>
 </dl>
 
 Proxy configuration
