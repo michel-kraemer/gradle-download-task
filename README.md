@@ -375,26 +375,31 @@ instance of the `DownloadDetails` class, which provides details about a
 download source and its target file. It can be used to change some aspects of
 the target file (e.g. its name or relative path).
 
-The `DownloadDetails` class provides the following methods:
+`DownloadDetails` provides the following properties:
 
 <dl>
-<dt>URL getSourceURL()</dt>
-<dd>Get the source URL of the file to be downloaded</dd>
-<dt>String getName()</dt>
-<dd>Get the name of the target file</dd>
-<dt>void setName(String)</dt>
-<dd>Set the name of the target file</dd>
-<dt>String getPath()</dt>
-<dd>Get the path of the target file (including the filename), relative to
+<dt>URL sourceURL <em>(read-only)</em></dt>
+<dd>The source URL of the file to be downloaded</dd>
+<dt>String name</dt>
+<dd>The name of the target file</dd>
+<dt>String path</dt>
+<dd>The path of the target file (including the filename), relative to
 download directory</dd>
-<dt>void setPath(String)</dt>
-<dd>Set the path of the target file (including the filename)</dd>
-<dt><a href="https://docs.gradle.org/current/javadoc/org/gradle/api/file/RelativePath.html">RelativePath</a> getRelativePath()</dt>
-<dd>Get the path of the target file (including the filename), relative to
+<dt><a href="https://docs.gradle.org/current/javadoc/org/gradle/api/file/RelativePath.html">RelativePath</a> relativePath</dt>
+<dd>The path of the target file (including the filename), relative to
 download directory</dd>
-<dt>void setRelativePath(<a href="https://docs.gradle.org/current/javadoc/org/gradle/api/file/RelativePath.html">RelativePath</a> path)</dt>
-<dd>Set the path of the target file (including the filename)</dd>
 </dl>
+
+### Example
+
+```groovy
+eachFile { f ->
+  f.name = f.name.toLowerCase()
+  if (f.sourceURL.toString().endsWith(".jpg")) {
+    f.path = "images/" + f.path
+  }
+}
+```
 
 Proxy configuration
 -------------------
