@@ -395,7 +395,7 @@ download directory</dd>
 ```groovy
 eachFile { f ->
   f.name = f.name.toLowerCase()
-  if (f.sourceURL.toString().endsWith(".jpg")) {
+  if (f.sourceURL.toString().toLowerCase().endsWith(".jpg")) {
     f.path = "images/" + f.path
   }
 }
