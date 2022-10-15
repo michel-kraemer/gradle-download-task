@@ -58,7 +58,7 @@ First, apply the plugin configuration:
 
 ```groovy
 plugins {
-    id "de.undercouch.download" version "5.2.1"
+    id "de.undercouch.download" version "5.3.0"
 }
 ```
 
@@ -176,8 +176,8 @@ plugin with Gradle's built-in support for ZIP files:
 
 ```groovy
 task downloadZipFile(type: Download) {
-    src 'https://github.com/michel-kraemer/gradle-download-task/archive/refs/tags/5.2.1.zip'
-    dest new File(buildDir, '5.2.1.zip')
+    src 'https://github.com/michel-kraemer/gradle-download-task/archive/refs/tags/5.3.0.zip'
+    dest new File(buildDir, '5.3.0.zip')
 }
 
 task downloadAndUnzipFile(dependsOn: downloadZipFile, type: Copy) {
