@@ -36,6 +36,7 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -53,7 +54,7 @@ public class ProxyTest extends TestBaseWithMockServer {
 
     private HttpProxyServer proxy;
     private int proxyPort;
-    private int proxyCounter = 0;
+    private final AtomicInteger proxyCounter = new AtomicInteger();
 
     /**
      * Host name of the local machine
@@ -129,7 +130,7 @@ public class ProxyTest extends TestBaseWithMockServer {
                        return new HttpFiltersAdapter(originalRequest) {
                           @Override
                           public void proxyToServerRequestSent() {
-                              proxyCounter++;
+                              proxyCounter.incrementAndGet();
                           }
                        };
                     }
@@ -207,7 +208,7 @@ public class ProxyTest extends TestBaseWithMockServer {
             execute(t);
 
             assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
-            assertThat(proxyCounter).isEqualTo(expectedProxyCounter);
+            assertThat(proxyCounter.get()).isEqualTo(expectedProxyCounter);
         } finally {
             stopProxy();
             if (proxyHost == null) {
