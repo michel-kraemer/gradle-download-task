@@ -131,9 +131,10 @@ task downloadFile(type: Download) {
 }
 ```
 
-Note that this feature depends on the server and whether it supports the
-`If-Modified-Since` request header and provides a `Last-Modified`
-timestamp in its response.
+Note that this example only works if the server supports the `If-Modified-Since`
+request header and provides a `Last-Modified` timestamp in its response. If the
+server supports entity tags (ETags) you may use `onlyIfModified` together with
+`useETag`.
 
 ### Concurrently download a list of files to a directory
 
