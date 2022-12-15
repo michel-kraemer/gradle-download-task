@@ -33,17 +33,24 @@ Who’s using gradle-download-task?
 <table border="0">
 <tbody>
   <tr>
-    <td align="center" width="230">
+    <td align="center" width="300" height="190">
       <h3>Facebook</h3>
       <a href="https://github.com/facebook/react-native/">React Native</a><br>
       <a href="https://github.com/facebook/hermes/">Hermes</a><br><br>
     </td>
-    <td align="center" width="230">
+    <td align="center" width="300" height="190">
+      <h3><a href="https://libgdx.com/"><img width="100" valign="middle" src="https://raw.githubusercontent.com/libgdx/libgdx/1.11.0/libgdx_logo.svg"></a></h3>
+      <a href="https://libgdx.com/">Website</a><br>
+      <a href="https://github.com/libgdx/libgdx">GitHub repository</a><br><br>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="230" height="190">
       <a href="https://github.com/wala/WALA"><img width="90" valign="middle" src="https://wala.github.io/public/img/wala.png"></a><br>
       <a href="https://github.com/wala/WALA">T. J. Watson Libraries<br>
       for Analysis (WALA)</a>
     </td>
-    <td align="center" width="230">
+    <td align="center" width="230" height="190">
       <a href="https://github.com/search?l=gradle&q=%22de.undercouch.download%22&type=Code"><strong>6000+ more</strong><br>open-source projects &hellip;</a><br><br>
       Want to be listed here?<br>Just comment on <a href="https://github.com/michel-kraemer/gradle-download-task/issues/192">this issue</a>.
     </td>
