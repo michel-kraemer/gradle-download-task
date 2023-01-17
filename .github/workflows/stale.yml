@@ -22,7 +22,7 @@ jobs:
 
           # Issues with these labels will never be considered stale
           exempt-issue-labels: pinned,security,confirmed,planned
-          exempt-pr-labels: pinned,security,confirmed,planned
+          exempt-pr-labels: pinned,security,confirmed,planned,dependencies
 
           stale-issue-message: >
             This issue has been automatically marked as stale because it has not had
