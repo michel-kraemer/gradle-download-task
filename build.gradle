@@ -27,8 +27,8 @@ ext {
     if ("true".equals(System.getenv("CI"))) {
         limitedVersionsToTest = [
             "5.6.4",
-            "6.9.2",
-            "7.5.1"
+            "6.9.3",
+            "7.6"
         ]
     } else {
         limitedVersionsToTest = versionsToTest
