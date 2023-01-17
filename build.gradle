@@ -19,7 +19,7 @@ targetCompatibility = '1.8'
 
 ext {
     isReleaseVersion = !version.endsWith("SNAPSHOT")
-    junitVersion = '5.9.1'
+    junitVersion = '5.9.2'
 
     // on CI server, limit functional tests to major versions to avoid running
     // out of open file descriptors (happens when we load the jar files of too
