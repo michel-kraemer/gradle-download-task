@@ -89,4 +89,20 @@ public class VerifyExtensionTest extends TestBase {
                 EXPECTED_CHECKSUM)).isInstanceOf(IllegalStateException.class)
                 .hasMessage("Could not verify file checksum");
     }
+
+    /**
+     * Tests if the verify extension can be created through the object factory
+     * for a task. See issue #284 for more information.
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void createVerifyExtensionForTask() throws Exception {
+        File src = makeSourceFile();
+        Download t = makeProjectAndTask();
+        VerifyExtension e = t.getProject().getObjects().newInstance(VerifyExtension.class, t);
+        e.run(action -> {
+            action.src(src.getAbsolutePath());
+            action.checksum(EXPECTED_CHECKSUM);
+        });
+    }
 }

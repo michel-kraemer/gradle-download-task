@@ -18,6 +18,7 @@ import org.apache.hc.client5.http.ClientProtocolException;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -123,5 +124,30 @@ public class DownloadExtensionTest extends TestBaseWithMockServer {
                     .isInstanceOf(ClientProtocolException.class)
                     .hasMessageContaining("HTTP status code: 404");
         }
+    }
+
+    /**
+     * Tests if the download extension can be created through the object factory
+     * for a task. See issue #284 for more information.
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void createDownloadExtensionForTask() throws Exception {
+        Download t = makeProjectAndTask();
+
+        String src = wireMock.url(TEST_FILE_NAME);
+        File dst = newTempFile();
+
+        DownloadExtension e = t.getProject().getObjects().newInstance(DownloadExtension.class, t);
+        e.run(action -> {
+            try {
+                action.src(src);
+                action.dest(dst);
+            } catch (IOException ex) {
+                fail("Could not execute action", ex);
+            }
+        });
+
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
     }
 }

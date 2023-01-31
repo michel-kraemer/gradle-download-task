@@ -140,16 +140,31 @@ public class DownloadAction implements DownloadSpec, Serializable {
      */
     public DownloadAction(Project project, @Nullable Task task) {
         // get required project properties now to enable configuration cache
-        this.projectLayout = project.getLayout();
-        this.logger = project.getLogger();
-        if (task != null) {
-            this.servicesOwner = task;
-        } else {
-            this.servicesOwner = project;
-        }
-        this.objectFactory = project.getObjects();
-        this.isOffline = project.getGradle().getStartParameter().isOffline();
-        this.downloadTaskDir = new File(project.getBuildDir(), "download-task");
+        this(project.getLayout(), project.getLogger(),
+                task != null ? task : project, project.getObjects(),
+                project.getGradle().getStartParameter().isOffline(),
+                project.getBuildDir());
+    }
+
+    /**
+     * Creates a new download action
+     * @param projectLayout the project layout
+     * @param logger the project logger
+     * @param servicesOwner either the current project or (preferably) the
+     * current task
+     * @param objectFactory the project's object factory
+     * @param isOffline whether Gradle has been started in offline mode or not
+     * @param buildDir the project's build directory
+     */
+    DownloadAction(ProjectLayout projectLayout, Logger logger,
+            Object servicesOwner, ObjectFactory objectFactory, boolean isOffline,
+            File buildDir) {
+        this.projectLayout = projectLayout;
+        this.logger = logger;
+        this.servicesOwner = servicesOwner;
+        this.objectFactory = objectFactory;
+        this.isOffline = isOffline;
+        this.downloadTaskDir = new File(buildDir, "download-task");
     }
 
     /**

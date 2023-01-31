@@ -28,7 +28,15 @@ public class VerifyAction implements VerifySpec {
      * @param project the project to be built
      */
     public VerifyAction(Project project) {
-        this.projectLayout = project.getLayout();
+        this(project.getLayout());
+    }
+
+    /**
+     * Creates a new verify action
+     * @param projectLayout the project layout
+     */
+    public VerifyAction(ProjectLayout projectLayout) {
+        this.projectLayout = projectLayout;
     }
 
     private String toHex(byte[] barr) {
