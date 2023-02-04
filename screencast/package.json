@@ -14,11 +14,11 @@
   "dependencies": {
     "@fontsource/dejavu-mono": "^4.5.4",
     "nunjucks": "^3.2.3",
-    "pretty-bytes": "^6.0.0",
+    "pretty-bytes": "^6.1.0",
     "subset-font": "^2.0.0",
     "svgo": "^3.0.2"
   },
   "devDependencies": {
-    "npm-check-updates": "^16.6.2"
+    "npm-check-updates": "^16.6.3"
   }
 }
