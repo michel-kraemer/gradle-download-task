@@ -239,7 +239,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
     public void downloadOnlyIfNewer() throws Exception {
         stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
                 .willReturn(aResponse()
-                        .withHeader("Last-Modified", "Sat, 21 Jun 2019 11:54:15 GMT")
+                        .withHeader("Last-Modified", "Fri, 21 Jun 2019 11:54:15 GMT")
                         .withBody(CONTENTS)));
 
         Parameters params1 = new Parameters.Builder(singleSrc, dest)
