@@ -1,7 +1,7 @@
 plugins {
     id "com.gradle.plugin-publish" version "1.1.0"
     id "com.github.johnrengelman.shadow" version "7.1.2"
-    id "io.github.gradle-nexus.publish-plugin" version "1.1.0"
+    id "io.github.gradle-nexus.publish-plugin" version "1.2.0"
 }
 
 apply plugin: 'java-gradle-plugin'
@@ -191,19 +191,15 @@ nexusPublishing {
 }
 
 gradlePlugin {
+    website = 'https://github.com/michel-kraemer/gradle-download-task'
+    vcsUrl = 'https://github.com/michel-kraemer/gradle-download-task'
     plugins {
         downloadPlugin {
             id = 'de.undercouch.download'
             implementationClass = 'de.undercouch.gradle.tasks.download.DownloadTaskPlugin'
             displayName = 'gradle-download-task'
             description = 'Adds a download task to Gradle that displays progress information'
+            tags.set(['download', 'task', 'progress', 'url', 'server', 'file', 'http', 'https'])
         }
     }
-}
-
-pluginBundle {
-    website = 'https://github.com/michel-kraemer/gradle-download-task'
-    vcsUrl = 'https://github.com/michel-kraemer/gradle-download-task'
-    description = 'Adds a download task to Gradle that displays progress information'
-    tags = ['download', 'task', 'progress', 'url', 'server', 'file', 'http', 'https']
 }
