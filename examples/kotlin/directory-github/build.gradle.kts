@@ -20,7 +20,7 @@ tasks.register("downloadDirectoryGitHub") {
         }
 
         // parse directory listing
-        val contents = groovy.json.JsonSlurper().parse(contentsFile, "utf-8") as List<Map<Object, String>>
+        val contents = groovy.json.JsonSlurper().parse(contentsFile, "utf-8") as List<Map<Any, String>>
         val urls = contents.map { it["download_url"] }
 
         // download files
