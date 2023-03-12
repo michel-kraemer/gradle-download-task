@@ -33,13 +33,13 @@ public class CachingHttpClientFactory extends DefaultHttpClientFactory {
 
     @Override
     public CloseableHttpClient createHttpClient(HttpHost httpHost,
-            boolean acceptAnyCertificate, int retries, Map<String, String> headers,
-            Logger logger, boolean quiet) {
+            boolean acceptAnyCertificate, int retries, int connectTimeoutMs,
+            Map<String, String> headers, Logger logger, boolean quiet) {
         CacheKey key = new CacheKey(httpHost, acceptAnyCertificate, retries);
         CloseableHttpClient c = cachedClients.get(key);
         if (c == null) {
             c = super.createHttpClient(httpHost, acceptAnyCertificate, retries,
-                    headers, logger, quiet);
+                    connectTimeoutMs, headers, logger, quiet);
             cachedClients.put(key, c);
         }
         return c;

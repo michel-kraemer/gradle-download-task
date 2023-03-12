@@ -5,10 +5,10 @@ import org.gradle.api.Project;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -45,8 +45,8 @@ public class VerifyExtensionTest extends TestBase {
      */
     private File makeSourceFile() throws IOException {
         File dst = newTempFile();
-        try (OutputStream os = new FileOutputStream(dst);
-              PrintWriter pw = new PrintWriter(os)) {
+        try (OutputStream os = Files.newOutputStream(dst.toPath());
+             PrintWriter pw = new PrintWriter(os)) {
             pw.write("THIS IS A TEST");
         }
         return dst;

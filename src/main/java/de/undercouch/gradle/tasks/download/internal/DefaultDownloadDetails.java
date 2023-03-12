@@ -63,7 +63,8 @@ public class DefaultDownloadDetails implements DownloadDetails {
             return false;
         }
         DefaultDownloadDetails that = (DefaultDownloadDetails)o;
-        return relativePath.equals(that.relativePath) && sourceURL.equals(that.sourceURL);
+        return relativePath.equals(that.relativePath) &&
+                sourceURL.toString().equals(that.sourceURL.toString());
     }
 
     @Override

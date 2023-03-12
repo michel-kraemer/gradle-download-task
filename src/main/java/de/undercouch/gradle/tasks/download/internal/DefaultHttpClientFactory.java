@@ -14,11 +14,12 @@
 
 package de.undercouch.gradle.tasks.download.internal;
 
+import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.impl.routing.SystemDefaultRoutePlanner;
-import org.apache.hc.client5.http.io.HttpClientConnectionManager;
 import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
 import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
@@ -26,6 +27,7 @@ import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.config.Registry;
 import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.util.TimeValue;
+import org.apache.hc.core5.util.Timeout;
 import org.gradle.api.logging.Logger;
 
 import javax.net.ssl.HostnameVerifier;
@@ -38,7 +40,7 @@ import java.util.Map;
 
 /**
  * Default implementation of {@link HttpClientFactory}. Creates a new client
- * every time {@link #createHttpClient(HttpHost, boolean, int, Map, Logger, boolean)}
+ * every time {@link #createHttpClient(HttpHost, boolean, int, int, Map, Logger, boolean)}
  * is called. The caller is responsible for closing this client.
  * @author Michel Kraemer
  */
@@ -52,11 +54,11 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
 
     @Override
     public CloseableHttpClient createHttpClient(HttpHost httpHost,
-            boolean acceptAnyCertificate, final int retries,
+            boolean acceptAnyCertificate, final int retries, int connectTimeoutMs,
             Map<String, String> headers, Logger logger, boolean quiet) {
         HttpClientBuilder builder = HttpClientBuilder.create();
 
-        //configure retries
+        // configure retries
         if (retries == 0) {
             builder.disableAutomaticRetries();
         } else {
@@ -69,22 +71,29 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
                     maxRetries, TimeValue.ofSeconds(0L), logger, quiet));
         }
 
-        //configure proxy from system environment
+        // configure proxy from system environment
         builder.setRoutePlanner(new SystemDefaultRoutePlanner(null));
         
-        //accept any certificate if necessary
+        // use pooling connection manager to support multiple threads
+        PoolingHttpClientConnectionManager cm;
         if ("https".equals(httpHost.getSchemeName()) && acceptAnyCertificate) {
+            // accept any certificate if necessary
             SSLConnectionSocketFactory icsf = getInsecureSSLSocketFactory();
             Registry<ConnectionSocketFactory> registry =
                     RegistryBuilder.<ConnectionSocketFactory>create()
                         .register("https", icsf)
                         .register("http", PlainConnectionSocketFactory.INSTANCE)
                         .build();
-            // use pooling connection manager to support multiple threads
-            HttpClientConnectionManager cm =
-                    new PoolingHttpClientConnectionManager(registry);
-            builder.setConnectionManager(cm);
+            cm = new PoolingHttpClientConnectionManager(registry);
+        } else {
+            cm = PoolingHttpClientConnectionManagerBuilder.create().build();
         }
+
+        // configure connection timeout
+        cm.setDefaultConnectionConfig(ConnectionConfig.custom()
+                .setConnectTimeout(Timeout.ofMilliseconds(connectTimeoutMs))
+                .build());
+        builder.setConnectionManager(cm);
 
         // add interceptor that strips the standard ports :80 and :443 from the
         // Host header unless the host has been explicitly specified by the user

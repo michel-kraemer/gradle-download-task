@@ -23,15 +23,16 @@ import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.auth.BasicScheme;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.client5.http.utils.DateUtils;
+import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.util.Timeout;
 import org.gradle.api.Action;
 import org.gradle.api.JavaVersion;
@@ -50,7 +51,6 @@ import org.gradle.util.GradleVersion;
 import javax.annotation.Nullable;
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -62,11 +62,12 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
+import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -377,14 +378,15 @@ public class DownloadAction implements DownloadSpec, Serializable {
     private void executeHttpProtocol(URL src, HttpClientFactory clientFactory,
             long timestamp, File destFile, ProgressLoggerWrapper progressLogger)
             throws IOException {
-        //create HTTP host from URL
+        // create HTTP host from URL
         HttpHost httpHost = new HttpHost(src.getProtocol(), src.getHost(), src.getPort());
         
-        //create HTTP client
+        // create HTTP client
         CloseableHttpClient client = clientFactory.createHttpClient(
-                httpHost, acceptAnyCertificate, retries, headers, logger, quiet);
+                httpHost, acceptAnyCertificate, retries, connectTimeoutMs,
+                headers, logger, quiet);
 
-        //open URL connection
+        // get cached ETag if there is any
         String etag = null;
         if (onlyIfModified && useETag.enabled && destFile.exists()) {
             etag = getCachedETag(httpHost, src.getFile());
@@ -392,10 +394,10 @@ public class DownloadAction implements DownloadSpec, Serializable {
                 etag = null;
             }
         }
-        CloseableHttpResponse response = openConnection(httpHost, src.getFile(),
-                timestamp, etag, client);
-        try {
-            //check if file on server was modified
+
+        // open URL connection
+        openConnection(httpHost, src.getFile(), timestamp, etag, client, response -> {
+            // check if file on server was modified
             long lastModified = parseLastModified(response);
             int code = response.getCode();
             if (code == HttpStatus.SC_NOT_MODIFIED ||
@@ -404,25 +406,25 @@ public class DownloadAction implements DownloadSpec, Serializable {
                     logger.info("Not modified. Skipping '" + src + "'");
                 }
                 upToDate.incrementAndGet();
-                return;
+                return null;
             }
-        
-            //perform the download
-            performDownload(response, destFile, progressLogger);
-        } finally {
-            response.close();
-        }
-        
-        //set last-modified time of destination file
-        long newTimestamp = parseLastModified(response);
-        if (onlyIfModified && newTimestamp > 0) {
-            destFile.setLastModified(newTimestamp);
-        }
 
-        //store ETag
-        if (onlyIfModified && useETag.enabled) {
-            storeETag(httpHost, src.getFile(), response);
-        }
+            // perform the download
+            performDownload(response, destFile, progressLogger);
+
+            // set last-modified time of destination file
+            long newTimestamp = parseLastModified(response);
+            if (onlyIfModified && newTimestamp > 0) {
+                destFile.setLastModified(newTimestamp);
+            }
+
+            // store ETag
+            if (onlyIfModified && useETag.enabled) {
+                storeETag(httpHost, src.getFile(), response);
+            }
+
+            return null;
+        });
     }
 
     /**
@@ -432,7 +434,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
      * @param progressLogger progress logger
      * @throws IOException if the response could not be downloaded
      */
-    private void performDownload(CloseableHttpResponse response, File destFile,
+    private void performDownload(ClassicHttpResponse response, File destFile,
             ProgressLoggerWrapper progressLogger) throws IOException {
         HttpEntity entity = response.getEntity();
         if (entity == null) {
@@ -466,7 +468,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
 
         // renameTo() failed. Try to copy the file and delete it afterwards.
         // see issue #146
-        try (InputStream is = new FileInputStream(src)) {
+        try (InputStream is = Files.newInputStream(src.toPath())) {
             stream(is, dest, progressLogger);
         }
         if (!src.delete()) {
@@ -778,11 +780,12 @@ public class DownloadAction implements DownloadSpec, Serializable {
      * @param timestamp the timestamp of the destination file, in milliseconds
      * @param etag the cached ETag for the requested host and file
      * @param client the HTTP client to use to perform the request
-     * @return the URLConnection
+     * @param responseHandler a callback that handles the HTTP response
      * @throws IOException if the connection could not be opened
      */
-    private CloseableHttpResponse openConnection(HttpHost httpHost, String file,
-            long timestamp, String etag, CloseableHttpClient client) throws IOException {
+    private <T> void openConnection(HttpHost httpHost, String file,
+            long timestamp, String etag, CloseableHttpClient client,
+            HttpClientResponseHandler<T> responseHandler) throws IOException {
         // configure authentication
         HttpClientContext context = null;
         if (username != null && password != null) {
@@ -791,19 +794,18 @@ public class DownloadAction implements DownloadSpec, Serializable {
             addAuthentication(httpHost, c, context);
         }
         
-        //create request
+        //c reate request
         HttpGet get = new HttpGet(file);
 
-        //configure timeouts
+        // configure timeouts
         RequestConfig config = RequestConfig.custom()
-                .setConnectTimeout(Timeout.ofMilliseconds(connectTimeoutMs))
                 .setConnectionRequestTimeout(Timeout.ofMilliseconds(connectTimeoutMs))
                 .setResponseTimeout(Timeout.ofMilliseconds(readTimeoutMs))
                 .setContentCompressionEnabled(compress)
                 .build();
         get.setConfig(config);
 
-        //add authentication information for proxy
+        // add authentication information for proxy
         String scheme = httpHost.getSchemeName();
         String proxyHost = System.getProperty(scheme + ".proxyHost");
         String proxyPort = System.getProperty(scheme + ".proxyPort");
@@ -821,48 +823,50 @@ public class DownloadAction implements DownloadSpec, Serializable {
             addAuthentication(proxy, credentials, context);
         }
         
-        //set If-Modified-Since header
+        // set If-Modified-Since header
         if (timestamp > 0) {
-            get.setHeader("If-Modified-Since", DateUtils.formatDate(new Date(timestamp)));
+            get.setHeader("If-Modified-Since", DateUtils.formatStandardDate(
+                    Instant.ofEpochMilli(timestamp)));
         }
         
-        //set If-None-Match header
+        // set If-None-Match header
         if (etag != null) {
             get.setHeader("If-None-Match", etag);
         }
         
-        //set headers
+        // set headers
         if (headers != null) {
             for (Map.Entry<String, String> headerEntry : headers.entrySet()) {
                 get.addHeader(headerEntry.getKey(), headerEntry.getValue());
             }
         }
         
-        //execute request
-        CloseableHttpResponse response = client.execute(httpHost, get, context);
-        
-        //handle response
-        int code = response.getCode();
-        if ((code < 200 || code > 299) && code != HttpStatus.SC_NOT_MODIFIED) {
-            String url = httpHost + file;
-            String message = "HTTP status code: " + code + ", URL: " + url;
-            if (code == HttpStatus.SC_UNAUTHORIZED && !response.containsHeader(HttpHeaders.WWW_AUTHENTICATE)) {
-                message += ". Missing " + HttpHeaders.WWW_AUTHENTICATE + " header in response; use the " +
-                        "preemptiveAuth flag to send credentials in first request";
+        // execute request
+        client.execute(httpHost, get, context, response -> {
+            // handle response
+            int code = response.getCode();
+            if ((code < 200 || code > 299) && code != HttpStatus.SC_NOT_MODIFIED) {
+                String url = httpHost + file;
+                String message = "HTTP status code: " + code + ", URL: " + url;
+                if (code == HttpStatus.SC_UNAUTHORIZED &&
+                        !response.containsHeader(HttpHeaders.WWW_AUTHENTICATE)) {
+                    message += ". Missing " + HttpHeaders.WWW_AUTHENTICATE +
+                            " header in response; use the preemptiveAuth flag" +
+                            " to send credentials in the first request.";
+                }
+                String phrase = response.getReasonPhrase();
+                if (phrase == null || phrase.isEmpty()) {
+                    phrase = message;
+                } else {
+                    phrase += " (" + message + ")";
+                }
+                throw new ClientProtocolException(phrase);
             }
-            String phrase = response.getReasonPhrase();
-            if (phrase == null || phrase.isEmpty()) {
-                phrase = message;
-            } else {
-                phrase += " (" + message + ")";
-            }
-            response.close();
-            throw new ClientProtocolException(phrase);
-        }
-        
-        return response;
+
+            return responseHandler.handleResponse(response);
+        });
     }
-    
+
     /**
      * Add authentication information for the given host
      * @param host the host
@@ -907,11 +911,11 @@ public class DownloadAction implements DownloadSpec, Serializable {
         if (value == null || value.isEmpty()) {
             return 0;
         }
-        Date date = DateUtils.parseDate(value);
+        Instant date = DateUtils.parseStandardDate(value);
         if (date == null) {
             return 0;
         }
-        return date.getTime();
+        return date.toEpochMilli();
     }
     
     /**

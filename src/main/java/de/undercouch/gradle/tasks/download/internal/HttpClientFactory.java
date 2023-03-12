@@ -32,11 +32,15 @@ public interface HttpClientFactory {
      * errors should be ignored and any certificate (even an invalid one)
      * should be accepted
      * @param retries the number of retries to perform if an HTTP request fails
+     * @param connectTimeoutMs the maximum number of milliseconds to wait until
+     * a connection is established. A value of 0 (zero) means infinite timeout.
+     * A negative value is interpreted as undefined.
      * @param headers the HTTP headers specified by the user
      * @param logger the project's logger
      * @param quiet {@code true} if the quiet flag is set
      * @return the HTTP client
      */
     CloseableHttpClient createHttpClient(HttpHost httpHost, boolean acceptAnyCertificate,
-            int retries, Map<String, String> headers, Logger logger, boolean quiet);
+            int retries, int connectTimeoutMs, Map<String, String> headers,
+            Logger logger, boolean quiet);
 }

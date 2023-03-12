@@ -20,11 +20,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -123,7 +123,7 @@ public class TempAndMoveTest extends TestBase {
 
         if (createDst) {
             dst = newTempFile();
-            OutputStream os = new FileOutputStream(dst);
+            OutputStream os = Files.newOutputStream(dst.toPath());
             os.close();
         } else {
             // make sure dest does not exist, so we can verify correctly
