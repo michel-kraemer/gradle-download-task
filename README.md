@@ -253,12 +253,12 @@ request <em>(optional)</em></dd>
 request <em>(optional)</em></dd>
 <dt>connectTimeout</dt>
 <dd>The maximum number of milliseconds to wait until a connection is established.
-A value of <code>0</code> (zero) means infinite timeout. A negative value
-is interpreted as undefined. <em>(default: <code>30 seconds</code>)</em></dd>
+A value of <code>0</code> (zero) means infinite timeout. Negative values
+are not allowed. <em>(default: <code>30 seconds</code>)</em></dd>
 <dt>readTimeout</dt>
 <dd>The maximum time in milliseconds to wait for data from the server.
-A value of <code>0</code> (zero) means infinite timeout. A negative value
-is interpreted as undefined. <em>(default: <code>30 seconds</code>)</em></dd>
+A value of <code>0</code> (zero) means infinite timeout. Negative values
+are not allowed. <em>(default: <code>30 seconds</code>)</em></dd>
 <dt>retries</dt>
 <dd>Specifies the maximum number of retry attempts if a request has failed.
 By default, requests are never retried and the task fails immediately if the
