@@ -327,6 +327,12 @@ ETags</a>. Possible values are:
 <dt>cachedETagsFile</dt>
 <dd>The location of the file that keeps entity tags (ETags) received
 from the server. <em>(default: <code>${downloadTaskDir}/etags.json</code>)</em></dd>
+<dt>method</dt>
+<dd>The HTTP method to use <em>(default: <code>GET</code>)</em></dd>
+<dt>body</dt>
+<dd>An optional request body. As gradle-download-task is meant for downloading
+and not for uploading, only simple strings are supported.
+<em>(optional)</em></dd>
 </dl>
 
 Verify task

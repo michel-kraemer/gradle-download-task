@@ -201,6 +201,19 @@ public interface DownloadSpec {
     void eachFile(Action<? super DownloadDetails> action);
 
     /**
+     * Sets the HTTP method to use
+     * @param method the HTTP method (default: {@code GET})
+     */
+    void method(String method);
+
+    /**
+     * Sets an optional request body to send to the server before the download.
+     * By default, the request will not have a body.
+     * @param body the request body ({@code null} to send no body)
+     */
+    void body(String body);
+
+    /**
      * @return the download source(s), either a URL or a list of URLs
      */
     Object getSrc();
@@ -311,4 +324,15 @@ public interface DownloadSpec {
      * from the server
      */
     File getCachedETagsFile();
+
+    /**
+     * @return the HTTP method to use (default: {@code GET})
+     */
+    String getMethod();
+
+    /**
+     * @return an optional request body to send to the server before
+     * downloading (default: {@code null})
+     */
+    String getBody();
 }

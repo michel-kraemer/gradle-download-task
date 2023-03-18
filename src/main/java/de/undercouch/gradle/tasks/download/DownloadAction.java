@@ -17,7 +17,7 @@ import org.apache.hc.client5.http.auth.Credentials;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.apache.hc.client5.http.auth.CredentialsStore;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
-import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
@@ -33,6 +33,7 @@ import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.util.Timeout;
 import org.gradle.api.Action;
 import org.gradle.api.JavaVersion;
@@ -58,6 +59,7 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -71,6 +73,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -121,6 +124,8 @@ public class DownloadAction implements DownloadSpec, Serializable {
     private File downloadTaskDir;
     private boolean tempAndMove = false;
     private UseETag useETag = UseETag.FALSE;
+    private String method = "GET";
+    private String body;
     private File cachedETagsFile;
     private transient Lock cachedETagsFileLock = new ReentrantLock();
     private final List<Action<? super DownloadDetails>> eachFileActions = new ArrayList<>();
@@ -794,8 +799,12 @@ public class DownloadAction implements DownloadSpec, Serializable {
             addAuthentication(httpHost, c, context);
         }
         
-        //c reate request
-        HttpGet get = new HttpGet(file);
+        // create request
+        HttpUriRequestBase req = new HttpUriRequestBase(
+                this.method.toUpperCase(Locale.ROOT), URI.create(file));
+        if (body != null) {
+            req.setEntity(new StringEntity(body));
+        }
 
         // configure timeouts
         RequestConfig config = RequestConfig.custom()
@@ -803,7 +812,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
                 .setResponseTimeout(Timeout.ofMilliseconds(readTimeoutMs))
                 .setContentCompressionEnabled(compress)
                 .build();
-        get.setConfig(config);
+        req.setConfig(config);
 
         // add authentication information for proxy
         String scheme = httpHost.getSchemeName();
@@ -825,24 +834,24 @@ public class DownloadAction implements DownloadSpec, Serializable {
         
         // set If-Modified-Since header
         if (timestamp > 0) {
-            get.setHeader("If-Modified-Since", DateUtils.formatStandardDate(
+            req.setHeader("If-Modified-Since", DateUtils.formatStandardDate(
                     Instant.ofEpochMilli(timestamp)));
         }
         
         // set If-None-Match header
         if (etag != null) {
-            get.setHeader("If-None-Match", etag);
+            req.setHeader("If-None-Match", etag);
         }
         
         // set headers
         if (headers != null) {
             for (Map.Entry<String, String> headerEntry : headers.entrySet()) {
-                get.addHeader(headerEntry.getKey(), headerEntry.getValue());
+                req.addHeader(headerEntry.getKey(), headerEntry.getValue());
             }
         }
         
         // execute request
-        client.execute(httpHost, get, context, response -> {
+        client.execute(httpHost, req, context, response -> {
             // handle response
             int code = response.getCode();
             if ((code < 200 || code > 299) && code != HttpStatus.SC_NOT_MODIFIED) {
@@ -1147,6 +1156,19 @@ public class DownloadAction implements DownloadSpec, Serializable {
         eachFileActions.add(action);
     }
 
+    @Override
+    public void method(String method) {
+        if (method == null) {
+            throw new IllegalArgumentException("HTTP method must not be null");
+        }
+        this.method = method;
+    }
+
+    @Override
+    public void body(String body) {
+        this.body = body;
+    }
+
     /**
      * Recursively convert the given source to a list of URLs
      * @param src the source to convert
@@ -1351,6 +1373,16 @@ public class DownloadAction implements DownloadSpec, Serializable {
         } finally {
             cachedETagsFileLock.unlock();
         }
+    }
+
+    @Override
+    public String getMethod() {
+        return method;
+    }
+
+    @Override
+    public String getBody() {
+        return body;
     }
 
     /**

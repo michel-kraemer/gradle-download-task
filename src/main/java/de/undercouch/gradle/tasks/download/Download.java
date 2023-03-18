@@ -200,6 +200,16 @@ public class Download extends DefaultTask implements DownloadSpec {
         this.action.eachFile(action);
     }
 
+    @Override
+    public void method(String method) {
+        action.method(method);
+    }
+
+    @Override
+    public void body(String body) {
+        action.body(body);
+    }
+
     @Input
     @Override
     public Object getSrc() {
@@ -321,5 +331,19 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public File getCachedETagsFile() {
         return action.getCachedETagsFile();
+    }
+
+    @Input
+    @Optional
+    @Override
+    public String getMethod() {
+        return this.action.getMethod();
+    }
+
+    @Input
+    @Optional
+    @Override
+    public String getBody() {
+        return this.action.getBody();
     }
 }
