@@ -15,7 +15,7 @@
     "@fontsource/dejavu-mono": "^4.5.4",
     "nunjucks": "^3.2.3",
     "pretty-bytes": "^6.1.0",
-    "subset-font": "^2.0.0",
+    "subset-font": "^2.1.0",
     "svgo": "^3.0.2"
   },
   "devDependencies": {
