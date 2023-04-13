@@ -13,7 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@fontsource/dejavu-mono": "^4.5.4",
-    "nunjucks": "^3.2.3",
+    "nunjucks": "^3.2.4",
     "pretty-bytes": "^6.1.0",
     "subset-font": "^2.0.0",
     "svgo": "^3.0.2"
