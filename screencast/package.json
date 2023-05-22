@@ -12,7 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@fontsource/dejavu-mono": "^4.5.4",
+    "@fontsource/dejavu-mono": "^5.0.0",
     "nunjucks": "^3.2.3",
     "pretty-bytes": "^6.1.0",
     "subset-font": "^2.0.0",
