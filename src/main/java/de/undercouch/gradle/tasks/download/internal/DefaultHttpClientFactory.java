@@ -20,6 +20,7 @@ import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.impl.routing.SystemDefaultRoutePlanner;
+import org.apache.hc.client5.http.protocol.RedirectStrategy;
 import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
 import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
@@ -51,6 +52,9 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         { new InsecureTrustManager() };
 
     private SSLConnectionSocketFactory insecureSSLSocketFactory = null;
+
+    private static final RedirectStrategy REDIRECT_STRATEGY =
+            new SanitizingLocationUriRedirectStrategy();
 
     @Override
     public CloseableHttpClient createHttpClient(HttpHost httpHost,
@@ -98,6 +102,8 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         // add interceptor that strips the standard ports :80 and :443 from the
         // Host header unless the host has been explicitly specified by the user
         builder.addRequestInterceptorLast(new StripPortsFromHostInterceptor(headers));
+
+        builder.setRedirectStrategy(REDIRECT_STRATEGY);
 
         if (logger.isDebugEnabled()) {
             DebugInterceptor di = new DebugInterceptor();
