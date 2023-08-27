@@ -111,6 +111,7 @@ shadowJar {
     archiveClassifier = ""
     enableRelocation = true
     relocationPrefix = "de.undercouch.gradle.tasks.download"
+    relocate 'mozilla', 'de.undercouch.gradle.tasks.download.mozilla'
 }
 
 // Disabling default jar task as it is overridden by shadowJar
