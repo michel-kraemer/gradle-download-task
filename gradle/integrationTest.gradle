@@ -102,18 +102,18 @@ task integrationTest {
 
                     task downloadFile(type: Download) {
                         src '${testFileSrc}'
-                        dest buildDir
+                        dest layout.buildDirectory
                     }
 
                     task downloadFile2(type: Download) {
                         src '${testFile2Src}'
-                        dest buildDir
+                        dest layout.buildDirectory
                         overwrite false
                         onlyIfModified true
                     }
 
                     task verifyFile(type: Verify, dependsOn: downloadFile) {
-                        src new File(buildDir, '${testFile.name}')
+                        src layout.buildDirectory.file('${testFile.name}')
                         algorithm 'MD5'
                         checksum 'ce114e4501d2f4e2dcea3e17b546f339'
                     }

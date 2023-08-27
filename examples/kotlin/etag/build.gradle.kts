@@ -12,7 +12,7 @@ import de.undercouch.gradle.tasks.download.Download
  */
 tasks.register<Download>("downloadFile") {
     src("https://repo.maven.apache.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar")
-    dest(buildDir)
+    dest(layout.buildDirectory)
     onlyIfModified(true)
     useETag(true)
 }

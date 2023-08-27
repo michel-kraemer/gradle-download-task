@@ -32,7 +32,7 @@ tasks.register("downloadDirectory") {
         val files = urlLister.listFiles(java.net.URL(dir))
         download.run {
            src(files)
-           dest(buildDir)
+           dest(layout.buildDirectory)
         }
     }
 }

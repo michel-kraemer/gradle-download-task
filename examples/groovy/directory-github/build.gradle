@@ -13,7 +13,7 @@ task downloadDirectoryGitHub {
     doLast {
         // download directory listing via GitHub API
         def dir = 'https://api.github.com/repos/michel-kraemer/gradle-download-task/contents/screencast'
-        def contentsFile = new File(buildDir, "directory_contents.json")
+        def contentsFile = layout.buildDirectory.file("directory_contents.json").get().asFile
         download.run {
            src dir
            dest contentsFile
@@ -26,7 +26,7 @@ task downloadDirectoryGitHub {
         // download files
         download.run {
            src urls
-           dest buildDir
+           dest layout.buildDirectory
         }
 
         // delete downloaded directory listing

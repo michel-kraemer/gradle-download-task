@@ -33,7 +33,7 @@ import java.util.Map;
  * <pre>
  * task downloadFile(type: Download) {
  *     src 'http://www.example.com/file.ext'
- *     dest buildDir
+ *     dest layout.buildDirectory
  * }
  * </pre>
  * @author Michel Kraemer

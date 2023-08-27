@@ -13,7 +13,7 @@ import de.undercouch.gradle.tasks.download.Verify
  */
 val downloadFile by tasks.registering(Download::class) {
     src("http://www.example.com/index.html")
-    dest(buildDir)
+    dest(layout.buildDirectory)
 }
 
 val verifyFile by tasks.registering(Verify::class) {

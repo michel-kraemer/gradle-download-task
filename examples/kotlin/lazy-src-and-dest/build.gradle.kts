@@ -30,7 +30,7 @@ tasks.register<Download>("downloadFile") {
     }
     dest {
         if (downloadToBuildDir) {
-            buildDir
+            layout.buildDirectory
         } else {
             Files.createTempDirectory("gradle-download-task").toFile()
         }

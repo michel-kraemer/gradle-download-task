@@ -14,7 +14,7 @@ tasks.register("downloadFile") {
     doLast {
         download.run {
             src("https://repo.maven.apache.org/maven2/org/citationstyles/styles/1.0/styles-1.0.jar")
-            dest(buildDir)
+            dest(layout.buildDirectory)
             overwrite(true)
         }
     }

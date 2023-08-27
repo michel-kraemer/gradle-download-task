@@ -10,7 +10,7 @@ plugins {
  */
 task downloadFile(type: Download) {
     src 'http://www.example.com/index.html'
-    dest buildDir
+    dest layout.buildDirectory
 }
 
 task verifyFile(type: Verify, dependsOn: downloadFile) {

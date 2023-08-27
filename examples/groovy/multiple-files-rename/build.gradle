@@ -15,7 +15,7 @@ ext.urls = [
 
 task downloadFiles(type: Download) {
     src urls.keySet()
-    dest buildDir
+    dest layout.buildDirectory
     eachFile { f ->
         f.name = urls[f.sourceURL.toString()]
     }

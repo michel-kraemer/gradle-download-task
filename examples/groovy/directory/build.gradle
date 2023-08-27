@@ -30,7 +30,7 @@ task downloadDirectory {
         def files = urlLister.listFiles(new URL(dir))
         download.run {
            src files
-           dest buildDir
+           dest layout.buildDirectory
         }
     }
 }

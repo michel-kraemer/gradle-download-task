@@ -28,7 +28,7 @@ import org.gradle.api.tasks.TaskAction;
  * Verifies a file's integrity by calculating its checksum.
  * <pre>
  * task verifyFile(type: Verify) {
- *     file new File(buildDir, "myfile.txt")
+ *     file layout.buildDirectory.file("myfile.txt")
  *     algorithm 'MD5'
  *     checksum '694B2863621FCDBBBA2777BF329C056C' // expected checksum (hex)
  * }

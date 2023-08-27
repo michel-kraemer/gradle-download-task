@@ -20,7 +20,7 @@ tasks.register("downloadFile") {
             try {
                 download.run {
                     src(mirror)
-                    dest(buildDir)
+                    dest(layout.buildDirectory)
                     overwrite(true)
                 }
                 break

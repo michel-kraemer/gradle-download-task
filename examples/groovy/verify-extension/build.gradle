@@ -12,11 +12,11 @@ task downloadAndVerifyFile {
     doLast {
         download.run {
             src 'http://www.example.com/index.html'
-            dest buildDir
+            dest layout.buildDirectory
             overwrite true
         }
         verifyChecksum.run {
-            src new File(buildDir, "index.html")
+            src layout.buildDirectory.file("index.html")
             algorithm 'MD5'
             checksum '84238dfc8092e5d9c0dac8ef93371a07'
         }

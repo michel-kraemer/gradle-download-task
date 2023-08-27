@@ -74,7 +74,7 @@ Then, use the `Download` task as follows:
 ```groovy
 task downloadFile(type: Download) {
     src 'http://www.example.com/index.html'
-    dest buildDir
+    dest layout.buildDirectory
 }
 ```
 
@@ -85,7 +85,7 @@ the `overwrite` flag (see [description below](#download-task)).
 ```groovy
 task downloadFile(type: Download) {
     src 'http://www.example.com/index.html'
-    dest buildDir
+    dest layout.buildDirectory
     overwrite false
 }
 ```
@@ -100,7 +100,7 @@ task myTask {
         // ... then download a file
         download.run {
             src 'http://www.example.com/index.html'
-            dest buildDir
+            dest layout.buildDirectory
             overwrite false
         }
         // ... do something else
@@ -133,7 +133,7 @@ Examples
 ```groovy
 task downloadFile(type: Download) {
     src 'http://www.example.com/index.html'
-    dest buildDir
+    dest layout.buildDirectory
     onlyIfModified true
 }
 ```
@@ -151,7 +151,7 @@ task downloadMultipleFiles(type: Download) {
         'http://www.example.com/index.html',
         'http://www.example.com/test.html'
     ])
-    dest buildDir
+    dest layout.buildDirectory
 }
 ```
 
@@ -171,7 +171,7 @@ task downloadDirectory {
         def files = urlLister.listFiles(new URL(dir))
         download.run {
            src files
-           dest buildDir
+           dest layout.buildDirectory
         }
     }
 }
@@ -185,12 +185,12 @@ plugin with Gradle's built-in support for ZIP files:
 ```groovy
 task downloadZipFile(type: Download) {
     src 'https://github.com/michel-kraemer/gradle-download-task/archive/refs/tags/5.4.0.zip'
-    dest new File(buildDir, '5.4.0.zip')
+    dest layout.buildDirectory.file('5.4.0.zip')
 }
 
 task downloadAndUnzipFile(dependsOn: downloadZipFile, type: Copy) {
     from zipTree(downloadZipFile.dest)
-    into buildDir
+    into layout.buildDirectory
 }
 ```
 
@@ -297,7 +297,7 @@ server actually needs them might pose a security risk. <em>(default:
 <dt>downloadTaskDir</dt>
 <dd>The directory where the plugin stores information that should persist
 between builds. It will only be created if necessary.
-<em>(default: <code>${buildDir}/download-task</code>)</em></dd>
+<em>(default: <code>${layout.buildDirectory}/download-task</code>)</em></dd>
 <dt>tempAndMove</dt>
 <dd><code>true</code> if the file should be downloaded to a temporary location
 and, upon successful execution, moved to the final location. If
@@ -347,7 +347,7 @@ Use the task as follows:
 
 ```groovy
 task verifyFile(type: Verify) {
-    src new File(buildDir, 'file.ext')
+    src layout.buildDirectory.file('file.ext')
     algorithm 'MD5'
     checksum 'ce114e4501d2f4e2dcea3e17b546f339'
 }
@@ -358,11 +358,11 @@ You can combine the download task and the verify task as follows:
 ```groovy
 task downloadFile(type: Download) {
     src 'http://www.example.com/index.html'
-    dest buildDir
+    dest layout.buildDirectory
 }
 
 task verifyFile(type: Verify, dependsOn: downloadFile) {
-    src new File(buildDir, 'index.html')
+    src layout.buildDirectory.file('index.html')
     algorithm 'MD5'
     checksum '09b9c392dc1f6e914cea287cb6be34b0'
 }

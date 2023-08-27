@@ -13,13 +13,13 @@ import de.undercouch.gradle.tasks.download.Download
  */
 val downloadZipFile by tasks.creating(Download::class) {
     src("https://github.com/michel-kraemer/gradle-download-task/archive/1.0.zip")
-    dest(File(buildDir, "1.0.zip"))
+    dest(layout.buildDirectory.file("1.0.zip"))
 }
 
 tasks.register<Copy>("downloadAndUnzipFile") {
     dependsOn(downloadZipFile)
     from(zipTree(downloadZipFile.dest))
-    into(buildDir)
+    into(layout.buildDirectory)
 }
 
 defaultTasks("downloadAndUnzipFile")

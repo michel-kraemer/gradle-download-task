@@ -29,7 +29,7 @@ task downloadFile(type: Download) {
     }
     dest {
         if (downloadToBuildDir) {
-            return buildDir
+            return layout.buildDirectory
         }
         return File.createTempDir()
     }

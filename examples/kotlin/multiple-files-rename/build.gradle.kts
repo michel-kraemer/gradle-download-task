@@ -17,7 +17,7 @@ val urls by extra(mapOf(
 
 tasks.register<Download>("downloadFiles") {
     src(urls.keys)
-    dest(buildDir)
+    dest(layout.buildDirectory)
     eachFile {
         name = urls[sourceURL.toString()]
     }
