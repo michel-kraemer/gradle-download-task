@@ -2,7 +2,7 @@
  * Include the gradle-download-task plugin
  */
 plugins {
-    id("de.undercouch.download") version "5.4.0"
+    id("de.undercouch.download") version "5.5.0"
 }
 
 import java.nio.file.Files
