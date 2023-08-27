@@ -18,7 +18,9 @@ import groovy.lang.Closure;
 import kotlin.jvm.functions.Function0;
 import org.apache.commons.codec.binary.Hex;
 import org.gradle.api.GradleException;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.internal.provider.DefaultProvider;
+import org.gradle.api.provider.Provider;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -285,5 +287,30 @@ public class VerifyTest extends TestBaseWithMockServer {
         execute(v); // will throw if the checksum is not OK
 
         assertThat(srcCalled[0]).isTrue();
+    }
+
+    /**
+     * Tests lazy evaluation of the 'src' property if it is a Provider, which
+     * returns a regular file
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void regularFileSrc() throws Exception {
+        configureDefaultStub();
+
+        final Download t = makeProjectAndTask();
+        t.src(wireMock.url(TEST_FILE_NAME));
+        Provider<RegularFile> dst = t.getProject().getLayout()
+                .getBuildDirectory().file("regularfile");
+        t.dest(dst);
+
+        Verify v = makeVerifyTask(t);
+        v.algorithm("MD5");
+        String calculatedChecksum = calculateChecksum();
+        v.checksum(calculatedChecksum);
+        v.src(dst);
+
+        execute(t);
+        execute(v); // will throw if the checksum is not OK
     }
 }

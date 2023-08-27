@@ -5,6 +5,7 @@ import kotlin.jvm.functions.Function0;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.file.ProjectLayout;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.provider.Provider;
 
 import java.io.File;
@@ -100,9 +101,10 @@ public class VerifyAction implements VerifySpec {
             src = ((Provider<?>)src).getOrNull();
         }
         if (src instanceof CharSequence) {
-            src = projectLayout.getProjectDirectory().file(src.toString()).getAsFile();
-        }
-        if (src instanceof File) {
+            this.src = projectLayout.getProjectDirectory().file(src.toString()).getAsFile();
+        } else if (src instanceof RegularFile) {
+            this.src = ((RegularFile)src).getAsFile();
+        } else if (src instanceof File) {
             this.src = (File)src;
         } else {
             throw new IllegalArgumentException("Verification source must "
