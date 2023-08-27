@@ -178,8 +178,19 @@ signing {
 }
 
 tasks.withType(Sign) {
-    // only sign release artifacts and not snapshots
-    onlyIf { isReleaseVersion }
+    onlyIf {
+        // only sign release artifacts and not snapshots
+        if (!isReleaseVersion) {
+            return false
+        }
+
+        // don't sign on CI server - it fails without a key
+        if ("true".equals(System.getenv("CI"))) {
+            return false
+        }
+
+        return true
+    }
 }
 
 nexusPublishing {

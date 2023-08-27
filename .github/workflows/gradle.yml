@@ -22,9 +22,10 @@ jobs:
           java-version: 8
           distribution: zulu
 
-      # publish to local maven repo but skip signing because this fails without a key
       - name: Build and install
-        run: ./gradlew publishToMavenLocal -x signPluginMavenPublication -x signDownloadPluginPluginMarkerMavenPublication
+        run: ./gradlew publishToMavenLocal
+        env:
+          CI: "true"
 
       - name: Run unit tests
         run: ./gradlew test --console=plain
