@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -79,6 +80,25 @@ public class DownloadTest extends TestBaseWithMockServer {
         execute(t);
 
         assertThat(t.getSrc()).isSameAs(src);
+        assertThat(t.getDest()).isSameAs(dst);
+
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
+    }
+
+    /**
+     * Tests if the plugin accepts a URI as source
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void downloadSingleURI() throws Exception {
+        Download t = makeProjectAndTask();
+        URI src = new URI(wireMock.url(TEST_FILE_NAME));
+        t.src(src);
+        File dst = newTempFile();
+        t.dest(dst);
+        execute(t);
+
+        assertThat(t.getSrc().toString()).isEqualTo(src.toString());
         assertThat(t.getDest()).isSameAs(dst);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);

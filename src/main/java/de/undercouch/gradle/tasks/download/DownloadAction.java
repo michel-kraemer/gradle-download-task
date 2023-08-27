@@ -1198,6 +1198,12 @@ public class DownloadAction implements DownloadSpec, Serializable {
             }
         } else if (src instanceof URL) {
             result.add((URL)src);
+        } else if (src instanceof URI) {
+            try {
+                result.add(((URI)src).toURL());
+            } catch (MalformedURLException e) {
+                throw new IllegalArgumentException("Invalid source URL", e);
+            }
         } else if (src instanceof Collection) {
             Collection<?> sc = (Collection<?>)src;
             for (Object sco : sc) {
@@ -1210,8 +1216,8 @@ public class DownloadAction implements DownloadSpec, Serializable {
                 result.addAll(convertSource(sco));
             }
         } else {
-            throw new IllegalArgumentException("Download source must " +
-                    "either be a URL, a CharSequence, a Collection or an array.");
+            throw new IllegalArgumentException("Download source must either " +
+                    "be a URL, a URI, a CharSequence, a Collection or an array.");
         }
 
         return result;
