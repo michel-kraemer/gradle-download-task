@@ -50,7 +50,7 @@ public class DownloadExtension {
         this(project.getLayout(), project.getLogger(),
                 task != null ? task : project, project.getObjects(),
                 project.getGradle().getStartParameter().isOffline(),
-                project.getBuildDir());
+                project.getLayout().getBuildDirectory().getAsFile().get());
     }
 
     /**

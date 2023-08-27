@@ -12,8 +12,11 @@ apply from: "gradle/integrationTest.gradle"
 
 group = 'de.undercouch'
 version = '5.4.0'
-sourceCompatibility = '1.8'
-targetCompatibility = '1.8'
+
+java {
+    sourceCompatibility = '1.8'
+    targetCompatibility = '1.8'
+}
 
 ext {
     isReleaseVersion = !version.endsWith("SNAPSHOT")

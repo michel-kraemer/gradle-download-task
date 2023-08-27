@@ -149,7 +149,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
         this(project.getLayout(), project.getLogger(),
                 task != null ? task : project, project.getObjects(),
                 project.getGradle().getStartParameter().isOffline(),
-                project.getBuildDir());
+                project.getLayout().getBuildDirectory().getAsFile().get());
     }
 
     /**

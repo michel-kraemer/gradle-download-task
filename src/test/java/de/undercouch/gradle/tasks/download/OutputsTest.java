@@ -63,11 +63,11 @@ public class OutputsTest extends TestBaseWithMockServer {
     public void singleOutputFileWithDestinationAsBuildDir1() {
         Download t = makeProjectAndTask();
         t.src(wireMock.baseUrl());
-        File buildDir = t.getProject().getBuildDir();
+        DirectoryProperty buildDir = t.getProject().getLayout().getBuildDirectory();
         t.dest(buildDir);
         // check the output files parent is our dir
         assertThat(t.getOutputs().getFiles().getSingleFile().getParentFile())
-                .isEqualTo(buildDir);
+                .isEqualTo(buildDir.getAsFile().get());
     }
 
     /**
