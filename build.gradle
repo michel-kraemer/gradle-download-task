@@ -54,7 +54,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-nop:1.7.36'
 
     testImplementation "commons-codec:commons-codec:1.15"
-    testImplementation "commons-io:commons-io:2.11.0"
+    testImplementation "commons-io:commons-io:2.13.0"
     testImplementation "com.github.tomakehurst:wiremock-jre8:2.35.0"
     testImplementation "org.assertj:assertj-core:3.24.2"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
