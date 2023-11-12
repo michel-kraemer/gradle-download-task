@@ -16,9 +16,9 @@
     "nunjucks": "^3.2.4",
     "pretty-bytes": "^6.1.1",
     "subset-font": "^2.1.0",
-    "svgo": "^3.0.2"
+    "svgo": "^3.0.3"
   },
   "devDependencies": {
-    "npm-check-updates": "^16.13.1"
+    "npm-check-updates": "^16.14.6"
   }
 }
