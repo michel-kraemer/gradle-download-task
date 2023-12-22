@@ -68,7 +68,6 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -82,6 +81,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 /**
  * Downloads a file and displays progress
@@ -1071,18 +1071,25 @@ public class DownloadAction implements DownloadSpec, Serializable {
      * {@code null} or could not be converted
      */
     private File getDestinationFromDirProperty(Object dir) {
+        if (dir instanceof Supplier) {
+            // lazily evaluate Java supplier
+            Supplier<?> supplier = (Supplier<?>)dir;
+            return getDestinationFromDirProperty(supplier.get());
+        }
         if (dir instanceof Function0) {
             // lazily evaluate Kotlin function
             Function0<?> function = (Function0<?>)dir;
-            dir = function.invoke();
+            return getDestinationFromDirProperty(function.invoke());
         }
         if (dir instanceof Closure) {
-            // lazily evaluate closure
+            // lazily evaluate Groovy closure
             Closure<?> closure = (Closure<?>)dir;
-            dir = closure.call();
+            return getDestinationFromDirProperty(closure.call());
         }
         if (dir instanceof Provider) {
-            dir = ((Provider<?>)dir).getOrNull();
+            // lazily evaluate Gradle provider
+            Provider<?> provider = (Provider<?>)dir;
+            return getDestinationFromDirProperty(provider.getOrNull());
         }
         if (dir instanceof CharSequence) {
             return projectLayout.getProjectDirectory().file(dir.toString()).getAsFile();
@@ -1109,7 +1116,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
         downloadTaskDir = getDestinationFromDirProperty(dir);
         if (downloadTaskDir == null) {
             throw new IllegalArgumentException("download-task directory must " +
-                "either be a File or a CharSequence");
+                "one of a File, Directory, RegularFile, or a CharSequence");
         }
     }
 
@@ -1125,18 +1132,29 @@ public class DownloadAction implements DownloadSpec, Serializable {
 
     @Override
     public void cachedETagsFile(Object location) {
+        if (location instanceof Supplier) {
+            // lazily evaluate Java supplier
+            Supplier<?> supplier = (Supplier<?>)location;
+            cachedETagsFile(supplier.get());
+            return;
+        }
         if (location instanceof Function0) {
             // lazily evaluate Kotlin function
             Function0<?> function = (Function0<?>)location;
-            location = function.invoke();
+            cachedETagsFile(function.invoke());
+            return;
         }
         if (location instanceof Closure) {
             // lazily evaluate closure
             Closure<?> closure = (Closure<?>)location;
-            location = closure.call();
+            cachedETagsFile(closure.call());
+            return;
         }
         if (location instanceof Provider) {
-            location = ((Provider<?>)location).getOrNull();
+            // lazily evaluate Gradle provider
+            Provider<?> provider = (Provider<?>)location;
+            cachedETagsFile(provider.getOrNull());
+            return;
         }
         if (location instanceof CharSequence) {
             this.cachedETagsFile = projectLayout.getProjectDirectory()
@@ -1176,19 +1194,25 @@ public class DownloadAction implements DownloadSpec, Serializable {
      */
     private List<URL> convertSource(Object src) {
         List<URL> result = new ArrayList<>();
-
+        if (src instanceof Supplier) {
+            // lazily evaluate Java supplier
+            Supplier<?> supplier = (Supplier<?>)src;
+            return convertSource(supplier.get());
+        }
         if (src instanceof Function0) {
             // lazily evaluate Kotlin function
             Function0<?> function = (Function0<?>)src;
-            src = function.invoke();
+            return convertSource(function.invoke());
         }
         if (src instanceof Closure) {
-            // lazily evaluate closure
+            // lazily evaluate Groovy closure
             Closure<?> closure = (Closure<?>)src;
-            src = closure.call();
+            return convertSource(closure.call());
         }
         if (src instanceof Provider) {
-            src = ((Provider<?>)src).getOrNull();
+            // lazily evaluate Gradle provider
+            Provider<?> closure = (Provider<?>) src;
+            return convertSource(closure.getOrNull());
         }
         if (src instanceof CharSequence) {
             try {
@@ -1204,8 +1228,8 @@ public class DownloadAction implements DownloadSpec, Serializable {
             } catch (MalformedURLException e) {
                 throw new IllegalArgumentException("Invalid source URL", e);
             }
-        } else if (src instanceof Collection) {
-            Collection<?> sc = (Collection<?>)src;
+        } else if (src instanceof Iterable) {
+            Iterable<?> sc = (Iterable<?>)src;
             for (Object sco : sc) {
                 result.addAll(convertSource(sco));
             }
