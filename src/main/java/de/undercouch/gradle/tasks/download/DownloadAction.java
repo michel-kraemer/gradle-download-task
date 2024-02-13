@@ -39,6 +39,7 @@ import org.gradle.api.Action;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.Transformer;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.ProjectLayout;
@@ -126,6 +127,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
     private UseETag useETag = UseETag.FALSE;
     private String method = "GET";
     private String body;
+    private Transformer<Boolean, Integer> statusValidator;
     private File cachedETagsFile;
     private transient Lock cachedETagsFileLock = new ReentrantLock();
     private final List<Action<? super DownloadDetails>> eachFileActions = new ArrayList<>();
@@ -854,7 +856,15 @@ public class DownloadAction implements DownloadSpec, Serializable {
         client.execute(httpHost, req, context, response -> {
             // handle response
             int code = response.getCode();
-            if ((code < 200 || code > 299) && code != HttpStatus.SC_NOT_MODIFIED) {
+
+            boolean valid;
+            if (statusValidator != null) {
+                valid = Boolean.TRUE.equals(statusValidator.transform(code));
+            } else {
+                valid = (code >= 200 && code <= 299) || code == HttpStatus.SC_NOT_MODIFIED;
+            }
+
+            if (!valid) {
                 String url = httpHost + file;
                 String message = "HTTP status code: " + code + ", URL: " + url;
                 if (code == HttpStatus.SC_UNAUTHORIZED &&
@@ -1167,6 +1177,11 @@ public class DownloadAction implements DownloadSpec, Serializable {
     @Override
     public void body(String body) {
         this.body = body;
+    }
+
+    @Override
+    public void validateStatus(Transformer<Boolean, Integer> validator) {
+        this.statusValidator = validator;
     }
 
     /**

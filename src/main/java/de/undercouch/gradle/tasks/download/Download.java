@@ -16,6 +16,7 @@ package de.undercouch.gradle.tasks.download;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.Transformer;
 import org.gradle.api.tasks.Console;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
@@ -208,6 +209,11 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public void body(String body) {
         action.body(body);
+    }
+
+    @Override
+    public void validateStatus(Transformer<Boolean, Integer> validator) {
+        this.action.validateStatus(validator);
     }
 
     @Input

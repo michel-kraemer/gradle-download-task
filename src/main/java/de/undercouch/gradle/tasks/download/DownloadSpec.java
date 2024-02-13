@@ -15,6 +15,7 @@
 package de.undercouch.gradle.tasks.download;
 
 import org.gradle.api.Action;
+import org.gradle.api.Transformer;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -212,6 +213,18 @@ public interface DownloadSpec {
      * @param body the request body ({@code null} to send no body)
      */
     void body(String body);
+
+    /**
+     * Sets an optional status code validator. By default, a download fails
+     * if the HTTP status code is less than 200 or greater than 299 and does
+     * not equal 304 (Not Modified). This behavior can be customized by
+     * providing a validator. This function receives an integer (the HTTP
+     * status code) and either returns {@code true} if the status code should
+     * be accepted or {@code false} if it should be rejected (i.e. if the
+     * download should fail).
+     * @param validator the status code validator
+     */
+    void validateStatus(Transformer<Boolean, Integer> validator);
 
     /**
      * @return the download source(s), either a URL or a list of URLs
