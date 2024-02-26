@@ -23,6 +23,7 @@ import com.github.tomakehurst.wiremock.http.Response;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.matching.UrlPattern;
 import com.google.common.net.HttpHeaders;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.hc.client5.http.CircularRedirectException;
 import org.apache.hc.client5.http.RedirectException;
 import org.gradle.workers.WorkerExecutionException;
@@ -286,5 +287,98 @@ public class RedirectTest extends TestBaseWithMockServer {
         redirectWireMock2.verify(1, getRequestedFor(up2));
         redirectWireMock2.verify(1, getRequestedFor(up3));
         verify(1, getRequestedFor(up4));
+    }
+
+    /**
+     * Test if basic auth headers are removed from the request after redirecting
+     * to another host
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void removeBasicAuth() throws Exception {
+        configureDefaultStub();
+
+        String realm = "Gradle";
+        String username = "testuser123";
+        String password = "testpass456";
+
+        String ahdr = "Basic " + Base64.encodeBase64String(
+                (username + ":" + password).getBytes(StandardCharsets.UTF_8));
+
+        UrlPattern up1 = urlPathEqualTo("/auth");
+        stubFor(get(up1)
+                .willReturn(aResponse()
+                        .withHeader("WWW-Authenticate",
+                                "Basic realm=\"" + realm + "\"")
+                        .withStatus(HttpServletResponse.SC_UNAUTHORIZED)));
+        stubFor(get(up1)
+                .withHeader(HttpHeaders.AUTHORIZATION, equalTo(ahdr))
+                .willReturn(aResponse()
+                        .withStatus(HttpServletResponse.SC_FOUND)
+                        .withHeader("Location", redirectWireMock2.url("elvis"))));
+
+        UrlPattern up2 = urlPathEqualTo("/elvis");
+        redirectWireMock2.stubFor(get(up2)
+                .withHeader(HttpHeaders.AUTHORIZATION, absent())
+                .willReturn(aResponse()
+                        .withStatus(HttpServletResponse.SC_FOUND)
+                        .withHeader("Location", wireMock.url(TEST_FILE_NAME))));
+
+        Download t = makeProjectAndTask();
+        t.src(wireMock.url("auth"));
+        t.username(username);
+        t.password(password);
+        File dst = newTempFile();
+        t.dest(dst);
+        execute(t);
+
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
+
+        verify(2, getRequestedFor(up1));
+        redirectWireMock2.verify(1, getRequestedFor(up2));
+    }
+
+    /**
+     * Test if basic auth headers are removed from the request after redirecting
+     * to another host
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void removeBasicAuthPreauth() throws Exception {
+        configureDefaultStub();
+
+        String username = "testuser123";
+        String password = "testpass456";
+
+        String ahdr = "Basic " + Base64.encodeBase64String(
+                (username + ":" + password).getBytes(StandardCharsets.UTF_8));
+
+        UrlPattern up1 = urlPathEqualTo("/auth");
+        stubFor(get(up1)
+                .withHeader(HttpHeaders.AUTHORIZATION, equalTo(ahdr))
+                .willReturn(aResponse()
+                        .withStatus(HttpServletResponse.SC_FOUND)
+                        .withHeader("Location", redirectWireMock2.url("elvis"))));
+
+        UrlPattern up2 = urlPathEqualTo("/elvis");
+        redirectWireMock2.stubFor(get(up2)
+                .withHeader(HttpHeaders.AUTHORIZATION, absent())
+                .willReturn(aResponse()
+                        .withStatus(HttpServletResponse.SC_FOUND)
+                        .withHeader("Location", wireMock.url(TEST_FILE_NAME))));
+
+        Download t = makeProjectAndTask();
+        t.src(wireMock.url("auth"));
+        t.username(username);
+        t.password(password);
+        t.preemptiveAuth(true);
+        File dst = newTempFile();
+        t.dest(dst);
+        execute(t);
+
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
+
+        verify(1, getRequestedFor(up1));
+        redirectWireMock2.verify(1, getRequestedFor(up2));
     }
 }
