@@ -99,6 +99,10 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         // Host header unless the host has been explicitly specified by the user
         builder.addRequestInterceptorLast(new StripPortsFromHostInterceptor(headers));
 
+        // add interceptor that removes sensitive headers from the request after
+        // we've been redirected to another host
+        builder.addRequestInterceptorLast(new RemoveSensitiveHeadersInterceptor(httpHost));
+
         if (logger.isDebugEnabled()) {
             DebugInterceptor di = new DebugInterceptor();
             // In contrast to a request interceptor, an exec interceptor can

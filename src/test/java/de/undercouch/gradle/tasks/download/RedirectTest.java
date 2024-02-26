@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.Response;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.matching.UrlPattern;
+import com.google.common.net.HttpHeaders;
 import org.apache.hc.client5.http.CircularRedirectException;
 import org.apache.hc.client5.http.RedirectException;
 import org.gradle.workers.WorkerExecutionException;
@@ -33,6 +34,8 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
@@ -58,6 +61,15 @@ public class RedirectTest extends TestBaseWithMockServer {
     public WireMockExtension redirectWireMock = WireMockExtension.newInstance()
             .options(wireMockConfig().dynamicPort()
                     .extensions(RedirectTransformer.class.getName())
+                    .jettyStopTimeout(10000L))
+            .build();
+
+    /**
+     * Run a third mock HTTP server
+     */
+    @RegisterExtension
+    public WireMockExtension redirectWireMock2 = WireMockExtension.newInstance()
+            .options(wireMockConfig().dynamicPort()
                     .jettyStopTimeout(10000L))
             .build();
 
@@ -193,5 +205,86 @@ public class RedirectTest extends TestBaseWithMockServer {
                 .rootCause()
                 .isInstanceOf(RedirectException.class)
                 .hasMessage("Maximum redirects (50) exceeded");
+    }
+
+    /**
+     * Test if sensitive headers are removed from the request after redirecting
+     * to another host
+     * @throws Exception if anything goes wrong
+     */
+    @Test
+    public void removeSensitiveHeaders() throws Exception {
+        configureDefaultStub();
+
+        String authorization = "Bearer Elvis";
+        String cookie = "MyCookie";
+        String cookie2 = "MyCookie2";
+        String proxyAuthorization = "Bearer Einar";
+        String wwwAuthenticate = "Max";
+
+        // headers should be present on the first request to the first host
+        UrlPattern up1 = urlPathEqualTo("/auth");
+        stubFor(get(up1)
+                .withHeader(HttpHeaders.AUTHORIZATION, equalTo(authorization))
+                .withHeader(HttpHeaders.COOKIE, equalTo(cookie))
+                .withHeader("Cookie2", equalTo(cookie2))
+                .withHeader(HttpHeaders.PROXY_AUTHORIZATION, equalTo(proxyAuthorization))
+                .withHeader(HttpHeaders.WWW_AUTHENTICATE, equalTo(wwwAuthenticate))
+                .willReturn(aResponse()
+                        .withStatus(HttpServletResponse.SC_FOUND)
+                        .withHeader("Location", redirectWireMock2.url("elvis"))));
+
+        // headers should be absent after we've been redirected
+        UrlPattern up2 = urlPathEqualTo("/elvis");
+        redirectWireMock2.stubFor(get(up2)
+                .withHeader(HttpHeaders.AUTHORIZATION, absent())
+                .withHeader(HttpHeaders.COOKIE, absent())
+                .withHeader("Cookie2", absent())
+                .withHeader(HttpHeaders.PROXY_AUTHORIZATION, absent())
+                .withHeader(HttpHeaders.WWW_AUTHENTICATE, absent())
+                .willReturn(aResponse()
+                        .withStatus(HttpServletResponse.SC_FOUND)
+                        .withHeader("Location", redirectWireMock2.url(TEST_FILE_NAME2))));
+
+        UrlPattern up3 = urlPathEqualTo("/" + TEST_FILE_NAME2);
+        redirectWireMock2.stubFor(get(up3)
+                .withHeader(HttpHeaders.AUTHORIZATION, absent())
+                .withHeader(HttpHeaders.COOKIE, absent())
+                .withHeader("Cookie2", absent())
+                .withHeader(HttpHeaders.PROXY_AUTHORIZATION, absent())
+                .withHeader(HttpHeaders.WWW_AUTHENTICATE, absent())
+                .willReturn(aResponse()
+                        .withStatus(HttpServletResponse.SC_FOUND)
+                        .withHeader("Location", wireMock.url("final"))));
+
+        // headers should be back again
+        UrlPattern up4 = urlPathEqualTo("/final");
+        stubFor(get(up4)
+                .withHeader(HttpHeaders.AUTHORIZATION, equalTo(authorization))
+                .withHeader(HttpHeaders.COOKIE, equalTo(cookie))
+                .withHeader("Cookie2", equalTo(cookie2))
+                .withHeader(HttpHeaders.PROXY_AUTHORIZATION, equalTo(proxyAuthorization))
+                .withHeader(HttpHeaders.WWW_AUTHENTICATE, equalTo(wwwAuthenticate))
+                .willReturn(aResponse()
+                        .withStatus(HttpServletResponse.SC_FOUND)
+                        .withHeader("Location", wireMock.url(TEST_FILE_NAME))));
+
+        Download t = makeProjectAndTask();
+        t.src(wireMock.url("auth"));
+        t.header(HttpHeaders.AUTHORIZATION, authorization);
+        t.header(HttpHeaders.COOKIE, cookie);
+        t.header("Cookie2", cookie2);
+        t.header(HttpHeaders.PROXY_AUTHORIZATION, proxyAuthorization);
+        t.header(HttpHeaders.WWW_AUTHENTICATE, wwwAuthenticate);
+        File dst = newTempFile();
+        t.dest(dst);
+        execute(t);
+
+        assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
+
+        verify(1, getRequestedFor(up1));
+        redirectWireMock2.verify(1, getRequestedFor(up2));
+        redirectWireMock2.verify(1, getRequestedFor(up3));
+        verify(1, getRequestedFor(up4));
     }
 }
