@@ -17,7 +17,7 @@ import org.apache.hc.core5.http.protocol.HttpContext;
  * <p>See <a href="https://github.com/michel-kraemer/gradle-download-task/issues/382">https://github.com/michel-kraemer/gradle-download-task/issues/382</a>
  * for more information. Also see <a href="https://github.com/ducaale/xh/blob/df2040e34dccaf93b7978d6e8b3404a77e984432/src/redirect.rs#L95-L101">
  * https://github.com/ducaale/xh/blob/df2040e34dccaf93b7978d6e8b3404a77e984432/src/redirect.rs#L95-L101</a>
- * for a reference how other HTTP client do this.</p>
+ * for a reference how other HTTP clients do this.</p>
  *
  * @author Michel Kraemer
  */
