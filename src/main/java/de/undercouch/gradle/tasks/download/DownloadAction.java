@@ -798,7 +798,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
         if (username != null && password != null) {
             context = HttpClientContext.create();
             Credentials c = new UsernamePasswordCredentials(username, password.toCharArray());
-            addAuthentication(httpHost, c, context);
+            addAuthentication(httpHost, c, context, preemptiveAuth);
         }
         
         // create request
@@ -831,7 +831,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
             HttpHost proxy = new HttpHost(scheme, proxyHost, nProxyPort);
             Credentials credentials = new UsernamePasswordCredentials(
                     proxyUser, proxyPassword.toCharArray());
-            addAuthentication(proxy, credentials, context);
+            addAuthentication(proxy, credentials, context, false);
         }
         
         // set If-Modified-Since header
@@ -894,7 +894,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
      * should be saved
      */
     private void addAuthentication(HttpHost host, Credentials credentials,
-            HttpClientContext context) {
+            HttpClientContext context, boolean preemptiveAuth) {
         AuthCache authCache = context.getAuthCache();
         if (authCache == null) {
             authCache = new BasicAuthCache();
@@ -907,7 +907,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
             context.setCredentialsProvider(credsProvider);
         }
 
-        if (preemptiveAuth && username != null && password != null) {
+        if (preemptiveAuth) {
             BasicScheme basicAuth = new BasicScheme();
             basicAuth.initPreemptive(credentials);
             authCache.put(host, basicAuth);
