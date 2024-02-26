@@ -33,11 +33,25 @@ public class RemoveSensitiveHeadersInterceptor implements HttpRequestInterceptor
         this.originalHost = originalHost;
     }
 
+    private int portOrDefault(int port, String scheme) {
+        if (port != -1) {
+            return port;
+        }
+        if ("https".equals(scheme)) {
+            return 443;
+        } else if ("http".equals(scheme)) {
+            return 80;
+        }
+        return -1;
+    }
+
     @Override
     public void process(HttpRequest request, EntityDetails entity, HttpContext context) {
+        int originalPort = portOrDefault(originalHost.getPort(), originalHost.getSchemeName());
+        int requestPort = portOrDefault(request.getAuthority().getPort(), request.getScheme());
         if (request.getAuthority() == null ||
                 !request.getAuthority().getHostName().equals(originalHost.getHostName()) ||
-                request.getAuthority().getPort() != originalHost.getPort()) {
+                requestPort != originalPort) {
             request.removeHeaders(HttpHeaders.AUTHORIZATION);
             request.removeHeaders(HttpHeaders.COOKIE);
             request.removeHeaders("Cookie2");
