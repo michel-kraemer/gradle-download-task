@@ -1,30 +1,24 @@
 package de.undercouch.gradle.tasks.download.internal;
 
-import org.apache.hc.client5.http.classic.ExecChain;
-import org.apache.hc.client5.http.classic.ExecChainHandler;
-import org.apache.hc.core5.http.ClassicHttpRequest;
-import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.EntityDetails;
 import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.HttpRequest;
+import org.apache.hc.core5.http.HttpRequestInterceptor;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.HttpResponseInterceptor;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 
-import java.io.IOException;
-
 /**
  * Interceptor that logs request and response headers if debug logging is enabled
  * @author Michel Kraemer
  */
-public class DebugInterceptor implements ExecChainHandler, HttpResponseInterceptor {
+public class DebugInterceptor implements HttpRequestInterceptor, HttpResponseInterceptor {
     private final Logger logger = Logging.getLogger(DebugInterceptor.class);
 
     @Override
-    public ClassicHttpResponse execute(ClassicHttpRequest request,
-            ExecChain.Scope scope, ExecChain chain) throws IOException, HttpException {
+    public void process(HttpRequest request, EntityDetails entity, HttpContext context) {
         StringBuilder sb = new StringBuilder("Sending request:\n");
         sb.append("> ")
                 .append(request.getMethod()).append(" ")
@@ -33,7 +27,6 @@ public class DebugInterceptor implements ExecChainHandler, HttpResponseIntercept
             sb.append("> ").append(h.toString()).append("\n");
         }
         logger.debug(sb.toString());
-        return chain.proceed(request, scope);
     }
 
     @Override

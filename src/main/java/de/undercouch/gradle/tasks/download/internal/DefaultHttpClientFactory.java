@@ -105,12 +105,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
 
         if (logger.isDebugEnabled()) {
             DebugInterceptor di = new DebugInterceptor();
-            // In contrast to a request interceptor, an exec interceptor can
-            // be really added to the end of the exec chain just before the
-            // main transport, so just before the request is made. This allows
-            // it to record all headers. It can also intercept all requests
-            // (including redirects, repeats, and authentication attempts)
-            builder.addExecInterceptorLast("debug-interceptor", di);
+            builder.addRequestInterceptorLast(di);
             builder.addResponseInterceptorFirst(di);
         }
 
