@@ -29,8 +29,8 @@ ext {
         limitedVersionsToTest = [
             "5.6.4",
             "6.9.4",
-            "7.6.3",
-            "8.4"
+            "7.6.4",
+            "8.6"
         ]
     } else {
         limitedVersionsToTest = versionsToTest
