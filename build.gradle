@@ -25,7 +25,7 @@ ext {
     // on CI server, limit functional tests to major versions to avoid running
     // out of open file descriptors (happens when we load the jar files of too
     // many Gradle distributions into memory)
-    if ("true".equals(System.getenv("CI"))) {
+    if ("true" == System.getenv("CI")) {
         limitedVersionsToTest = [
             "5.6.4",
             "6.9.4",
@@ -74,11 +74,11 @@ jacocoTestReport {
 }
 
 // configure functional tests
-task functionalTest
+tasks.register('functionalTest')
 
 for (v in limitedVersionsToTest) {
     def vn = v.replace(".", "_")
-    task "functionalTest_$vn"(type: Test) {
+    tasks.register("functionalTest_$vn", Test) {
         include "**/FunctionalDownloadTest.class"
         systemProperty 'gradleVersionUnderTest', v
     }
@@ -87,7 +87,7 @@ for (v in limitedVersionsToTest) {
 
 test.finalizedBy(functionalTest)
 
-tasks.withType(Test).all {
+tasks.withType(Test).configureEach {
     // use junit5 for tests
     useJUnitPlatform()
 
@@ -177,7 +177,7 @@ signing {
     useGpgCmd()
 }
 
-tasks.withType(Sign) {
+tasks.withType(Sign).configureEach {
     onlyIf {
         // only sign release artifacts and not snapshots
         if (!isReleaseVersion) {
@@ -185,7 +185,7 @@ tasks.withType(Sign) {
         }
 
         // don't sign on CI server - it fails without a key
-        if ("true".equals(System.getenv("CI"))) {
+        if ("true" == System.getenv("CI")) {
             return false
         }
 
