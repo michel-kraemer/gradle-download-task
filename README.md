@@ -333,6 +333,15 @@ from the server. <em>(default: <code>${downloadTaskDir}/etags.json</code>)</em><
 <dd>An optional request body. As gradle-download-task is meant for downloading
 and not for uploading, only simple strings are supported.
 <em>(optional)</em></dd>
+<dt>validateStatus</dt>
+<dd>An optional status code validator. By default, a download fails if the HTTP
+status code is less than 200 or greater than 299 and does not equal 304 (Not
+Modified). This behavior can be customized by providing a validator. This
+function receives an integer (the HTTP status code) and either returns
+<code>true</code> if the status code should be accepted or <code>false</code>
+if it should be rejected (i.e. if the download should fail). Examples:
+<code>validateStatus { it < 500 }</code> or <code>validateStatus { true }</code>.
+<em>(optional)</em></dd>
 </dl>
 
 Verify task
