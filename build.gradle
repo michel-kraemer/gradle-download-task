@@ -53,10 +53,10 @@ dependencies {
     // See issue 141 (https://github.com/michel-kraemer/gradle-download-task/issues/141)
     implementation 'org.slf4j:slf4j-nop:1.7.36'
 
-    testImplementation "commons-codec:commons-codec:1.16.0"
+    testImplementation "commons-codec:commons-codec:1.16.1"
     testImplementation "commons-io:commons-io:2.15.1"
-    testImplementation "com.github.tomakehurst:wiremock-jre8:2.35.0"
-    testImplementation "org.assertj:assertj-core:3.24.2"
+    testImplementation "com.github.tomakehurst:wiremock-jre8:2.35.2"
+    testImplementation "org.assertj:assertj-core:3.25.3"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junitVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
