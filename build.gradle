@@ -186,11 +186,6 @@ tasks.withType(Sign).configureEach {
             return false
         }
 
-        // don't sign on CI server - it fails without a key
-        if ("true" == System.getenv("CI")) {
-            return false
-        }
-
         // don't attempt to sign without a key
         if (!project.hasProperty('signing.keyId')) {
             return false
