@@ -11,7 +11,7 @@ apply plugin: 'signing'
 apply from: "gradle/integrationTest.gradle"
 
 group = 'de.undercouch'
-version = '5.6.0'
+version = '5.6.1'
 
 java {
     sourceCompatibility = '1.8'
@@ -30,7 +30,9 @@ ext {
             "5.6.4",
             "6.9.4",
             "7.6.4",
-            "8.6"
+            "8.6",
+            "8.7",
+            "8.8"
         ]
     } else {
         limitedVersionsToTest = versionsToTest
@@ -186,6 +188,11 @@ tasks.withType(Sign).configureEach {
 
         // don't sign on CI server - it fails without a key
         if ("true" == System.getenv("CI")) {
+            return false
+        }
+
+        // don't attempt to sign without a key
+        if (!project.hasProperty('signing.keyId')) {
             return false
         }
 
