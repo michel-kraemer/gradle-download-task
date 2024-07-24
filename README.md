@@ -24,7 +24,7 @@ It **displays progress information** just like Gradle does when it retrieves
 an artifact from a repository. It is also able to **download multiple files in
 parallel** and supports **concurrent execution** with other tasks.
 
-The plugin has been successfully tested with Gradle 5.0 up to 8.6.
+The plugin has been successfully tested with Gradle 5.0 up to 8.9.
 It should work with newer versions as well.
 
 Who’s using gradle-download-task?
