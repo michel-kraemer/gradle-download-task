@@ -19,6 +19,6 @@
     "svgo": "^3.3.2"
   },
   "devDependencies": {
-    "npm-check-updates": "^16.14.20"
+    "npm-check-updates": "^17.1.3"
   }
 }
