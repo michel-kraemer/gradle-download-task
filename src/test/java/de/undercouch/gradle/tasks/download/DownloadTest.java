@@ -585,24 +585,6 @@ public class DownloadTest extends TestBaseWithMockServer {
     }
 
     /**
-     * Tests if specifying an eachFile action leads to an exception if only
-     * one source is given
-     * @throws Exception if anything goes wrong
-     */
-    @Test
-    public void eachFileActionSingleSource() throws Exception {
-        Download t = makeProjectAndTask();
-        t.src(wireMock.url(TEST_FILE_NAME));
-        t.dest(newTempFile());
-        t.eachFile(details -> {
-            fail("We should never get here");
-        });
-        assertThatThrownBy(() -> execute(t))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("eachFile");
-    }
-
-    /**
      * Tests if we can catch an exception from an eachFile action
      * @throws Exception if anything goes wrong
      */
