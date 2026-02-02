@@ -14,6 +14,7 @@
 
 package de.undercouch.gradle.tasks.download.internal;
 
+import de.undercouch.gradle.tasks.download.HttpTunnelProxySelector;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
@@ -72,7 +73,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         }
 
         // configure proxy from system environment
-        builder.setRoutePlanner(new SystemDefaultRoutePlanner(null));
+        builder.setRoutePlanner(new SystemDefaultRoutePlanner(new HttpTunnelProxySelector()));
         
         // use pooling connection manager to support multiple threads
         PoolingHttpClientConnectionManager cm;
