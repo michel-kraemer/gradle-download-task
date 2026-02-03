@@ -11,7 +11,7 @@ apply plugin: 'signing'
 apply from: "gradle/integrationTest.gradle"
 
 group = 'de.undercouch'
-version = '5.7.0-SNAPSHOT'
+version = '5.7.0'
 
 java {
     sourceCompatibility = '1.8'
