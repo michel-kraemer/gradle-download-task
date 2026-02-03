@@ -58,12 +58,7 @@ public class Download extends DefaultTask implements DownloadSpec {
             // destination already exists
             if (isOffline) {
                 for (File f : getOutputFiles()) {
-                    if (f.exists()) {
-                        if (!isQuiet()) {
-                            getProject().getLogger().info("Skipping existing file '" +
-                                    f.getName() + "' in offline mode.");
-                        }
-                    } else {
+                    if (!f.exists()) {
                         throw new IllegalStateException("Unable to download file '" +
                                 f.getName() + "' in offline mode.");
                     }
