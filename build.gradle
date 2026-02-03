@@ -186,7 +186,7 @@ tasks.withType(Sign).configureEach {
         }
 
         // don't attempt to sign without a key
-        if (!project.hasProperty('signing.keyId')) {
+        if (!project.hasProperty('signing.gnupg.keyName')) {
             return false
         }
 
@@ -196,7 +196,10 @@ tasks.withType(Sign).configureEach {
 
 nexusPublishing {
     repositories {
-        sonatype()
+        sonatype {
+            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
+        }
     }
 }
 
