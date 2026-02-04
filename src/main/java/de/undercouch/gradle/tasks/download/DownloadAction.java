@@ -817,7 +817,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
         req.setConfig(config);
 
         // add authentication information for proxy
-        String scheme = httpHost.getSchemeName();
+        String scheme = getProxyScheme();
         String proxyHost = System.getProperty(scheme + ".proxyHost");
         String proxyPort = System.getProperty(scheme + ".proxyPort");
         String proxyUser = System.getProperty(scheme + ".proxyUser");
@@ -884,6 +884,14 @@ public class DownloadAction implements DownloadSpec, Serializable {
 
             return responseHandler.handleResponse(response);
         });
+    }
+
+    private String getProxyScheme() {
+        Optional<String> scheme = Optional.ofNullable(System.getProperty("http.proxyHost"));
+        if(scheme.isPresent()) {
+            return "http";
+        }
+        return "https";
     }
 
     /**
