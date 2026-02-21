@@ -228,8 +228,7 @@ has been modified on the server since the last download <em>(default:
 be applied to each source URL before it is downloaded. The action is called
 with a <a href="#downloaddetails">DownloadDetails</a> object and can modify
 some aspects of the target file in the destination directory (e.g. the
-filename or relative path). If only one download source has been given, adding
-an <code>eachFile</code> action will make the plugin fail.</dd>
+filename or relative path).</dd>
 </dl>
 
 <em>Tip!</em> You may provide Groovy Closures or Kotlin Lambdas to the `src`

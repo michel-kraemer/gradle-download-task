@@ -239,11 +239,6 @@ public class DownloadAction implements DownloadSpec, Serializable {
             }
         }
 
-        if (!eachFileActions.isEmpty() && sources.size() < 2) {
-            throw new IllegalArgumentException("An 'eachFile' action can only " +
-                    "be added if multiple sources are provided.");
-        }
-
         List<File> destFiles = getOutputFiles();
 
         // make sure parent directories of target files exist
