@@ -17,6 +17,7 @@ package de.undercouch.gradle.tasks.download;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Transformer;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Console;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
@@ -51,7 +52,7 @@ public class Download extends DefaultTask implements DownloadSpec {
 
         action = new DownloadAction(getProject(), this);
 
-        getOutputs().upToDateWhen(task -> !(isOnlyIfModified() || isOverwrite()));
+        getOutputs().upToDateWhen(task -> !(isOnlyIfModified() || getOverwrite().get()));
         
         onlyIf(task -> {
             // in case offline mode is enabled don't try to download if
@@ -100,15 +101,17 @@ public class Download extends DefaultTask implements DownloadSpec {
     public void dest(Object dest) {
         action.dest(dest);
     }
-    
+
+    @Console
     @Override
-    public void quiet(boolean quiet) {
-        action.quiet(quiet);
+    public Property<Boolean> getQuiet() {
+        return action.getQuiet();
     }
-    
+
+    @Input
     @Override
-    public void overwrite(boolean overwrite) {
-        action.overwrite(overwrite);
+    public Property<Boolean> getOverwrite() {
+        return action.getOverwrite();
     }
     
     @Override
@@ -221,18 +224,6 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public File getDest() {
         return action.getDest();
-    }
-
-    @Console
-    @Override
-    public boolean isQuiet() {
-        return action.isQuiet();
-    }
-
-    @Input
-    @Override
-    public boolean isOverwrite() {
-        return action.isOverwrite();
     }
 
     @Input

@@ -47,6 +47,7 @@ import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.util.GradleVersion;
 
@@ -110,8 +111,8 @@ public class DownloadAction implements DownloadSpec, Serializable {
     private transient Lock cachedDestLock = new ReentrantLock();
     private List<File> cachedOutputFiles;
     private transient Lock cachedOutputFilesLock = new ReentrantLock();
-    private boolean quiet = false;
-    private boolean overwrite = true;
+    private final Property<Boolean> quiet;
+    private final Property<Boolean> overwrite;
     private boolean onlyIfModified = false;
     private boolean compress = true;
     private String username;
@@ -173,6 +174,11 @@ public class DownloadAction implements DownloadSpec, Serializable {
         this.objectFactory = objectFactory;
         this.isOffline = isOffline;
         this.downloadTaskDir = new File(buildDir, "download-task");
+
+        this.quiet = objectFactory.property(Boolean.class);
+        this.quiet.set(false);
+        this.overwrite = objectFactory.property(Boolean.class);
+        this.overwrite.set(true);
     }
 
     /**
@@ -195,7 +201,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
      * @throws IOException if the file could not downloaded
      */
     public CompletableFuture<Void> execute(boolean throwOnError) throws IOException {
-        if (GradleVersion.current().compareTo(HARD_MIN_GRADLE_VERSION) < 0 && !quiet) {
+        if (GradleVersion.current().compareTo(HARD_MIN_GRADLE_VERSION) < 0 && !quiet.get()) {
             throw new IllegalStateException("gradle-download-task requires " +
                     "Gradle 5.x or higher");
         }
@@ -204,7 +210,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
         //             + "with Gradle 2.x, 3.x, and 4.x has been deprecated and will be removed in "
         //             + "gradle-download-task 5.0.0");
         // }
-        if (JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) < 0 && !quiet) {
+        if (JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) < 0 && !quiet.get()) {
             throw new IllegalStateException("gradle-download-task requires " +
                     "Java 8 or higher");
         }
@@ -263,7 +269,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
             workerExecutor.submit(() -> {
                 // create progress logger
                 ProgressLoggerWrapper progressLogger = new ProgressLoggerWrapper(logger);
-                if (!quiet) {
+                if (!quiet.get()) {
                     try {
                         progressLogger.init(servicesOwner, src.toString());
                     } catch (Exception e) {
@@ -316,8 +322,8 @@ public class DownloadAction implements DownloadSpec, Serializable {
 
     private void execute(URL src, File destFile, HttpClientFactory clientFactory,
             ProgressLoggerWrapper progressLogger) throws IOException {
-        if (!overwrite && destFile.exists()) {
-            if (!quiet) {
+        if (!overwrite.get() && destFile.exists()) {
+            if (!quiet.get()) {
                 logger.info("Destination file already exists. "
                         + "Skipping '" + destFile.getName() + "'");
             }
@@ -331,7 +337,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
         // destination already exists
         if (isOffline) {
             if (destFile.exists()) {
-                if (!quiet) {
+                if (!quiet.get()) {
                     logger.info("Skipping existing file '" +
                             destFile.getName() + "' in offline mode.");
                 }
@@ -365,7 +371,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
         if (srcFile != null) {
             lastModified = srcFile.lastModified();
             if (lastModified != 0 && timestamp >= lastModified) {
-                if (!quiet) {
+                if (!quiet.get()) {
                     logger.info("Not modified. Skipping '" + src + "'");
                 }
                 upToDate.incrementAndGet();
@@ -391,7 +397,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
         // create HTTP client
         CloseableHttpClient client = clientFactory.createHttpClient(
                 httpHost, acceptAnyCertificate, retries, connectTimeoutMs,
-                headers, logger, quiet);
+                headers, logger, quiet.get());
 
         // get cached ETag if there is any
         String etag = null;
@@ -409,7 +415,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
             int code = response.getCode();
             if (code == HttpStatus.SC_NOT_MODIFIED ||
                     (lastModified != 0 && timestamp >= lastModified)) {
-                if (!quiet) {
+                if (!quiet.get()) {
                     logger.info("Not modified. Skipping '" + src + "'");
                 }
                 upToDate.incrementAndGet();
@@ -671,7 +677,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
         //get ETag header
         Header etagHdr = response.getFirstHeader("ETag");
         if (etagHdr == null) {
-            if (!quiet) {
+            if (!quiet.get()) {
                 logger.warn("Server response does not include an "
                         + "entity tag (ETag).");
             }
@@ -681,7 +687,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
 
         //handle weak ETags
         if (isWeakETag(etag)) {
-            if (useETag.displayWarningForWeak && !quiet) {
+            if (useETag.displayWarningForWeak && !quiet.get()) {
                 logger.warn("Weak entity tag (ETag) encountered. "
                         + "Please make sure you want to compare resources based on "
                         + "weak ETags. If yes, set the 'useETag' flag to \"all\", "
@@ -994,13 +1000,13 @@ public class DownloadAction implements DownloadSpec, Serializable {
     }
     
     @Override
-    public void quiet(boolean quiet) {
-        this.quiet = quiet;
+    public Property<Boolean> getQuiet() {
+        return quiet;
     }
     
     @Override
-    public void overwrite(boolean overwrite) {
-        this.overwrite = overwrite;
+    public Property<Boolean> getOverwrite() {
+        return overwrite;
     }
     
     @Override
@@ -1293,16 +1299,6 @@ public class DownloadAction implements DownloadSpec, Serializable {
         } finally {
             cachedDestLock.unlock();
         }
-    }
-    
-    @Override
-    public boolean isQuiet() {
-        return quiet;
-    }
-    
-    @Override
-    public boolean isOverwrite() {
-        return overwrite;
     }
     
     @Override

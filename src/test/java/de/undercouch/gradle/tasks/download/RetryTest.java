@@ -378,7 +378,7 @@ public class RetryTest extends TestBaseWithMockServer {
         loggerField.set(action, logger);
 
         t.retries(1);
-        t.quiet(true);
+        t.getQuiet().set(true);
         t.src(wireMock.url(TEST_FILE_NAME));
         File dst = newTempFile();
         t.dest(dst);

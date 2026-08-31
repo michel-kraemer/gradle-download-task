@@ -462,7 +462,7 @@ public class DownloadTest extends TestBaseWithMockServer {
         String src = wireMock.url(TEST_FILE_NAME);
         t.src(src);
         t.dest(dst);
-        t.overwrite(false); // do not overwrite the file
+        t.getOverwrite().set(false); // do not overwrite the file
         execute(t);
 
         // contents must not be changed
@@ -577,7 +577,7 @@ public class DownloadTest extends TestBaseWithMockServer {
 
         t.src(new Object[] { url.toExternalForm() });
         t.dest(dst);
-        t.overwrite(true);
+        t.getOverwrite().set(true);
         execute(t);
 
         String content = FileUtils.readFileToString(dst, "UTF-8");

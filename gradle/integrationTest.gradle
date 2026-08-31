@@ -114,7 +114,7 @@ task integrationTest {
                     task downloadFile2(type: Download) {
                         src '${testFile2Src}'
                         dest layout.buildDirectory
-                        overwrite false
+                        overwrite = false
                         onlyIfModified true
                     }
 

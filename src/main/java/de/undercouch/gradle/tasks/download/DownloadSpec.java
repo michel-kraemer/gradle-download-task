@@ -16,6 +16,7 @@ package de.undercouch.gradle.tasks.download;
 
 import org.gradle.api.Action;
 import org.gradle.api.Transformer;
+import org.gradle.api.provider.Property;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -40,16 +41,16 @@ public interface DownloadSpec {
     void dest(Object dest);
     
     /**
-     * Sets the quiet flag
-     * @param quiet true if download progress should not be logged
+     * @return {@code true} if progress information should not be displayed
+     * (default: {@code false})
      */
-    void quiet(boolean quiet);
+    Property<Boolean> getQuiet();
     
     /**
-     * Sets the overwrite flag
-     * @param overwrite true if existing files should be overwritten, false otherwise
+     * @return {@code true} if existing files should be overwritten (default:
+     * {@code true})
      */
-    void overwrite(boolean overwrite);
+    Property<Boolean> getOverwrite();
     
     /**
      * Sets the onlyIfModified flag
@@ -235,16 +236,6 @@ public interface DownloadSpec {
      * @return the download destination
      */
     File getDest();
-    
-    /**
-     * @return the quiet flag
-     */
-    boolean isQuiet();
-    
-    /**
-     * @return the overwrite flag
-     */
-    boolean isOverwrite();
     
     /**
      * @return the onlyIfModified flag
