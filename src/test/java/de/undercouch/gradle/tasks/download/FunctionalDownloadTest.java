@@ -470,7 +470,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 "src(" + parameters.src + ")\n" +
                 "dest " + parameters.dest + "\n" +
                 "overwrite = " + parameters.overwrite + "\n" +
-                "onlyIfModified " + parameters.onlyIfModified + "\n" +
+                "onlyIfModified = " + parameters.onlyIfModified + "\n" +
                 "compress " + parameters.compress + "\n" +
                 "quiet = " + parameters.quiet + "\n" +
                 "useETag " + parameters.useETag + "\n" +

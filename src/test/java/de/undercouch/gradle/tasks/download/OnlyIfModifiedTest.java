@@ -52,7 +52,7 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         assertThat(dst.delete()).isTrue();
         assertThat(dst.exists()).isFalse();
         t.dest(dst);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         execute(t);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
@@ -76,7 +76,7 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         assertThat(dst.delete()).isTrue();
         assertThat(dst.exists()).isFalse();
         t.dest(dst);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         execute(t);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
@@ -104,7 +104,7 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         assertThat(dst.delete()).isTrue();
         assertThat(dst.exists()).isFalse();
         t.dest(dst);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         execute(t);
 
         assertThat(dst.exists()).isTrue();
@@ -136,7 +136,7 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         FileUtils.writeStringToFile(dst, "Hello", StandardCharsets.UTF_8);
         assertThat(dst.setLastModified(expectedlmlong)).isTrue();
         t.dest(dst);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         execute(t);
 
         long lmlong = dst.lastModified();
@@ -170,7 +170,7 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         FileUtils.writeStringToFile(dst, "Hello", StandardCharsets.UTF_8);
         assertThat(dst.setLastModified(expectedlmlong + 1000)).isTrue();
         t.dest(dst);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         execute(t);
 
         long lmlong = dst.lastModified();
@@ -205,7 +205,7 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
         assertThat(CONTENTS).isNotEqualTo("Hello");
         assertThat(dst.setLastModified(expectedlmlong - 1000)).isTrue();
         t.dest(dst);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         execute(t);
 
         long lmlong = dst.lastModified();
@@ -219,13 +219,13 @@ public class OnlyIfModifiedTest extends TestBaseWithMockServer {
     @Test
     public void alias() {
         Download t = makeProjectAndTask();
-        assertThat(t.isOnlyIfModified()).isFalse();
-        assertThat(t.isOnlyIfNewer()).isFalse();
-        t.onlyIfModified(true);
-        assertThat(t.isOnlyIfModified()).isTrue();
-        assertThat(t.isOnlyIfNewer()).isTrue();
-        t.onlyIfNewer(false);
-        assertThat(t.isOnlyIfModified()).isFalse();
-        assertThat(t.isOnlyIfNewer()).isFalse();
+        assertThat(t.getOnlyIfModified().get()).isFalse();
+        assertThat(t.getOnlyIfNewer().get()).isFalse();
+        t.getOnlyIfModified().set(true);
+        assertThat(t.getOnlyIfModified().get()).isTrue();
+        assertThat(t.getOnlyIfNewer().get()).isTrue();
+        t.getOnlyIfNewer().set(false);
+        assertThat(t.getOnlyIfModified().get()).isFalse();
+        assertThat(t.getOnlyIfNewer().get()).isFalse();
     }
 }

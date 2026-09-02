@@ -113,7 +113,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
     private transient Lock cachedOutputFilesLock = new ReentrantLock();
     private final Property<Boolean> quiet;
     private final Property<Boolean> overwrite;
-    private boolean onlyIfModified = false;
+    private final Property<Boolean> onlyIfModified;
     private boolean compress = true;
     private String username;
     private String password;
@@ -179,6 +179,8 @@ public class DownloadAction implements DownloadSpec, Serializable {
         this.quiet.set(false);
         this.overwrite = objectFactory.property(Boolean.class);
         this.overwrite.set(true);
+        this.onlyIfModified = objectFactory.property(Boolean.class);
+        this.onlyIfModified.set(false);
     }
 
     /**
@@ -347,7 +349,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
                     "' in offline mode.");
         }
 
-        final long timestamp = onlyIfModified && destFile.exists() ? destFile.lastModified() : 0;
+        final long timestamp = onlyIfModified.get() && destFile.exists() ? destFile.lastModified() : 0;
         
         if ("file".equals(src.getProtocol())) {
             executeFileProtocol(src, timestamp, destFile, progressLogger);
@@ -383,7 +385,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
         streamAndMove(fileStream, destFile, progressLogger);
         
         //set last-modified time of destination file
-        if (onlyIfModified && lastModified > 0) {
+        if (onlyIfModified.get() && lastModified > 0) {
             destFile.setLastModified(lastModified);
         }
     }
@@ -401,7 +403,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
 
         // get cached ETag if there is any
         String etag = null;
-        if (onlyIfModified && useETag.enabled && destFile.exists()) {
+        if (onlyIfModified.get() && useETag.enabled && destFile.exists()) {
             etag = getCachedETag(httpHost, src.getFile());
             if (!useETag.useWeakETags && isWeakETag(etag)) {
                 etag = null;
@@ -427,12 +429,12 @@ public class DownloadAction implements DownloadSpec, Serializable {
 
             // set last-modified time of destination file
             long newTimestamp = parseLastModified(response);
-            if (onlyIfModified && newTimestamp > 0) {
+            if (onlyIfModified.get() && newTimestamp > 0) {
                 destFile.setLastModified(newTimestamp);
             }
 
             // store ETag
-            if (onlyIfModified && useETag.enabled) {
+            if (onlyIfModified.get() && useETag.enabled) {
                 storeETag(httpHost, src.getFile(), response);
             }
 
@@ -1010,13 +1012,13 @@ public class DownloadAction implements DownloadSpec, Serializable {
     }
     
     @Override
-    public void onlyIfModified(boolean onlyIfModified) {
-        this.onlyIfModified = onlyIfModified;
+    public Property<Boolean> getOnlyIfModified() {
+        return onlyIfModified;
     }
     
     @Override
-    public void onlyIfNewer(boolean onlyIfNewer) {
-        onlyIfModified(onlyIfNewer);
+    public Property<Boolean> getOnlyIfNewer() {
+        return getOnlyIfModified();
     }
     
     @Override
@@ -1299,16 +1301,6 @@ public class DownloadAction implements DownloadSpec, Serializable {
         } finally {
             cachedDestLock.unlock();
         }
-    }
-    
-    @Override
-    public boolean isOnlyIfModified() {
-        return onlyIfModified;
-    }
-    
-    @Override
-    public boolean isOnlyIfNewer() {
-        return isOnlyIfModified();
     }
     
     @Override

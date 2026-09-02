@@ -60,7 +60,7 @@ public class ETagTest extends TestBaseWithMockServer {
         assertThat(dst.delete()).isTrue();
         assertThat(dst).doesNotExist();
         t.dest(dst);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         t.useETag(true);
         t.compress(false);
         execute(t);
@@ -88,7 +88,7 @@ public class ETagTest extends TestBaseWithMockServer {
         assertThat(dst.delete()).isTrue();
         assertThat(dst).doesNotExist();
         t.dest(dst);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         t.useETag(true);
         t.compress(false);
         execute(t);
@@ -124,7 +124,7 @@ public class ETagTest extends TestBaseWithMockServer {
         assertThat(dst1.delete()).isTrue();
         assertThat(dst1).doesNotExist();
         t.dest(dst1);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         t.useETag(true);
         t.compress(false);
         execute(t);
@@ -136,7 +136,7 @@ public class ETagTest extends TestBaseWithMockServer {
         assertThat(dst2.delete()).isTrue();
         assertThat(dst2).doesNotExist();
         t.dest(dst2);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         t.useETag(true);
         t.compress(false);
         execute(t);
@@ -188,7 +188,7 @@ public class ETagTest extends TestBaseWithMockServer {
         assertThat(dst.delete()).isTrue();
         assertThat(dst).doesNotExist();
         t.dest(dst);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         t.useETag(true);
         assertThat((Boolean)t.getUseETag()).isTrue();
         t.compress(false);
@@ -240,7 +240,7 @@ public class ETagTest extends TestBaseWithMockServer {
         File dst = newTempFile();
         assertThat(dst.delete()).isTrue();
         t.dest(dst);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         t.useETag(true);
         t.compress(false);
         execute(t);
@@ -270,7 +270,7 @@ public class ETagTest extends TestBaseWithMockServer {
         File dst = newTempFile();
         assertThat(dst.delete()).isTrue();
         t.dest(dst);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         t.useETag(true);
         t.compress(false);
         execute(t);
@@ -363,7 +363,7 @@ public class ETagTest extends TestBaseWithMockServer {
         File dst = newTempFile();
         FileUtils.writeStringToFile(dst, "Hello", StandardCharsets.UTF_8);
         t.dest(dst);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         t.useETag(true);
 
         prepareCachedETagsFile(t.getCachedETagsFile(), etag);
@@ -397,7 +397,7 @@ public class ETagTest extends TestBaseWithMockServer {
         File dst = newTempFile();
         assertThat(dst.delete()).isTrue();
         t.dest(dst);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         t.useETag(true);
 
         prepareCachedETagsFile(t.getCachedETagsFile(), etag);
@@ -429,7 +429,7 @@ public class ETagTest extends TestBaseWithMockServer {
         File dst = newTempFile();
         FileUtils.writeStringToFile(dst, "Hello", StandardCharsets.UTF_8);
         t.dest(dst);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         t.useETag(true);
 
         prepareCachedETagsFile(t.getCachedETagsFile(), wrongEtag);
@@ -460,7 +460,7 @@ public class ETagTest extends TestBaseWithMockServer {
         assertThat(dst.delete()).isTrue();
         assertThat(dst).doesNotExist();
         t.dest(dst);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         t.useETag(true);
         assertThat(t.getUseETag()).isEqualTo(true);
         t.compress(false);
@@ -505,7 +505,7 @@ public class ETagTest extends TestBaseWithMockServer {
         assertThat(dst.delete()).isTrue();
         assertThat(dst).doesNotExist();
         t.dest(dst);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         t.useETag("all");
         assertThat(t.getUseETag()).isEqualTo("all");
         t.compress(false);
@@ -557,7 +557,7 @@ public class ETagTest extends TestBaseWithMockServer {
         assertThat(dst1.delete()).isTrue();
         assertThat(dst1).doesNotExist();
         t.dest(dst1);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         t.useETag("strongOnly");
         assertThat(t.getUseETag()).isEqualTo("strongOnly");
         t.compress(false);
@@ -570,7 +570,7 @@ public class ETagTest extends TestBaseWithMockServer {
         assertThat(dst2.delete()).isTrue();
         assertThat(dst2).doesNotExist();
         t.dest(dst2);
-        t.onlyIfModified(true);
+        t.getOnlyIfModified().set(true);
         t.useETag("strongOnly");
         assertThat(t.getUseETag()).isEqualTo("strongOnly");
         t.compress(false);

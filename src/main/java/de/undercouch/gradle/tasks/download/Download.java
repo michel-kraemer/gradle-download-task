@@ -52,8 +52,8 @@ public class Download extends DefaultTask implements DownloadSpec {
 
         action = new DownloadAction(getProject(), this);
 
-        getOutputs().upToDateWhen(task -> !(isOnlyIfModified() || getOverwrite().get()));
-        
+        getOutputs().upToDateWhen(task -> !(getOnlyIfModified().get() || getOverwrite().get()));
+
         onlyIf(task -> {
             // in case offline mode is enabled don't try to download if
             // destination already exists
@@ -113,15 +113,17 @@ public class Download extends DefaultTask implements DownloadSpec {
     public Property<Boolean> getOverwrite() {
         return action.getOverwrite();
     }
-    
+
+    @Input
     @Override
-    public void onlyIfModified(boolean onlyIfModified) {
-        action.onlyIfModified(onlyIfModified);
+    public Property<Boolean> getOnlyIfModified() {
+        return action.getOnlyIfModified();
     }
-    
+
+    @Input
     @Override
-    public void onlyIfNewer(boolean onlyIfNewer) {
-        action.onlyIfNewer(onlyIfNewer);
+    public Property<Boolean> getOnlyIfNewer() {
+        return action.getOnlyIfNewer();
     }
     
     @Override
@@ -224,18 +226,6 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public File getDest() {
         return action.getDest();
-    }
-
-    @Input
-    @Override
-    public boolean isOnlyIfModified() {
-        return action.isOnlyIfModified();
-    }
-
-    @Input
-    @Override
-    public boolean isOnlyIfNewer() {
-        return action.isOnlyIfNewer();
     }
 
     @Input

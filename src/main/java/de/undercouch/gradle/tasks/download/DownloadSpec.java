@@ -53,19 +53,17 @@ public interface DownloadSpec {
     Property<Boolean> getOverwrite();
     
     /**
-     * Sets the onlyIfModified flag
-     * @param onlyIfModified true if the file should only be downloaded if it
-     * has been modified on the server since the last download
+     * @return {@code true} if the file should only be downloaded if it has been
+     * modified on the server since the last download (default: {@code false})
      */
-    void onlyIfModified(boolean onlyIfModified);
+    Property<Boolean> getOnlyIfModified();
     
     /**
-     * Sets the onlyIfNewer flag. This method is an alias for
-     * {@link #onlyIfModified(boolean)}.
-     * @param onlyIfNewer true if the file should only be downloaded if it
-     * has been modified on the server since the last download
+     * This method is an alias of {@link #getOnlyIfModified()}.
+     * @return {@code true} if the file should only be downloaded if it has been
+     * modified on the server since the last download (default: {@code false})
      */
-    void onlyIfNewer(boolean onlyIfNewer);
+    Property<Boolean> getOnlyIfNewer();
     
     /**
      * Specifies if compression should be used during download
@@ -236,18 +234,6 @@ public interface DownloadSpec {
      * @return the download destination
      */
     File getDest();
-    
-    /**
-     * @return the onlyIfModified flag
-     */
-    boolean isOnlyIfModified();
-    
-    /**
-     * Get the <code>onlyIfNewer</code> flag. This method is an alias for
-     * {@link #isOnlyIfModified()}.
-     * @return the onlyIfNewer flag
-     */
-    boolean isOnlyIfNewer();
     
     /**
      * @return true if compression is enabled

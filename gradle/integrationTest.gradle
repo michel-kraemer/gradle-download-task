@@ -115,7 +115,7 @@ task integrationTest {
                         src '${testFile2Src}'
                         dest layout.buildDirectory
                         overwrite = false
-                        onlyIfModified true
+                        onlyIfModified = true
                     }
 
                     task verifyFile(type: Verify, dependsOn: downloadFile) {
