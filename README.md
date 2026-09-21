@@ -203,9 +203,6 @@ also read my blog post about
 Download task
 -------------
 
-HTTP/1.1 responses are limited to 100 headers and 8192 characters per header
-line. Downloads fail if the response headers exceed these limits.
-
 The download task and the extension support the following properties.
 
 ### General
