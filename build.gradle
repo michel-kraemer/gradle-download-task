@@ -50,6 +50,15 @@ dependencies {
     shadow gradleApi()
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
 
+    constraints {
+        implementation('org.apache.httpcomponents.core5:httpcore5:5.4.3') {
+            because 'Fix CVE-2026-54399: unbounded HTTP/1 response headers'
+        }
+        implementation('org.apache.httpcomponents.core5:httpcore5-h2:5.4.3') {
+            because 'Fix CVE-2026-54428: unbounded initial HPACK header list'
+        }
+    }
+
     // Disable logging. This avoids slf4j warning and might also improve download performance.
     // See issue 141 (https://github.com/michel-kraemer/gradle-download-task/issues/141)
     implementation 'org.slf4j:slf4j-nop:1.7.36'
