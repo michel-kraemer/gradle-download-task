@@ -114,10 +114,10 @@ public class DownloadAction implements DownloadSpec, Serializable {
     private final Property<Boolean> quiet;
     private final Property<Boolean> overwrite;
     private final Property<Boolean> onlyIfModified;
-    private boolean compress = true;
-    private String username;
-    private String password;
-    private boolean preemptiveAuth = false;
+    private final Property<Boolean> compress;
+    private final Property<String> username;
+    private final Property<String> password;
+    private final Property<Boolean> preemptiveAuth;
     private Map<String, String> headers;
     private boolean acceptAnyCertificate = false;
     private int connectTimeoutMs = 30 * 1000;
@@ -181,6 +181,12 @@ public class DownloadAction implements DownloadSpec, Serializable {
         this.overwrite.set(true);
         this.onlyIfModified = objectFactory.property(Boolean.class);
         this.onlyIfModified.set(false);
+        this.compress = objectFactory.property(Boolean.class);
+        this.compress.set(true);
+        this.username = objectFactory.property(String.class);
+        this.password = objectFactory.property(String.class);
+        this.preemptiveAuth = objectFactory.property(Boolean.class);
+        this.preemptiveAuth.set(false);
     }
 
     /**
@@ -803,12 +809,13 @@ public class DownloadAction implements DownloadSpec, Serializable {
             HttpClientResponseHandler<T> responseHandler) throws IOException {
         // configure authentication
         HttpClientContext context = null;
-        if (username != null && password != null) {
+        if (username.isPresent() && password.isPresent()) {
             context = HttpClientContext.create();
-            Credentials c = new UsernamePasswordCredentials(username, password.toCharArray());
-            addAuthentication(httpHost, c, context, preemptiveAuth);
+            Credentials c = new UsernamePasswordCredentials(username.get(),
+                    password.get().toCharArray());
+            addAuthentication(httpHost, c, context, preemptiveAuth.get());
         }
-        
+
         // create request
         HttpUriRequestBase req = new HttpUriRequestBase(
                 this.method.toUpperCase(Locale.ROOT), URI.create(file));
@@ -820,7 +827,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
         RequestConfig config = RequestConfig.custom()
                 .setConnectionRequestTimeout(Timeout.ofMilliseconds(connectTimeoutMs))
                 .setResponseTimeout(Timeout.ofMilliseconds(readTimeoutMs))
-                .setContentCompressionEnabled(compress)
+                .setContentCompressionEnabled(compress.get())
                 .build();
         req.setConfig(config);
 
@@ -1022,23 +1029,23 @@ public class DownloadAction implements DownloadSpec, Serializable {
     }
     
     @Override
-    public void compress(boolean compress) {
-        this.compress = compress;
+    public Property<Boolean> getCompress() {
+        return compress;
     }
     
     @Override
-    public void username(String username) {
-        this.username = username;
+    public Property<String> getUsername() {
+        return username;
     }
     
     @Override
-    public void password(String password) {
-        this.password = password;
+    public Property<String> getPassword() {
+        return password;
     }
 
     @Override
-    public void preemptiveAuth(boolean preemptiveAuth) {
-        this.preemptiveAuth = preemptiveAuth;
+    public Property<Boolean> getPreemptiveAuth() {
+        return preemptiveAuth;
     }
 
     @Override
@@ -1303,26 +1310,6 @@ public class DownloadAction implements DownloadSpec, Serializable {
         }
     }
     
-    @Override
-    public boolean isCompress() {
-        return compress;
-    }
-    
-    @Override
-    public String getUsername() {
-        return username;
-    }
-    
-    @Override
-    public String getPassword() {
-        return password;
-    }
-
-    @Override
-    public boolean isPreemptiveAuth() {
-        return preemptiveAuth;
-    }
-
     @Override
     public Map<String, String> getHeaders() {
         return headers;

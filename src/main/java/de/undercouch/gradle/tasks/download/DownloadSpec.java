@@ -66,22 +66,22 @@ public interface DownloadSpec {
     Property<Boolean> getOnlyIfNewer();
     
     /**
-     * Specifies if compression should be used during download
-     * @param compress true if compression should be enabled
+     * @return {@code true} if compression should be used during download
+     * (default: {@code true})
      */
-    void compress(boolean compress);
+    Property<Boolean> getCompress();
 
     /**
-     * Sets the username for authentication
-     * @param username the username
+     * @return the username that should be used if the server requires
+     * authentication (may be {@code null})
      */
-    void username(String username);
+    Property<String> getUsername();
 
     /**
-     * Sets the password for authentication
-     * @param password the password
+     * @return the password that should be used if the server requires
+     * authentication (may be {@code null})
      */
-    void password(String password);
+    Property<String> getPassword();
 
     /**
      * Sets the HTTP request headers to use when downloading
@@ -97,22 +97,21 @@ public interface DownloadSpec {
     void header(String name, String value);
 
     /**
-     * <p>Specifies if preemptive Basic authentication should be enabled. By default,
-     * gradle-download-task automatically detects the required authentication
-     * scheme by sending two requests: one without credentials to determine
-     * the scheme based on the {@code WWW-Authenticate} header in the server's
-     * response and the actual request with credentials. This will fail if the
-     * server does not send a {@code WWW-Authenticate} header. In this case,
-     * set {@code preemptiveAuth} to {@code true} to use Basic authentication
-     * and to always send credentials in the first request.</p>
+     * @return {@code true} if preemptive Basic authentication should be
+     * enabled. By default, gradle-download-task automatically detects the
+     * required authentication scheme by sending two requests: one without
+     * credentials to determine the scheme based on the {@code WWW-Authenticate}
+     * header in the server's response and the actual request with credentials.
+     * This will fail if the server does not send a {@code WWW-Authenticate}
+     * header. In this case, set {@code preemptiveAuth} to {@code true} to use
+     * Basic authentication and to always send credentials in the first request.
      *
      * <p>Note: Sending credentials in clear text in the first request without
      * checking if the server actually needs them might pose a security risk.</p>
      *
-     * @param preemptiveAuth {@code true} if preemptive Basic authentication
-     * should be enabled
+     * <p>The default value is {@code false}.</p>
      */
-    void preemptiveAuth(boolean preemptiveAuth);
+    Property<Boolean> getPreemptiveAuth();
 
     /**
      * Specifies if HTTPS certificate verification errors should be ignored
@@ -235,27 +234,6 @@ public interface DownloadSpec {
      */
     File getDest();
     
-    /**
-     * @return true if compression is enabled
-     */
-    boolean isCompress();
-
-    /**
-     * @return the username for authentication
-     */
-    String getUsername();
-
-    /**
-     * @return the password for authentication
-     */
-    String getPassword();
-
-    /**
-     * @return true if preemptive Basic authenticate is enabled
-     * @see #preemptiveAuth(boolean)
-     */
-    boolean isPreemptiveAuth();
-
     /**
      * @return the HTTP request headers to use when downloading
      */

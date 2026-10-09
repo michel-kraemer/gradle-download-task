@@ -129,8 +129,8 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         t.src(wireMock.url(AUTHENTICATE));
         File dst = newTempFile();
         t.dest(dst);
-        t.username(wrongUser);
-        t.password(wrongPass);
+        t.getUsername().set(wrongUser);
+        t.getPassword().set(wrongPass);
 
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
@@ -165,8 +165,8 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         t.src(wireMock.url(AUTHENTICATE));
         File dst = newTempFile();
         t.dest(dst);
-        t.username(USERNAME);
-        t.password(PASSWORD);
+        t.getUsername().set(USERNAME);
+        t.getPassword().set(PASSWORD);
         execute(t);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
@@ -195,9 +195,9 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         t.src(wireMock.url(AUTHENTICATE));
         File dst = newTempFile();
         t.dest(dst);
-        t.username(USERNAME);
-        t.password(PASSWORD);
-        t.preemptiveAuth(true);
+        t.getUsername().set(USERNAME);
+        t.getPassword().set(PASSWORD);
+        t.getPreemptiveAuth().set(true);
         execute(t);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
@@ -240,8 +240,8 @@ public class AuthenticationTest extends TestBaseWithMockServer {
         t.src(wireMock.url(AUTHENTICATE));
         File dst = newTempFile();
         t.dest(dst);
-        t.username(USERNAME);
-        t.password(PASSWORD);
+        t.getUsername().set(USERNAME);
+        t.getPassword().set(PASSWORD);
         execute(t);
 
         // check if non-preemptive authentication request was made

@@ -62,7 +62,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.dest(dst);
         t.getOnlyIfModified().set(true);
         t.useETag(true);
-        t.compress(false);
+        t.getCompress().set(false);
         execute(t);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
@@ -90,7 +90,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.dest(dst);
         t.getOnlyIfModified().set(true);
         t.useETag(true);
-        t.compress(false);
+        t.getCompress().set(false);
         execute(t);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
@@ -126,7 +126,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.dest(dst1);
         t.getOnlyIfModified().set(true);
         t.useETag(true);
-        t.compress(false);
+        t.getCompress().set(false);
         execute(t);
 
         // download second file
@@ -138,7 +138,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.dest(dst2);
         t.getOnlyIfModified().set(true);
         t.useETag(true);
-        t.compress(false);
+        t.getCompress().set(false);
         execute(t);
 
         // check server responses
@@ -191,7 +191,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.getOnlyIfModified().set(true);
         t.useETag(true);
         assertThat((Boolean)t.getUseETag()).isTrue();
-        t.compress(false);
+        t.getCompress().set(false);
         execute(t);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
@@ -242,7 +242,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.dest(dst);
         t.getOnlyIfModified().set(true);
         t.useETag(true);
-        t.compress(false);
+        t.getCompress().set(false);
         execute(t);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
@@ -272,7 +272,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.dest(dst);
         t.getOnlyIfModified().set(true);
         t.useETag(true);
-        t.compress(false);
+        t.getCompress().set(false);
         execute(t);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
@@ -368,7 +368,7 @@ public class ETagTest extends TestBaseWithMockServer {
 
         prepareCachedETagsFile(t.getCachedETagsFile(), etag);
 
-        t.compress(false);
+        t.getCompress().set(false);
         execute(t);
 
         String dstContents = FileUtils.readFileToString(dst,
@@ -402,7 +402,7 @@ public class ETagTest extends TestBaseWithMockServer {
 
         prepareCachedETagsFile(t.getCachedETagsFile(), etag);
 
-        t.compress(false);
+        t.getCompress().set(false);
         execute(t);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
@@ -434,7 +434,7 @@ public class ETagTest extends TestBaseWithMockServer {
 
         prepareCachedETagsFile(t.getCachedETagsFile(), wrongEtag);
 
-        t.compress(false);
+        t.getCompress().set(false);
         execute(t);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
@@ -463,7 +463,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.getOnlyIfModified().set(true);
         t.useETag(true);
         assertThat(t.getUseETag()).isEqualTo(true);
-        t.compress(false);
+        t.getCompress().set(false);
         execute(t);
 
         // check server response
@@ -508,7 +508,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.getOnlyIfModified().set(true);
         t.useETag("all");
         assertThat(t.getUseETag()).isEqualTo("all");
-        t.compress(false);
+        t.getCompress().set(false);
         execute(t);
 
         // check server response
@@ -560,7 +560,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.getOnlyIfModified().set(true);
         t.useETag("strongOnly");
         assertThat(t.getUseETag()).isEqualTo("strongOnly");
-        t.compress(false);
+        t.getCompress().set(false);
         execute(t);
 
         // download second file
@@ -573,7 +573,7 @@ public class ETagTest extends TestBaseWithMockServer {
         t.getOnlyIfModified().set(true);
         t.useETag("strongOnly");
         assertThat(t.getUseETag()).isEqualTo("strongOnly");
-        t.compress(false);
+        t.getCompress().set(false);
         execute(t);
 
         // check server responses

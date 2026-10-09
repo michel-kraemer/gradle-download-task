@@ -326,8 +326,8 @@ public class RedirectTest extends TestBaseWithMockServer {
 
         Download t = makeProjectAndTask();
         t.src(wireMock.url("auth"));
-        t.username(username);
-        t.password(password);
+        t.getUsername().set(username);
+        t.getPassword().set(password);
         File dst = newTempFile();
         t.dest(dst);
         execute(t);
@@ -369,9 +369,9 @@ public class RedirectTest extends TestBaseWithMockServer {
 
         Download t = makeProjectAndTask();
         t.src(wireMock.url("auth"));
-        t.username(username);
-        t.password(password);
-        t.preemptiveAuth(true);
+        t.getUsername().set(username);
+        t.getPassword().set(password);
+        t.getPreemptiveAuth().set(true);
         File dst = newTempFile();
         t.dest(dst);
         execute(t);

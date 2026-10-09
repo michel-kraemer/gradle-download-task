@@ -93,7 +93,7 @@ public class ContentLengthTest extends TestBaseWithMockServer {
                         .withBody(contents)));
 
         Download t = makeProjectAndTask();
-        t.compress(false); // do not use GZIP or the response will be chunked
+        t.getCompress().set(false); // do not use GZIP or the response will be chunked
         t.src(wireMock.url(testFileName));
         File dst = newTempFile();
         t.dest(dst);

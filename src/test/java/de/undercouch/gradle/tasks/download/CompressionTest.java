@@ -67,7 +67,7 @@ public class CompressionTest extends TestBaseWithMockServer {
         t.src(wireMock.url(TEST_FILE_NAME));
         File dst = newTempFile();
         t.dest(dst);
-        t.compress(false);
+        t.getCompress().set(false);
         execute(t);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);

@@ -471,7 +471,7 @@ public class FunctionalDownloadTest extends FunctionalTestBase {
                 "dest " + parameters.dest + "\n" +
                 "overwrite = " + parameters.overwrite + "\n" +
                 "onlyIfModified = " + parameters.onlyIfModified + "\n" +
-                "compress " + parameters.compress + "\n" +
+                "compress = " + parameters.compress + "\n" +
                 "quiet = " + parameters.quiet + "\n" +
                 "useETag " + parameters.useETag + "\n" +
             "}\n" +

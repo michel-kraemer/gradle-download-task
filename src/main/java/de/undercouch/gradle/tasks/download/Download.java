@@ -125,25 +125,31 @@ public class Download extends DefaultTask implements DownloadSpec {
     public Property<Boolean> getOnlyIfNewer() {
         return action.getOnlyIfNewer();
     }
-    
+
+    @Input
     @Override
-    public void compress(boolean compress) {
-        action.compress(compress);
-    }
-    
-    @Override
-    public void username(String username) {
-        action.username(username);
-    }
-    
-    @Override
-    public void password(String password) {
-        action.password(password);
+    public Property<Boolean> getCompress() {
+        return action.getCompress();
     }
 
+    @Input
+    @Optional
     @Override
-    public void preemptiveAuth(boolean preemptiveAuth) {
-        action.preemptiveAuth(preemptiveAuth);
+    public Property<String> getUsername() {
+        return action.getUsername();
+    }
+
+    @Input
+    @Optional
+    @Override
+    public Property<String> getPassword() {
+        return action.getPassword();
+    }
+
+    @Input
+    @Override
+    public Property<Boolean> getPreemptiveAuth() {
+        return action.getPreemptiveAuth();
     }
 
     @Override
@@ -226,32 +232,6 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public File getDest() {
         return action.getDest();
-    }
-
-    @Input
-    @Override
-    public boolean isCompress() {
-        return action.isCompress();
-    }
-
-    @Input
-    @Optional
-    @Override
-    public String getUsername() {
-        return action.getUsername();
-    }
-
-    @Input
-    @Optional
-    @Override
-    public String getPassword() {
-        return action.getPassword();
-    }
-
-    @Input
-    @Override
-    public boolean isPreemptiveAuth() {
-        return action.isPreemptiveAuth();
     }
 
     @Input
