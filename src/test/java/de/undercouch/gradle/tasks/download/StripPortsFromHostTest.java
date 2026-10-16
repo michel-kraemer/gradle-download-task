@@ -150,7 +150,7 @@ public class StripPortsFromHostTest extends TestBase {
             t.src(scheme + "://" + host);
             t.dest(dst);
             if (scheme.equals("https")) {
-                t.acceptAnyCertificate(true);
+                t.getAcceptAnyCertificate().set(true);
             }
             if (explicitHostHeader != null) {
                 t.header("Host", explicitHostHeader);

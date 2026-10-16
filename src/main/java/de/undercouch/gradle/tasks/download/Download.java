@@ -162,24 +162,28 @@ public class Download extends DefaultTask implements DownloadSpec {
         action.header(name, value);
     }
 
+    @Input
     @Override
-    public void acceptAnyCertificate(boolean accept) {
-        action.acceptAnyCertificate(accept);
+    public Property<Boolean> getAcceptAnyCertificate() {
+        return action.getAcceptAnyCertificate();
     }
 
+    @Input
     @Override
-    public void connectTimeout(int milliseconds) {
-        action.connectTimeout(milliseconds);
+    public Property<Integer> getConnectTimeout() {
+        return action.getConnectTimeout();
     }
 
+    @Input
     @Override
-    public void readTimeout(int milliseconds) {
-        action.readTimeout(milliseconds);
+    public Property<Integer> getReadTimeout() {
+        return action.getReadTimeout();
     }
 
+    @Input
     @Override
-    public void retries(int retries) {
-        action.retries(retries);
+    public Property<Integer> getRetries() {
+        return action.getRetries();
     }
 
     @Override
@@ -244,30 +248,6 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public String getHeader(String name) {
         return action.getHeader(name);
-    }
-
-    @Input
-    @Override
-    public boolean isAcceptAnyCertificate() {
-        return action.isAcceptAnyCertificate();
-    }
-
-    @Input
-    @Override
-    public int getConnectTimeout() {
-        return action.getConnectTimeout();
-    }
-
-    @Input
-    @Override
-    public int getReadTimeout() {
-        return action.getReadTimeout();
-    }
-
-    @Input
-    @Override
-    public int getRetries() {
-        return action.getRetries();
     }
 
     @Internal

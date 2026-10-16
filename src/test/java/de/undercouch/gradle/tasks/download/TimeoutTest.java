@@ -49,8 +49,8 @@ public class TimeoutTest extends TestBaseWithMockServer {
                         .withBody("Whatever")));
 
         Download t = makeProjectAndTask();
-        t.readTimeout(TIMEOUT_MS);
-        assertThat(t.getReadTimeout()).isEqualTo(TIMEOUT_MS);
+        t.getReadTimeout().set(TIMEOUT_MS);
+        assertThat(t.getReadTimeout().get()).isEqualTo(TIMEOUT_MS);
         t.src(wireMock.url(TIMEOUT));
         File dst = newTempFile();
         t.dest(dst);
@@ -66,8 +66,8 @@ public class TimeoutTest extends TestBaseWithMockServer {
     @Test
     public void connectTimeout() throws Exception {
         Download t = makeProjectAndTask();
-        t.connectTimeout(TIMEOUT_MS);
-        assertThat(t.getConnectTimeout()).isEqualTo(TIMEOUT_MS);
+        t.getConnectTimeout().set(TIMEOUT_MS);
+        assertThat(t.getConnectTimeout().get()).isEqualTo(TIMEOUT_MS);
         t.src("http://10.255.255.1"); // try to connect to an invalid host
         File dst = newTempFile();
         t.dest(dst);

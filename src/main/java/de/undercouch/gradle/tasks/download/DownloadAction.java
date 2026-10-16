@@ -118,11 +118,11 @@ public class DownloadAction implements DownloadSpec, Serializable {
     private final Property<String> username;
     private final Property<String> password;
     private final Property<Boolean> preemptiveAuth;
+    private final Property<Boolean> acceptAnyCertificate;
     private Map<String, String> headers;
-    private boolean acceptAnyCertificate = false;
-    private int connectTimeoutMs = 30 * 1000;
-    private int readTimeoutMs = 30 * 1000;
-    private int retries = 0;
+    private final Property<Integer> connectTimeoutMs;
+    private final Property<Integer> readTimeoutMs;
+    private final Property<Integer> retries;
     private File downloadTaskDir;
     private boolean tempAndMove = false;
     private UseETag useETag = UseETag.FALSE;
@@ -187,6 +187,14 @@ public class DownloadAction implements DownloadSpec, Serializable {
         this.password = objectFactory.property(String.class);
         this.preemptiveAuth = objectFactory.property(Boolean.class);
         this.preemptiveAuth.set(false);
+        this.acceptAnyCertificate = objectFactory.property(Boolean.class);
+        this.acceptAnyCertificate.set(false);
+        this.connectTimeoutMs = objectFactory.property(Integer.class);
+        this.connectTimeoutMs.set(30 * 1000);
+        this.readTimeoutMs = objectFactory.property(Integer.class);
+        this.readTimeoutMs.set(30 * 1000);
+        this.retries = objectFactory.property(Integer.class);
+        this.retries.set(0);
     }
 
     /**
@@ -403,9 +411,9 @@ public class DownloadAction implements DownloadSpec, Serializable {
         HttpHost httpHost = new HttpHost(src.getProtocol(), src.getHost(), src.getPort());
         
         // create HTTP client
-        CloseableHttpClient client = clientFactory.createHttpClient(
-                httpHost, acceptAnyCertificate, retries, connectTimeoutMs,
-                headers, logger, quiet.get());
+        CloseableHttpClient client = clientFactory.createHttpClient(httpHost,
+                acceptAnyCertificate.get(), retries.get(),
+                connectTimeoutMs.get(), headers, logger, quiet.get());
 
         // get cached ETag if there is any
         String etag = null;
@@ -825,8 +833,10 @@ public class DownloadAction implements DownloadSpec, Serializable {
 
         // configure timeouts
         RequestConfig config = RequestConfig.custom()
-                .setConnectionRequestTimeout(Timeout.ofMilliseconds(connectTimeoutMs))
-                .setResponseTimeout(Timeout.ofMilliseconds(readTimeoutMs))
+                .setConnectionRequestTimeout(
+                        Timeout.ofMilliseconds(connectTimeoutMs.get()))
+                .setResponseTimeout(
+                        Timeout.ofMilliseconds(readTimeoutMs.get()))
                 .setContentCompressionEnabled(compress.get())
                 .build();
         req.setConfig(config);
@@ -1069,23 +1079,23 @@ public class DownloadAction implements DownloadSpec, Serializable {
     }
 
     @Override
-    public void acceptAnyCertificate(boolean accept) {
-        this.acceptAnyCertificate = accept;
+    public Property<Boolean> getAcceptAnyCertificate() {
+        return acceptAnyCertificate;
     }
 
     @Override
-    public void connectTimeout(int milliseconds) {
-        this.connectTimeoutMs = milliseconds;
+    public Property<Integer> getConnectTimeout() {
+        return connectTimeoutMs;
     }
 
     @Override
-    public void readTimeout(int milliseconds) {
-        this.readTimeoutMs = milliseconds;
+    public Property<Integer> getReadTimeout() {
+        return readTimeoutMs;
     }
 
     @Override
-    public void retries(int retries) {
-        this.retries = retries;
+    public Property<Integer> getRetries() {
+        return retries;
     }
 
     /**
@@ -1321,26 +1331,6 @@ public class DownloadAction implements DownloadSpec, Serializable {
             return null;
         }
         return headers.get(name);
-    }
-
-    @Override
-    public boolean isAcceptAnyCertificate() {
-        return acceptAnyCertificate;
-    }
-
-    @Override
-    public int getConnectTimeout() {
-        return connectTimeoutMs;
-    }
-
-    @Override
-    public int getReadTimeout() {
-        return readTimeoutMs;
-    }
-
-    @Override
-    public int getRetries() {
-        return retries;
     }
 
     @Override

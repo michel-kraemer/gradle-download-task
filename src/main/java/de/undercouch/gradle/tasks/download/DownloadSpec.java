@@ -114,36 +114,35 @@ public interface DownloadSpec {
     Property<Boolean> getPreemptiveAuth();
 
     /**
-     * Specifies if HTTPS certificate verification errors should be ignored
-     * and any certificate (even an invalid one) should be accepted. By default
-     * certificates are validated and errors are not being ignored.
-     * @param accept true if certificate errors should be ignored (default: false)
+     * @return {@code true} if HTTPS certificate verification errors should be
+     * ignored and any certificate (even an invalid one) should be accepted.
+     * (default: {@code false})
      */
-    void acceptAnyCertificate(boolean accept);
+    Property<Boolean> getAcceptAnyCertificate();
 
     /**
-     * Specifies the maximum time to wait in milliseconds until a connection is
-     * established. A value of zero means infinite timeout. A negative value
-     * is interpreted as undefined.
-     * @param milliseconds the timeout in milliseconds (default: -1)
+     * @return the maximum number of milliseconds to wait until a connection is
+     * established. A value of {@code 0} (zero) means infinite timeout. Negative
+     * values are not allowed. (default: 30 seconds)
      */
-    void connectTimeout(int milliseconds);
+    Property<Integer> getConnectTimeout();
 
     /**
-     * Specifies the maximum time in milliseconds to wait for data from the
-     * server. A value of zero means infinite timeout. A negative value is
-     * interpreted as undefined.
-     * @param milliseconds the timeout in milliseconds (default: -1)
+     * @return the maximum time in milliseconds to wait for data from the
+     * server. A value of {@code 0} (zero) means infinite timeout. Negative
+     * values are not allowed. (default: 30 seconds)
      */
-    void readTimeout(int milliseconds);
+    Property<Integer> getReadTimeout();
 
     /**
-     * Specifies the maximum number of retry attempts if a request has failed.
-     * By default, requests are never retried and the task fails immediately if
-     * the first request does not succeed.
-     * @param retries the maximum number of retries (default: 0)
+     * @return the maximum number of retry attempts if a request has failed. By
+     * default, requests are never retried and the task fails immediately if
+     * the first request does not succeed. If the value is greater than
+     * {@code 0}, failed requests are retried regardless of the actual error.
+     * This includes failed connection attempts and file-not-found errors (404).
+     * A negative value means infinite retries. (default: {@code 0})
      */
-    void retries(int retries);
+    Property<Integer> getRetries();
 
     /**
      * Specifies the directory where gradle-download-task stores information
@@ -244,29 +243,6 @@ public interface DownloadSpec {
      * @return the value of the HTTP header
      */
     String getHeader(String name);
-
-    /**
-     * @return true if HTTPS certificate verification errors should be ignored,
-     * default value is false
-     */
-    boolean isAcceptAnyCertificate();
-
-    /**
-     * @return the maximum time to wait in milliseconds until a connection
-     * is established
-     */
-    int getConnectTimeout();
-
-    /**
-     * @return the maximum time in milliseconds to wait for data from the
-     * server
-     */
-    int getReadTimeout();
-
-    /**
-     * @return the maximum number of retries
-     */
-    int getRetries();
     
     /**
      * @return the directory where gradle-download-task stores information

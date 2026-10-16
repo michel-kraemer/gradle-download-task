@@ -74,7 +74,7 @@ public class RetryTest extends TestBaseWithMockServer {
                 .willReturn(aResponse().withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        assertThat(t.getRetries()).isZero();
+        assertThat(t.getRetries().get()).isZero();
         t.src(wireMock.url(TEST_FILE_NAME));
         File dst = newTempFile();
         t.dest(dst);
@@ -104,8 +104,8 @@ public class RetryTest extends TestBaseWithMockServer {
                 .willReturn(aResponse().withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.retries(1);
-        assertThat(t.getRetries()).isOne();
+        t.getRetries().set(1);
+        assertThat(t.getRetries().get()).isOne();
         t.src(wireMock.url(TEST_FILE_NAME));
         File dst = newTempFile();
         t.dest(dst);
@@ -145,8 +145,8 @@ public class RetryTest extends TestBaseWithMockServer {
                 .willReturn(aResponse().withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.retries(3);
-        assertThat(t.getRetries()).isEqualTo(3);
+        t.getRetries().set(3);
+        assertThat(t.getRetries().get()).isEqualTo(3);
         t.src(wireMock.url(TEST_FILE_NAME));
         File dst = newTempFile();
         t.dest(dst);
@@ -180,8 +180,8 @@ public class RetryTest extends TestBaseWithMockServer {
                 .willReturn(aResponse().withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.retries(3);
-        assertThat(t.getRetries()).isEqualTo(3);
+        t.getRetries().set(3);
+        assertThat(t.getRetries().get()).isEqualTo(3);
         t.src(wireMock.url(TEST_FILE_NAME));
         File dst = newTempFile();
         t.dest(dst);
@@ -221,8 +221,8 @@ public class RetryTest extends TestBaseWithMockServer {
                 .willReturn(aResponse().withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.retries(2);
-        assertThat(t.getRetries()).isEqualTo(2);
+        t.getRetries().set(2);
+        assertThat(t.getRetries().get()).isEqualTo(2);
         t.src(wireMock.url(TEST_FILE_NAME));
         File dst = newTempFile();
         t.dest(dst);
@@ -258,8 +258,8 @@ public class RetryTest extends TestBaseWithMockServer {
                 .willReturn(aResponse().withBody(CONTENTS)));
 
         Download t = makeProjectAndTask();
-        t.retries(-1);
-        assertThat(t.getRetries()).isEqualTo(-1);
+        t.getRetries().set(-1);
+        assertThat(t.getRetries().get()).isEqualTo(-1);
         t.src(wireMock.url(TEST_FILE_NAME));
         File dst = newTempFile();
         t.dest(dst);
@@ -326,7 +326,7 @@ public class RetryTest extends TestBaseWithMockServer {
         loggerField.setAccessible(true);
         loggerField.set(action, logger);
 
-        t.retries(2);
+        t.getRetries().set(2);
         t.src(wireMock.url(TEST_FILE_NAME));
         File dst = newTempFile();
         t.dest(dst);
@@ -377,7 +377,7 @@ public class RetryTest extends TestBaseWithMockServer {
         loggerField.setAccessible(true);
         loggerField.set(action, logger);
 
-        t.retries(1);
+        t.getRetries().set(1);
         t.getQuiet().set(true);
         t.src(wireMock.url(TEST_FILE_NAME));
         File dst = newTempFile();
@@ -425,8 +425,8 @@ public class RetryTest extends TestBaseWithMockServer {
         loggerField.setAccessible(true);
         loggerField.set(action, logger);
 
-        t.retries(1);
-        t.connectTimeout(1);
+        t.getRetries().set(1);
+        t.getConnectTimeout().set(1);
         t.src("http://10.255.255.1"); // try to connect to an invalid host
         File dst = newTempFile();
         t.dest(dst);
@@ -478,7 +478,7 @@ public class RetryTest extends TestBaseWithMockServer {
         loggerField.setAccessible(true);
         loggerField.set(action, logger);
 
-        t.retries(1);
+        t.getRetries().set(1);
         t.src("http://thisserverdoesnotreallyexistgradledownloadtask"); // try to connect to an invalid host
         File dst = newTempFile();
         t.dest(dst);

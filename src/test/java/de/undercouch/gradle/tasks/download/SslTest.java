@@ -62,8 +62,8 @@ public class SslTest extends TestBase {
         t.src(wireMock.url(TEST_FILE_NAME));
         File dst = newTempFile();
         t.dest(dst);
-        t.acceptAnyCertificate(true);
-        assertThat(t.isAcceptAnyCertificate()).isTrue();
+        t.getAcceptAnyCertificate().set(true);
+        assertThat(t.getAcceptAnyCertificate().get()).isTrue();
         execute(t);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
@@ -79,7 +79,7 @@ public class SslTest extends TestBase {
         t.src(wireMock.url(TEST_FILE_NAME));
         File dst = newTempFile();
         t.dest(dst);
-        assertThat(t.isAcceptAnyCertificate()).isFalse();
+        assertThat(t.getAcceptAnyCertificate().get()).isFalse();
         assertThatThrownBy(() -> execute(t))
                 .isInstanceOf(WorkerExecutionException.class)
                 .rootCause()
