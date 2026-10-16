@@ -15,6 +15,8 @@
 package de.undercouch.gradle.tasks.download.internal;
 
 import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.impl.ChainElement;
+import org.apache.hc.client5.http.impl.LaxRedirectStrategy;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
@@ -102,6 +104,17 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         // add interceptor that removes sensitive headers from the request after
         // we've been redirected to another host
         builder.addRequestInterceptorLast(new RemoveSensitiveHeadersInterceptor(httpHost));
+
+        // Always allow redirects even if they don't adhere to the specification
+        // and even if they contain sensitive headers. Note: To protect against
+        // sensitive headers being leaked, we have registered the
+        // `RemoveSensitiveHeadersInterceptor` above.
+        builder.setRedirectStrategy(new LaxRedirectStrategy());
+
+        // add interceptor that replaces the invalid Content-Encoding 'none' by 'identity'
+        // see https://github.com/michel-kraemer/gradle-download-task/issues/55
+        builder.addExecInterceptorAfter(ChainElement.COMPRESS.name(),
+                "ContentEncodingNone", new ContentEncodingNoneInterceptor());
 
         if (logger.isDebugEnabled()) {
             DebugInterceptor di = new DebugInterceptor();

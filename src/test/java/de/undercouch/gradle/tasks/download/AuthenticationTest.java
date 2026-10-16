@@ -229,7 +229,8 @@ public class AuthenticationTest extends TestBaseWithMockServer {
                 .willReturn(aResponse()
                         .withHeader("WWW-Authenticate",
                                 "Digest realm=\"" + REALM + "\"," +
-                                        "nonce=\"" + NONCE + "\"")
+                                        "nonce=\"" + NONCE + "\"," +
+                                        "algorithm=MD5")
                         .withStatus(HttpServletResponse.SC_UNAUTHORIZED)));
         stubFor(get(urlEqualTo(AUTHENTICATE))
                 .withHeader("Authorization", equalTo(ahdr))
