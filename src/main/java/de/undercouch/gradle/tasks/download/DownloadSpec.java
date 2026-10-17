@@ -152,18 +152,16 @@ public interface DownloadSpec {
     void downloadTaskDir(Object dir);
 
     /**
-     * Specifies whether the file should be downloaded to a temporary location
-     * and, upon successful execution, moved to the final location. If the
-     * overwrite flag is set to false, this flag is useful to avoid partially
-     * downloaded files if Gradle is forcefully closed or the system crashes.
-     * Note that the plugin always deletes partial downloads on connection
-     * errors, regardless of the value of this flag. The default temporary
-     * location can be configured with the {@link #downloadTaskDir(Object)};
-     * @param tempAndMove true if the file should be downloaded to a temporary
-     * location and, upon successful execution, moved to the final location
-     * (default: false)
+     * @return {@code true} if the file should be downloaded to a temporary
+     * location and, upon successful execution, moved to the final location.
+     * If the {@code overwrite} flag is set to {@code false}, this flag is
+     * useful to avoid partially downloaded files if Gradle is forcefully closed
+     * or the system crashes. Note that the plugin always deletes partial
+     * downloads on connection errors, regardless of the value of this flag. The
+     * default temporary location can be configured with the
+     * {@link #downloadTaskDir(Object)} (default: {@code false})
      */
-    void tempAndMove(boolean tempAndMove);
+    Property<Boolean> getTempAndMove();
 
     /**
      * <p>Sets the <code>useETag</code> flag. Possible values are:</p>
@@ -199,17 +197,16 @@ public interface DownloadSpec {
     void eachFile(Action<? super DownloadDetails> action);
 
     /**
-     * Sets the HTTP method to use
-     * @param method the HTTP method (default: {@code GET})
+     * @return the HTTP method to use (default: {@code GET})
      */
-    void method(String method);
+    Property<String> getMethod();
 
     /**
-     * Sets an optional request body to send to the server before the download.
-     * By default, the request will not have a body.
-     * @param body the request body ({@code null} to send no body)
+     * @return an optional request body to send to the server. As
+     * gradle-download-task is meant for downloading and not for uploading, only
+     * simple strings are supported.
      */
-    void body(String body);
+    Property<String> getBody();
 
     /**
      * Sets an optional status code validator. By default, a download fails
@@ -251,13 +248,6 @@ public interface DownloadSpec {
     File getDownloadTaskDir();
 
     /**
-     * @return true of if the file should be downloaded to a temporary
-     * location and, upon successful execution, moved to the final
-     * location.
-     */
-    boolean isTempAndMove();
-
-    /**
      * @return the value of the <code>useETag</code> flag
      * @see #useETag(Object)
      */
@@ -268,15 +258,4 @@ public interface DownloadSpec {
      * from the server
      */
     File getCachedETagsFile();
-
-    /**
-     * @return the HTTP method to use (default: {@code GET})
-     */
-    String getMethod();
-
-    /**
-     * @return an optional request body to send to the server before
-     * downloading (default: {@code null})
-     */
-    String getBody();
 }

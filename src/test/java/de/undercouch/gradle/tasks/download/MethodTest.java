@@ -21,13 +21,13 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.requestMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests if another HTTP method can be used
@@ -39,7 +39,7 @@ public class MethodTest extends TestBaseWithMockServer {
         t.src(wireMock.url(TEST_FILE_NAME));
         File dst = newTempFile();
         t.dest(dst);
-        t.method(method);
+        t.getMethod().set(method);
         execute(t);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);
@@ -100,14 +100,19 @@ public class MethodTest extends TestBaseWithMockServer {
     }
 
     /**
-     * Makes sure {@code null} cannot be used as method
+     * Makes sure {@code null} defaults to {@code "GET"}
      * @throws Exception if anything goes wrong
      */
     @Test
     public void nullMethod() throws Exception {
         Download t = makeProjectAndTask();
-        assertThat(t.getMethod()).isEqualTo("GET");
-        assertThatThrownBy(() -> t.method(null)).isInstanceOf(
-                IllegalArgumentException.class);
+        assertThat(t.getMethod().get()).isEqualTo("GET");
+        t.getMethod().set((String)null);
+        assertThat(t.getMethod().isPresent()).isFalse();
+
+        stubFor(get(urlEqualTo("/" + TEST_FILE_NAME))
+                .willReturn(aResponse()
+                        .withBody(CONTENTS)));
+        testWithMethod(null);
     }
 }

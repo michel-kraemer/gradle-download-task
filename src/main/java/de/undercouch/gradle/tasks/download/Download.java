@@ -191,9 +191,10 @@ public class Download extends DefaultTask implements DownloadSpec {
         action.downloadTaskDir(dir);
     }
 
+    @Input
     @Override
-    public void tempAndMove(boolean tempAndMove) {
-        action.tempAndMove(tempAndMove);
+    public Property<Boolean> getTempAndMove() {
+        return action.getTempAndMove();
     }
 
     @Override
@@ -211,14 +212,18 @@ public class Download extends DefaultTask implements DownloadSpec {
         this.action.eachFile(action);
     }
 
+    @Input
+    @Optional
     @Override
-    public void method(String method) {
-        action.method(method);
+    public Property<String> getMethod() {
+        return action.getMethod();
     }
 
+    @Input
+    @Optional
     @Override
-    public void body(String body) {
-        action.body(body);
+    public Property<String> getBody() {
+        return action.getBody();
     }
 
     @Override
@@ -257,12 +262,6 @@ public class Download extends DefaultTask implements DownloadSpec {
     }
 
     @Input
-    @Override
-    public boolean isTempAndMove() {
-        return action.isTempAndMove();
-    }
-
-    @Input
     @Optional
     @Override
     public Object getUseETag() {
@@ -273,19 +272,5 @@ public class Download extends DefaultTask implements DownloadSpec {
     @Override
     public File getCachedETagsFile() {
         return action.getCachedETagsFile();
-    }
-
-    @Input
-    @Optional
-    @Override
-    public String getMethod() {
-        return this.action.getMethod();
-    }
-
-    @Input
-    @Optional
-    @Override
-    public String getBody() {
-        return this.action.getBody();
     }
 }

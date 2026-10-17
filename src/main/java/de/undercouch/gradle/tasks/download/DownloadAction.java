@@ -96,6 +96,11 @@ public class DownloadAction implements DownloadSpec, Serializable {
     // private static final GradleVersion SOFT_MIN_GRADLE_VERSION =
     //         GradleVersion.version("5.0");
 
+    /**
+     * The default value of {@link #method}
+     */
+    private static final String DEFAULT_METHOD = "GET";
+
     // HEADS UP: FIELDS ARE POTENTIALLY ACCESSED BY MULTIPLE THREADS!
     private final ProjectLayout projectLayout;
     private final Logger logger;
@@ -124,10 +129,10 @@ public class DownloadAction implements DownloadSpec, Serializable {
     private final Property<Integer> readTimeoutMs;
     private final Property<Integer> retries;
     private File downloadTaskDir;
-    private boolean tempAndMove = false;
+    private final Property<Boolean> tempAndMove;
     private UseETag useETag = UseETag.FALSE;
-    private String method = "GET";
-    private String body;
+    private final Property<String> method;
+    private final Property<String> body;
     private Transformer<Boolean, Integer> statusValidator;
     private File cachedETagsFile;
     private transient Lock cachedETagsFileLock = new ReentrantLock();
@@ -195,6 +200,11 @@ public class DownloadAction implements DownloadSpec, Serializable {
         this.readTimeoutMs.set(30 * 1000);
         this.retries = objectFactory.property(Integer.class);
         this.retries.set(0);
+        this.tempAndMove = objectFactory.property(Boolean.class);
+        this.tempAndMove.set(false);
+        this.method = objectFactory.property(String.class);
+        this.method.set(DEFAULT_METHOD);
+        this.body = objectFactory.property(String.class);
     }
 
     /**
@@ -508,10 +518,10 @@ public class DownloadAction implements DownloadSpec, Serializable {
     }
 
     /**
-     * If {@link #tempAndMove} is <code>true</code>, copy bytes from an input
-     * stream to a temporary file and log progress. Upon successful
+     * If {@link #getTempAndMove()} returns <code>true</code>, copy bytes from
+     * an input stream to a temporary file and log progress. Upon successful
      * completion, move the temporary file to the given destination. If
-     * {@link #tempAndMove} is <code>false</code>, just forward to
+     * {@link #getTempAndMove()} returns <code>false</code>, just forward to
      * {@link #stream(InputStream, File, ProgressLoggerWrapper)}.
      * @param is the input stream to read
      * @param destFile the destination file
@@ -520,7 +530,7 @@ public class DownloadAction implements DownloadSpec, Serializable {
      */
     private void streamAndMove(InputStream is, File destFile,
             ProgressLoggerWrapper progressLogger) throws IOException {
-        if (!tempAndMove) {
+        if (!tempAndMove.get()) {
             stream(is, destFile, progressLogger);
         } else {
             //create parent directory
@@ -826,9 +836,10 @@ public class DownloadAction implements DownloadSpec, Serializable {
 
         // create request
         HttpUriRequestBase req = new HttpUriRequestBase(
-                this.method.toUpperCase(Locale.ROOT), URI.create(file));
-        if (body != null) {
-            req.setEntity(new StringEntity(body));
+                method.getOrElse(DEFAULT_METHOD)
+                        .toUpperCase(Locale.ROOT), URI.create(file));
+        if (body.isPresent()) {
+            req.setEntity(new StringEntity(body.get()));
         }
 
         // configure timeouts
@@ -1149,8 +1160,8 @@ public class DownloadAction implements DownloadSpec, Serializable {
     }
 
     @Override
-    public void tempAndMove(boolean tempAndMove) {
-        this.tempAndMove = tempAndMove;
+    public Property<Boolean> getTempAndMove() {
+        return tempAndMove;
     }
 
     @Override
@@ -1192,16 +1203,13 @@ public class DownloadAction implements DownloadSpec, Serializable {
     }
 
     @Override
-    public void method(String method) {
-        if (method == null) {
-            throw new IllegalArgumentException("HTTP method must not be null");
-        }
-        this.method = method;
+    public Property<String> getMethod() {
+        return method;
     }
 
     @Override
-    public void body(String body) {
-        this.body = body;
+    public Property<String> getBody() {
+        return body;
     }
 
     @Override
@@ -1339,11 +1347,6 @@ public class DownloadAction implements DownloadSpec, Serializable {
     }
 
     @Override
-    public boolean isTempAndMove() {
-        return tempAndMove;
-    }
-
-    @Override
     public Object getUseETag() {
         return useETag.value;
     }
@@ -1359,16 +1362,6 @@ public class DownloadAction implements DownloadSpec, Serializable {
         } finally {
             cachedETagsFileLock.unlock();
         }
-    }
-
-    @Override
-    public String getMethod() {
-        return method;
-    }
-
-    @Override
-    public String getBody() {
-        return body;
     }
 
     /**

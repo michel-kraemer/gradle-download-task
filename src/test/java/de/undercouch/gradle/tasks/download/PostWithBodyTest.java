@@ -48,8 +48,8 @@ public class PostWithBodyTest extends TestBaseWithMockServer {
         t.src(wireMock.url(TEST_FILE_NAME));
         File dst = newTempFile();
         t.dest(dst);
-        t.method("POST");
-        t.body(body);
+        t.getMethod().set("POST");
+        t.getBody().set(body);
         execute(t);
 
         assertThat(dst).usingCharset(StandardCharsets.UTF_8).hasContent(CONTENTS);

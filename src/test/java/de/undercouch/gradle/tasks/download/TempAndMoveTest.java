@@ -131,7 +131,7 @@ public class TempAndMoveTest extends TestBase {
         }
 
         t.dest(dst);
-        t.tempAndMove(true);
+        t.getTempAndMove().set(true);
         execute(t);
 
         assertThat(dst).exists();
